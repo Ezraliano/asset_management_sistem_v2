@@ -6,6 +6,7 @@ export enum AssetStatus {
   LOST = 'Lost'
 }
 
+
 export enum MaintenanceStatus {
   SCHEDULED = 'Scheduled',
   IN_PROGRESS = 'In Progress',
@@ -32,7 +33,7 @@ export interface Asset {
   value: number;
   purchase_date: string;
   useful_life: number;
-  status: AssetStatus; // Ganti dari string literal ke enum
+  status: 'In Use' | 'In Repair' | 'Disposed' | 'Lost'; // Tetap string literal
   created_at?: string;
   updated_at?: string;
 }
@@ -43,7 +44,7 @@ export interface Maintenance {
   asset_id: number;
   date: string;
   description: string;
-  status: MaintenanceStatus; // Ganti dari string literal ke enum
+  status: 'Scheduled' | 'In Progress' | 'Completed' | 'Cancelled'; // Tetap string literal
   asset?: Asset;
 }
 
