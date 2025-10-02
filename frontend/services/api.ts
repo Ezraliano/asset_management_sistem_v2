@@ -1,6 +1,6 @@
 import { Asset, AssetMovement, Maintenance, User, DamageReport, LossReport, DashboardStats } from '../types';
 
-const API_BASE_URL = 'http://localhost:8000/api'; // Sesuaikan dengan URL Laravel Anda
+const API_BASE_URL = 'http://localhost:8000/api';
 
 // Helper function untuk API calls
 const apiRequest = async (endpoint: string, options: RequestInit = {}) => {
@@ -20,7 +20,6 @@ const apiRequest = async (endpoint: string, options: RequestInit = {}) => {
   
   if (!response.ok) {
     if (response.status === 401) {
-      // Token expired, redirect to login
       localStorage.removeItem('auth_token');
       window.location.href = '/';
     }
@@ -75,7 +74,7 @@ export const getDashboardStats = async (): Promise<DashboardStats> => {
   return data.data;
 };
 
-// Assets API
+// Assets API - DIPERBAIKI DENGAN getAssetById
 export const getAssets = async (filters: { category?: string; location?: string; status?: string } = {}): Promise<Asset[]> => {
   const queryParams = new URLSearchParams();
   if (filters.category) queryParams.append('category', filters.category);
@@ -89,12 +88,13 @@ export const getAssets = async (filters: { category?: string; location?: string;
   return data.data;
 };
 
+// FUNCTION YANG DITAMBAHKAN:
 export const getAssetById = async (id: string): Promise<Asset | undefined> => {
   try {
     const data = await apiRequest(`/assets/${id}`);
     return data.data;
   } catch (error) {
-    console.error('Get asset error:', error);
+    console.error('Get asset by ID error:', error);
     return undefined;
   }
 };
@@ -136,12 +136,12 @@ export const getAllMovements = async (): Promise<AssetMovement[]> => {
   return data.data;
 };
 
-export const addAssetMovement = async (data: { assetId: string; location: string; movedBy: string }): Promise<Asset> => {
-  const response = await apiRequest('/asset-movements', {
+export const addAssetMovement = async (movementData: { assetId: string; location: string; movedBy: string }): Promise<AssetMovement> => {
+  const data = await apiRequest('/asset-movements', {
     method: 'POST',
-    body: JSON.stringify(data),
+    body: JSON.stringify(movementData),
   });
-  return response.data;
+  return data.data;
 };
 
 // Maintenance API
@@ -202,14 +202,11 @@ export const addLossReport = async (reportData: Omit<LossReport, 'id'>): Promise
 
 // Users API
 export const getUsers = async (): Promise<User[]> => {
-  // Note: Anda perlu membuat endpoint untuk users di Laravel jika belum ada
-  // Untuk sementara, return empty array
   return [];
 };
 
-// Bulk Assets - Anda perlu membuat endpoint khusus di Laravel untuk ini
+// Bulk Assets
 export const addBulkAssets = async (assetsData: Omit<Asset, 'id'>[]): Promise<Asset[]> => {
-  // Implementasi bulk insert - buat endpoint khusus di Laravel
   const promises = assetsData.map(asset => addAsset(asset));
   return Promise.all(promises);
 };

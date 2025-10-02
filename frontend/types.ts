@@ -1,11 +1,10 @@
-// Tambahkan enum ini di bagian paling atas file
+// types.ts - PERBAIKAN
 export enum AssetStatus {
   IN_USE = 'In Use',
   IN_REPAIR = 'In Repair',
   DISPOSED = 'Disposed',
   LOST = 'Lost'
 }
-
 
 export enum MaintenanceStatus {
   SCHEDULED = 'Scheduled',
@@ -14,7 +13,6 @@ export enum MaintenanceStatus {
   CANCELLED = 'Cancelled'
 }
 
-// Interface yang sudah ada tetap sama...
 export interface User {
   id: number;
   name: string;
@@ -23,32 +21,30 @@ export interface User {
   role: 'Admin' | 'Staff' | 'Audit';
 }
 
-// Update interface Asset untuk menggunakan enum
+// PERBAIKAN: Sesuaikan field names dengan backend Laravel
 export interface Asset {
   id: number;
-  asset_tag: string;
+  asset_tag: string; // Sesuai dengan database
   name: string;
   category: string;
   location: string;
   value: number;
-  purchase_date: string;
-  useful_life: number;
-  status: 'In Use' | 'In Repair' | 'Disposed' | 'Lost'; // Tetap string literal
+  purchase_date: string; // Sesuai dengan database (bukan purchaseDate)
+  useful_life: number; // Sesuai dengan database (bukan usefulLife)
+  status: AssetStatus; // Gunakan enum untuk type safety
   created_at?: string;
   updated_at?: string;
 }
 
-// Update Maintenance interface juga
 export interface Maintenance {
   id: number;
   asset_id: number;
   date: string;
   description: string;
-  status: 'Scheduled' | 'In Progress' | 'Completed' | 'Cancelled'; // Tetap string literal
+  status: MaintenanceStatus;
   asset?: Asset;
 }
 
-// Interface lainnya tetap sama...
 export interface AssetMovement {
   id: number;
   asset_id: number;
