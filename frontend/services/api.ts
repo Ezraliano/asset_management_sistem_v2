@@ -1,216 +1,215 @@
-import { Asset, AssetStatus, AssetMovement, Maintenance, MaintenanceStatus, User, DamageReport, LossReport } from '../types';
+import { Asset, AssetMovement, Maintenance, User, DamageReport, LossReport, DashboardStats } from '../types';
 
-// Seed data for assets to make the app interactive from the start
-const initialAssets: Asset[] = [];
+const API_BASE_URL = 'http://localhost:8000/api'; // Sesuaikan dengan URL Laravel Anda
 
+// Helper function untuk API calls
+const apiRequest = async (endpoint: string, options: RequestInit = {}) => {
+  const token = localStorage.getItem('auth_token');
+  
+  const config: RequestInit = {
+    headers: {
+      'Content-Type': 'application/json',
+      'Accept': 'application/json',
+      ...(token && { 'Authorization': `Bearer ${token}` }),
+      ...options.headers,
+    },
+    ...options,
+  };
 
-let assets: Asset[] = [...initialAssets];
-// Use a counter for new IDs to prevent duplicates after deletion
-let nextAssetIdCounter = assets.length + 1;
-
-let movements: AssetMovement[] = [];
-
-let maintenance: Maintenance[] = [];
-
-let damageReports: DamageReport[] = [];
-
-let lossReports: LossReport[] = [];
-
-let users: User[] = [
-    { id: 'USR-001', name: 'admin', role: 'Admin', password: '123' },
-    { id: 'USR-002', name: 'staff', role: 'Staff', password: '123' },
-    { id: 'USR-003', name: 'audit', role: 'Audit', password: '123' },
-];
-
-const simulateDelay = <T,>(data: T): Promise<T> => new Promise(res => setTimeout(() => res(data), 500));
-
-export const loginUser = async (username: string, password_input: string): Promise<User | null> => {
-    const user = users.find(u => u.name.toLowerCase() === username.toLowerCase());
-    if (user && user.password === password_input) {
-        // In a real app, you would not send the password back
-        const { password, ...userWithoutPassword } = user;
-        return simulateDelay(userWithoutPassword);
+  const response = await fetch(`${API_BASE_URL}${endpoint}`, config);
+  
+  if (!response.ok) {
+    if (response.status === 401) {
+      // Token expired, redirect to login
+      localStorage.removeItem('auth_token');
+      window.location.href = '/';
     }
-    return simulateDelay(null);
+    throw new Error(`API error: ${response.status}`);
+  }
+
+  return response.json();
 };
 
+// Auth API
+export const loginUser = async (username: string, password: string): Promise<User | null> => {
+  try {
+    const data = await apiRequest('/login', {
+      method: 'POST',
+      body: JSON.stringify({ username, password }),
+    });
 
-export const getAssets = async (filters: { category?: string, location?: string, status?: string } = {}): Promise<Asset[]> => {
-  let filteredAssets = assets;
-  if (filters.category) {
-    filteredAssets = filteredAssets.filter(a => a.category === filters.category);
+    if (data.success && data.token) {
+      localStorage.setItem('auth_token', data.token);
+      return data.user;
+    }
+    return null;
+  } catch (error) {
+    console.error('Login error:', error);
+    return null;
   }
-  if (filters.location) {
-    filteredAssets = filteredAssets.filter(a => a.location === filters.location);
+};
+
+export const logoutUser = async (): Promise<void> => {
+  try {
+    await apiRequest('/logout', { method: 'POST' });
+  } catch (error) {
+    console.error('Logout error:', error);
+  } finally {
+    localStorage.removeItem('auth_token');
   }
-  if (filters.status) {
-    filteredAssets = filteredAssets.filter(a => a.status === filters.status);
+};
+
+export const getCurrentUser = async (): Promise<User | null> => {
+  try {
+    const data = await apiRequest('/user');
+    return data.success ? data.user : null;
+  } catch (error) {
+    console.error('Get user error:', error);
+    return null;
   }
-  return simulateDelay(filteredAssets);
+};
+
+// Dashboard API
+export const getDashboardStats = async (): Promise<DashboardStats> => {
+  const data = await apiRequest('/dashboard/stats');
+  return data.data;
+};
+
+// Assets API
+export const getAssets = async (filters: { category?: string; location?: string; status?: string } = {}): Promise<Asset[]> => {
+  const queryParams = new URLSearchParams();
+  if (filters.category) queryParams.append('category', filters.category);
+  if (filters.location) queryParams.append('location', filters.location);
+  if (filters.status) queryParams.append('status', filters.status);
+
+  const queryString = queryParams.toString();
+  const endpoint = queryString ? `/assets?${queryString}` : '/assets';
+  
+  const data = await apiRequest(endpoint);
+  return data.data;
 };
 
 export const getAssetById = async (id: string): Promise<Asset | undefined> => {
-  return simulateDelay(assets.find(a => a.id === id));
-};
-
-export const addAsset = async (assetData: Omit<Asset, 'id' | 'qrCodeUrl'>): Promise<Asset> => {
-  const newId = `ASSET-${String(nextAssetIdCounter++).padStart(3, '0')}`;
-  const newAsset: Asset = {
-    ...assetData,
-    id: newId,
-    qrCodeUrl: newId,
-  };
-  assets.push(newAsset);
-  return simulateDelay(newAsset);
-};
-
-export const addBulkAssets = async (assetsData: Omit<Asset, 'id' | 'qrCodeUrl'>[]): Promise<Asset[]> => {
-    const newAssets: Asset[] = [];
-    assetsData.forEach(assetData => {
-        const newId = `ASSET-${String(nextAssetIdCounter++).padStart(3, '0')}`;
-        const newAsset: Asset = {
-            ...assetData,
-            id: newId,
-            qrCodeUrl: newId,
-        };
-        assets.push(newAsset);
-        newAssets.push(newAsset);
-    });
-    return simulateDelay(newAssets);
-};
-
-export const updateAsset = async (id: string, assetData: Partial<Asset>): Promise<Asset | undefined> => {
-  const index = assets.findIndex(a => a.id === id);
-  if (index !== -1) {
-    assets[index] = { ...assets[index], ...assetData };
-    return simulateDelay(assets[index]);
+  try {
+    const data = await apiRequest(`/assets/${id}`);
+    return data.data;
+  } catch (error) {
+    console.error('Get asset error:', error);
+    return undefined;
   }
-  return simulateDelay(undefined);
+};
+
+export const addAsset = async (assetData: Omit<Asset, 'id'>): Promise<Asset> => {
+  const data = await apiRequest('/assets', {
+    method: 'POST',
+    body: JSON.stringify(assetData),
+  });
+  return data.data;
+};
+
+export const updateAsset = async (id: string, assetData: Partial<Asset>): Promise<Asset> => {
+  const data = await apiRequest(`/assets/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(assetData),
+  });
+  return data.data;
 };
 
 export const deleteAsset = async (id: string): Promise<boolean> => {
-  const index = assets.findIndex(a => a.id === id);
-  if (index !== -1) {
-    assets.splice(index, 1);
-    return simulateDelay(true);
+  try {
+    await apiRequest(`/assets/${id}`, { method: 'DELETE' });
+    return true;
+  } catch (error) {
+    console.error('Delete asset error:', error);
+    return false;
   }
-  return simulateDelay(false);
 };
 
+// Asset Movements API
 export const getAssetHistory = async (assetId: string): Promise<AssetMovement[]> => {
-  return simulateDelay(movements.filter(m => m.assetId === assetId).sort((a, b) => new Date(b.movedAt).getTime() - new Date(a.movedAt).getTime()));
+  const data = await apiRequest(`/assets/${assetId}/movements`);
+  return data.data;
 };
 
 export const getAllMovements = async (): Promise<AssetMovement[]> => {
-  return simulateDelay(movements.sort((a, b) => new Date(b.movedAt).getTime() - new Date(a.movedAt).getTime()));
+  const data = await apiRequest('/asset-movements');
+  return data.data;
 };
-
 
 export const addAssetMovement = async (data: { assetId: string; location: string; movedBy: string }): Promise<Asset> => {
-    const { assetId, location, movedBy } = data;
-    
-    const assetIndex = assets.findIndex(a => a.id === assetId);
-    if (assetIndex === -1) {
-        throw new Error("Asset not found");
-    }
-
-    assets[assetIndex].location = location;
-
-    const newMovement: AssetMovement = {
-        id: `MOV-${String(movements.length + 1).padStart(3, '0')}`,
-        assetId: assetId,
-        location: location,
-        movedAt: new Date().toISOString(),
-        movedBy: movedBy,
-    };
-    movements.push(newMovement);
-
-    return simulateDelay(assets[assetIndex]);
+  const response = await apiRequest('/asset-movements', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+  return response.data;
 };
 
+// Maintenance API
 export const getMaintenanceHistory = async (assetId: string): Promise<Maintenance[]> => {
-  return simulateDelay(maintenance.filter(m => m.assetId === assetId));
+  const data = await apiRequest(`/assets/${assetId}/maintenances`);
+  return data.data;
 };
 
 export const getAllMaintenance = async (): Promise<Maintenance[]> => {
-    return simulateDelay(maintenance);
+  const data = await apiRequest('/maintenances');
+  return data.data;
 };
-
 
 export const addMaintenance = async (maintData: Omit<Maintenance, 'id'>): Promise<Maintenance> => {
-    const newMaint = { ...maintData, id: `MNT-${String(maintenance.length + 1).padStart(3, '0')}` };
-    maintenance.push(newMaint);
-    return simulateDelay(newMaint);
+  const data = await apiRequest('/maintenances', {
+    method: 'POST',
+    body: JSON.stringify(maintData),
+  });
+  return data.data;
 };
 
+// Incident Reports API
 export const getDamageReports = async (assetId: string): Promise<DamageReport[]> => {
-    return simulateDelay(damageReports.filter(d => d.assetId === assetId));
+  const data = await apiRequest(`/assets/${assetId}/incident-reports`);
+  return data.data.filter((report: any) => report.type === 'Damage');
 };
 
 export const getAllDamageReports = async (): Promise<DamageReport[]> => {
-    return simulateDelay(damageReports);
+  const data = await apiRequest('/incident-reports');
+  return data.data.filter((report: any) => report.type === 'Damage');
 };
 
-export const addDamageReport = async (reportData: Omit<DamageReport, 'id' | 'status'>): Promise<DamageReport> => {
-    const newReport: DamageReport = {
-        ...reportData,
-        id: `DMG-${String(damageReports.length + 1).padStart(3, '0')}`,
-        status: 'Reported',
-    };
-    damageReports.push(newReport);
-    return simulateDelay(newReport);
+export const addDamageReport = async (reportData: Omit<DamageReport, 'id'>): Promise<DamageReport> => {
+  const data = await apiRequest('/incident-reports', {
+    method: 'POST',
+    body: JSON.stringify({ ...reportData, type: 'Damage' }),
+  });
+  return data.data;
 };
 
 export const getLossReports = async (assetId: string): Promise<LossReport[]> => {
-    return simulateDelay(lossReports.filter(l => l.assetId === assetId));
+  const data = await apiRequest(`/assets/${assetId}/incident-reports`);
+  return data.data.filter((report: any) => report.type === 'Loss');
 };
 
 export const getAllLossReports = async (): Promise<LossReport[]> => {
-    return simulateDelay(lossReports);
+  const data = await apiRequest('/incident-reports');
+  return data.data.filter((report: any) => report.type === 'Loss');
 };
 
-export const addLossReport = async (reportData: Omit<LossReport, 'id' | 'status'>): Promise<LossReport> => {
-    const newReport: LossReport = {
-        ...reportData,
-        id: `LSS-${String(lossReports.length + 1).padStart(3, '0')}`,
-        status: 'Reported',
-    };
-    lossReports.push(newReport);
-    return simulateDelay(newReport);
+export const addLossReport = async (reportData: Omit<LossReport, 'id'>): Promise<LossReport> => {
+  const data = await apiRequest('/incident-reports', {
+    method: 'POST',
+    body: JSON.stringify({ ...reportData, type: 'Loss' }),
+  });
+  return data.data;
 };
 
-
+// Users API
 export const getUsers = async (): Promise<User[]> => {
-    // In a real app, you would not send the password back
-    const usersWithoutPasswords = users.map(u => {
-        const { password, ...user } = u;
-        return user;
-    });
-    return simulateDelay(usersWithoutPasswords);
+  // Note: Anda perlu membuat endpoint untuk users di Laravel jika belum ada
+  // Untuk sementara, return empty array
+  return [];
 };
 
-export const getDashboardStats = async () => {
-    const totalAssets = assets.length;
-    const totalAssetValue = assets.reduce((sum, asset) => sum + asset.value, 0);
-    const inRepair = assets.filter(a => a.status === AssetStatus.InRepair).length;
-    const disposed = assets.filter(a => a.status === AssetStatus.Disposed).length;
-    
-    const byCategory = assets.reduce((acc, asset) => {
-        acc[asset.category] = (acc[asset.category] || 0) + 1;
-        return acc;
-    }, {} as Record<string, number>);
-
-    const byLocation = assets.reduce((acc, asset) => {
-        acc[asset.location] = (acc[asset.location] || 0) + 1;
-        return acc;
-    }, {} as Record<string, number>);
-
-    return simulateDelay({
-        totalAssets,
-        totalAssetValue,
-        inRepair,
-        disposed,
-        byCategory: Object.entries(byCategory).map(([name, value]) => ({ name, value })),
-        byLocation: Object.entries(byLocation).map(([name, value]) => ({ name, value }))
-    });
+// Bulk Assets - Anda perlu membuat endpoint khusus di Laravel untuk ini
+export const addBulkAssets = async (assetsData: Omit<Asset, 'id'>[]): Promise<Asset[]> => {
+  // Implementasi bulk insert - buat endpoint khusus di Laravel
+  const promises = assetsData.map(asset => addAsset(asset));
+  return Promise.all(promises);
 };

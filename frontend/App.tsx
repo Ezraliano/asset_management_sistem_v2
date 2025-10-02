@@ -1,5 +1,4 @@
-
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { View, User } from './types';
 import Header from './components/Header';
 import Dashboard from './components/Dashboard';
@@ -13,11 +12,31 @@ import InventoryAuditSetup from './components/InventoryAuditSetup';
 import InventoryAudit from './components/InventoryAudit';
 import Login from './components/Login';
 import { LanguageProvider } from './hooks/useTranslation';
+import { getCurrentUser } from './services/api';
 
 const AppContent: React.FC = () => {
   const [user, setUser] = useState<User | null>(null);
   const [view, setView] = useState<View>({ type: 'DASHBOARD' });
   const [isSidebarOpen, setSidebarOpen] = useState(false);
+  const [loading, setLoading] = useState(true);
+
+  // Check if user is already logged in on app start
+  useEffect(() => {
+    const checkAuth = async () => {
+      const token = localStorage.getItem('auth_token');
+      if (token) {
+        const currentUser = await getCurrentUser();
+        if (currentUser) {
+          setUser(currentUser);
+        } else {
+          localStorage.removeItem('auth_token');
+        }
+      }
+      setLoading(false);
+    };
+
+    checkAuth();
+  }, []);
 
   const navigateTo = useCallback((newView: View) => {
     setView(newView);
@@ -31,9 +50,22 @@ const AppContent: React.FC = () => {
     setView({ type: 'DASHBOARD' });
   };
   
-  const handleLogout = () => {
-      setUser(null);
+  const handleLogout = async () => {
+    // Panggil API logout di sini jika diperlukan
+    localStorage.removeItem('auth_token');
+    setUser(null);
   };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-light-bg">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
+          <p className="mt-4 text-medium-text">Loading...</p>
+        </div>
+      </div>
+    );
+  }
 
   if (!user) {
     return <Login onLoginSuccess={handleLoginSuccess} />;
@@ -58,7 +90,13 @@ const AppContent: React.FC = () => {
       case 'INVENTORY_AUDIT_SETUP':
           return <InventoryAuditSetup navigateTo={navigateTo} />;
       case 'INVENTORY_AUDIT_SESSION':
-          return <InventoryAudit location={view.location} mode={view.mode} navigateTo={navigateTo} />;
+          return (
+            <InventoryAudit
+              location={view.location}
+              mode={view.mode === 'camera' ? 'camera' : 'manual'}
+              navigateTo={navigateTo}
+            />
+          );
       default:
         return <Dashboard navigateTo={navigateTo} />;
     }
@@ -81,12 +119,10 @@ const AppContent: React.FC = () => {
   );
 };
 
-
 const App: React.FC = () => (
   <LanguageProvider>
     <AppContent />
   </LanguageProvider>
 );
-
 
 export default App;

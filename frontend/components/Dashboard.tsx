@@ -1,121 +1,121 @@
-
-import React, { useEffect, useState } from 'react';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
+import React, { useState, useEffect } from 'react';
+import { View, DashboardStats } from '../types';
 import { getDashboardStats } from '../services/api';
-import { View } from '../types';
-import { PlusIcon, QRIcon } from './icons';
 import { useTranslation } from '../hooks/useTranslation';
-import { formatToRupiah } from '../utils/formatters';
 
 interface DashboardProps {
   navigateTo: (view: View) => void;
 }
 
-interface StatData {
-  totalAssets: number;
-  totalAssetValue: number;
-  inRepair: number;
-  disposed: number;
-  byCategory: { name: string, value: number }[];
-  byLocation: { name: string, value: number }[];
-}
-
-const StatCard: React.FC<{ title: string; value: string | number; color: string }> = ({ title, value, color }) => (
-    <div className="bg-white p-6 rounded-xl shadow-md flex flex-col">
-        <h3 className="text-lg font-medium text-medium-text">{title}</h3>
-        <p className={`text-4xl font-bold ${color}`}>{value}</p>
-    </div>
-);
-
 const Dashboard: React.FC<DashboardProps> = ({ navigateTo }) => {
-    const { t } = useTranslation();
-    const [stats, setStats] = useState<StatData | null>(null);
-    const [loading, setLoading] = useState(true);
+  const { t } = useTranslation();
+  const [stats, setStats] = useState<DashboardStats | null>(null);
+  const [loading, setLoading] = useState(true);
 
-    useEffect(() => {
-        const fetchStats = async () => {
-            setLoading(true);
-            const data = await getDashboardStats();
-            setStats(data);
-            setLoading(false);
-        };
-        fetchStats();
-    }, []);
+  useEffect(() => {
+    const loadStats = async () => {
+      try {
+        const data = await getDashboardStats();
+        setStats(data);
+      } catch (error) {
+        console.error('Failed to load dashboard stats:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
 
-    if (loading || !stats) {
-        return <div className="flex justify-center items-center h-full">Loading...</div>;
-    }
+    loadStats();
+  }, []);
 
-    const PIE_CHART_COLORS = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899'];
-
+  if (loading) {
     return (
-        <div className="space-y-8">
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                <h1 className="text-4xl font-bold text-dark-text">{t('dashboard.title')}</h1>
-                 <div className="flex space-x-4">
-                    <button onClick={() => navigateTo({type: 'ASSET_LIST'})} className="flex items-center bg-primary text-white px-4 py-2 rounded-lg shadow hover:bg-primary-dark transition-colors">
-                        <PlusIcon />
-                        <span className="ml-2">{t('dashboard.add_asset')}</span>
-                    </button>
-                    <button onClick={() => navigateTo({type: 'QR_SCANNER'})} className="flex items-center bg-secondary text-white px-4 py-2 rounded-lg shadow hover:bg-green-600 transition-colors">
-                        <QRIcon />
-                        <span className="ml-2">{t('dashboard.scan_asset')}</span>
-                    </button>
-                </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                <StatCard title={t('dashboard.total_assets')} value={stats.totalAssets} color="text-primary" />
-                <StatCard title={t('dashboard.total_asset_value')} value={formatToRupiah(stats.totalAssetValue)} color="text-indigo-500" />
-                <StatCard title={t('dashboard.assets_in_repair')} value={stats.inRepair} color="text-yellow-500" />
-                <StatCard title={t('dashboard.assets_disposed')} value={stats.disposed} color="text-red-500" />
-            </div>
-            
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                <div className="bg-white p-6 rounded-xl shadow-md">
-                    <h2 className="text-2xl font-semibold mb-4 text-dark-text">{t('dashboard.assets_by_category')}</h2>
-                    <div style={{ width: '100%', height: 400 }}>
-                        <ResponsiveContainer>
-                            <BarChart data={stats.byCategory} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
-                                <CartesianGrid strokeDasharray="3 3" />
-                                <XAxis dataKey="name" />
-                                <YAxis allowDecimals={false} />
-                                <Tooltip />
-                                <Legend />
-                                <Bar dataKey="value" fill="#3B82F6" name={t('dashboard.number_of_assets')} />
-                            </BarChart>
-                        </ResponsiveContainer>
-                    </div>
-                </div>
-                <div className="bg-white p-6 rounded-xl shadow-md">
-                    <h2 className="text-2xl font-semibold mb-4 text-dark-text">{t('dashboard.assets_by_location')}</h2>
-                    <div style={{ width: '100%', height: 400 }}>
-                        <ResponsiveContainer>
-                            <PieChart>
-                                <Pie
-                                    data={stats.byLocation}
-                                    cx="50%"
-                                    cy="50%"
-                                    labelLine={false}
-                                    outerRadius={150}
-                                    fill="#8884d8"
-                                    dataKey="value"
-                                    nameKey="name"
-                                    label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                                >
-                                    {stats.byLocation.map((entry, index) => (
-                                        <Cell key={`cell-${index}`} fill={PIE_CHART_COLORS[index % PIE_CHART_COLORS.length]} />
-                                    ))}
-                                </Pie>
-                                <Tooltip />
-                                <Legend />
-                            </PieChart>
-                        </ResponsiveContainer>
-                    </div>
-                </div>
-            </div>
-        </div>
+      <div className="flex justify-center items-center h-64">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+      </div>
     );
+  }
+
+  if (!stats) {
+    return (
+      <div className="text-center text-red-500">
+        Failed to load dashboard data
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      <div className="flex justify-between items-center">
+        <h1 className="text-3xl font-bold text-dark-text">{t('dashboard.title')}</h1>
+      </div>
+
+      {/* Stats Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="bg-white p-6 rounded-lg shadow-md">
+          <h3 className="text-lg font-semibold text-medium-text">{t('dashboard.total_assets')}</h3>
+          <p className="text-3xl font-bold text-primary">{stats.total_assets}</p>
+        </div>
+        
+        <div className="bg-white p-6 rounded-lg shadow-md">
+          <h3 className="text-lg font-semibold text-medium-text">{t('dashboard.total_value')}</h3>
+          <p className="text-3xl font-bold text-primary">
+            ${stats.total_value.toLocaleString()}
+          </p>
+        </div>
+        
+        <div className="bg-white p-6 rounded-lg shadow-md">
+          <h3 className="text-lg font-semibold text-medium-text">{t('dashboard.assets_in_use')}</h3>
+          <p className="text-3xl font-bold text-secondary">{stats.assets_in_use}</p>
+        </div>
+        
+        <div className="bg-white p-6 rounded-lg shadow-md">
+          <h3 className="text-lg font-semibold text-medium-text">{t('dashboard.assets_in_repair')}</h3>
+          <p className="text-3xl font-bold text-orange-500">{stats.assets_in_repair}</p>
+        </div>
+        
+        <div className="bg-white p-6 rounded-lg shadow-md">
+          <h3 className="text-lg font-semibold text-medium-text">{t('dashboard.scheduled_maintenances')}</h3>
+          <p className="text-3xl font-bold text-yellow-500">{stats.scheduled_maintenances}</p>
+        </div>
+        
+        <div className="bg-white p-6 rounded-lg shadow-md">
+          <h3 className="text-lg font-semibold text-medium-text">{t('dashboard.active_incidents')}</h3>
+          <p className="text-3xl font-bold text-red-500">{stats.active_incidents}</p>
+        </div>
+      </div>
+
+      {/* Quick Actions */}
+      <div className="bg-white p-6 rounded-lg shadow-md">
+        <h2 className="text-xl font-semibold mb-4">{t('dashboard.quick_actions')}</h2>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <button
+            onClick={() => navigateTo({ type: 'ASSET_LIST' })}
+            className="p-4 bg-primary text-white rounded-lg hover:bg-primary-dark transition-colors"
+          >
+            {t('dashboard.view_assets')}
+          </button>
+          <button
+            onClick={() => navigateTo({ type: 'BULK_TRANSACTION' })}
+            className="p-4 bg-secondary text-white rounded-lg hover:bg-green-600 transition-colors"
+          >
+            {t('dashboard.bulk_operations')}
+          </button>
+          <button
+            onClick={() => navigateTo({ type: 'QR_SCANNER' })}
+            className="p-4 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition-colors"
+          >
+            {t('dashboard.scan_qr')}
+          </button>
+          <button
+            onClick={() => navigateTo({ type: 'REPORTS' })}
+            className="p-4 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors"
+          >
+            {t('dashboard.view_reports')}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
 };
 
 export default Dashboard;
