@@ -1,4 +1,4 @@
-// AssetList.tsx - PERBAIKAN BAGIAN YANG BERHUBUNGAN DENGAN ID
+// AssetList.tsx - PERBAIKAN BAGIAN VALUE
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { getAssets, deleteAsset } from '../services/api';
 import { Asset, AssetStatus, View } from '../types';
@@ -6,6 +6,7 @@ import AssetForm from './AssetForm';
 import Modal from './Modal';
 import { EditIcon, DeleteIcon, PlusIcon, ViewIcon } from './icons';
 import { useTranslation } from '../hooks/useTranslation';
+import { formatToRupiah } from '../utils/formatters'; // IMPORT FORMATTER
 
 interface AssetListProps {
   navigateTo: (view: View) => void;
@@ -45,7 +46,7 @@ const AssetList: React.FC<AssetListProps> = ({ navigateTo }) => {
     setModalOpen(true);
   };
 
-  const handleDelete = async (id: number) => { // Ubah parameter ke number
+  const handleDelete = async (id: number) => {
     if (window.confirm(t('asset_list.delete_confirm'))) {
       try {
         await deleteAsset(id.toString());
@@ -157,7 +158,8 @@ const AssetList: React.FC<AssetListProps> = ({ navigateTo }) => {
                       {asset.location}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      Rp {asset.value.toLocaleString()}
+                      {/* PERBAIKAN: Gunakan formatToRupiah */}
+                      {formatToRupiah(asset.value)}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm">
                       <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${statusColorMap[asset.status as AssetStatus]}`}>
@@ -178,7 +180,7 @@ const AssetList: React.FC<AssetListProps> = ({ navigateTo }) => {
                         <EditIcon />
                       </button>
                       <button 
-                        onClick={() => handleDelete(asset.id)} // Pass number ID
+                        onClick={() => handleDelete(asset.id)}
                         className="text-red-600 hover:text-red-900"
                       >
                         <DeleteIcon />

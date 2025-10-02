@@ -1,4 +1,4 @@
-// AssetForm.tsx - PERBAIKAN LENGKAP
+// AssetForm.tsx - PERBAIKAN LENGKAP DENGAN CURRENCY FORMATTING
 import React, { useState, useEffect } from 'react';
 import { addAsset, updateAsset } from '../services/api';
 import { Asset, AssetStatus } from '../types';
@@ -13,17 +13,18 @@ interface AssetFormProps {
 const AssetForm: React.FC<AssetFormProps> = ({ asset, onSuccess, onClose }) => {
   const { t } = useTranslation();
   const [formData, setFormData] = useState({
-    asset_tag: '', // Tambahkan asset_tag
+    asset_tag: '',
     name: '',
     category: '',
     location: '',
     value: 0,
-    purchase_date: '', // Sesuai dengan database
-    useful_life: 0, // Sesuai dengan database
+    purchase_date: '',
+    useful_life: 36, // Default 3 tahun
     status: AssetStatus.IN_USE,
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [valueInput, setValueInput] = useState(''); // State terpisah untuk input value
 
   useEffect(() => {
     if (asset) {
@@ -38,6 +39,8 @@ const AssetForm: React.FC<AssetFormProps> = ({ asset, onSuccess, onClose }) => {
         useful_life: asset.useful_life,
         status: asset.status as AssetStatus,
       });
+      // Set value input dengan format Rupiah
+      setValueInput(formatNumberToRupiahInput(asset.value));
     } else {
       // Set default values untuk form baru
       setFormData({
@@ -47,11 +50,45 @@ const AssetForm: React.FC<AssetFormProps> = ({ asset, onSuccess, onClose }) => {
         location: '',
         value: 0,
         purchase_date: new Date().toISOString().split('T')[0],
-        useful_life: 36, // Default 3 tahun
+        useful_life: 36,
         status: AssetStatus.IN_USE,
       });
+      setValueInput('');
     }
   }, [asset]);
+
+  // Helper function untuk format Rupiah di input
+  const formatNumberToRupiahInput = (number: number): string => {
+    if (number === 0) return '';
+    return number.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+  };
+
+  // Helper function untuk parse Rupiah ke number
+  const parseRupiahToNumber = (rupiahString: string): number => {
+    // Hapus semua karakter non-digit kecuali titik
+    const cleanString = rupiahString.replace(/[^\d]/g, '');
+    return cleanString ? parseInt(cleanString, 10) : 0;
+  };
+
+  const handleValueChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const inputValue = e.target.value;
+    
+    // Hapus semua karakter non-digit kecuali titik
+    const cleanValue = inputValue.replace(/[^\d]/g, '');
+    
+    if (cleanValue === '') {
+      // Jika input kosong, set ke 0
+      setValueInput('');
+      setFormData(prev => ({ ...prev, value: 0 }));
+    } else {
+      // Format angka dengan titik sebagai pemisah ribuan
+      const numberValue = parseInt(cleanValue, 10);
+      const formattedValue = numberValue.toLocaleString('id-ID');
+      
+      setValueInput(formattedValue);
+      setFormData(prev => ({ ...prev, value: numberValue }));
+    }
+  };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target;
@@ -75,6 +112,18 @@ const AssetForm: React.FC<AssetFormProps> = ({ asset, onSuccess, onClose }) => {
       // Validasi required fields
       if (!formData.asset_tag.trim()) {
         setError('Asset Tag is required');
+        setLoading(false);
+        return;
+      }
+
+      if (!formData.name.trim()) {
+        setError('Asset Name is required');
+        setLoading(false);
+        return;
+      }
+
+      if (formData.value <= 0) {
+        setError('Value must be greater than 0');
         setLoading(false);
         return;
       }
@@ -195,23 +244,24 @@ const AssetForm: React.FC<AssetFormProps> = ({ asset, onSuccess, onClose }) => {
           />
         </div>
 
-        {/* Value */}
+        {/* Value - PERBAIKAN BESAR: Input dengan format Rupiah */}
         <div>
           <label htmlFor="value" className="block text-sm font-medium text-gray-700">
             Value (IDR) *
           </label>
           <input
-            type="number"
+            type="text"
             name="value"
             id="value"
-            value={formData.value}
-            onChange={handleChange}
+            value={valueInput}
+            onChange={handleValueChange}
             required
-            min="0"
-            step="0.01"
             className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary sm:text-sm"
             placeholder="0"
           />
+          <p className="mt-1 text-sm text-gray-500">
+            Actual value: {formData.value === 0 ? 'Rp 0' : `Rp ${formData.value.toLocaleString('id-ID')}`}
+          </p>
         </div>
 
         {/* Purchase Date */}

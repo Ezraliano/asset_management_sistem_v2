@@ -1,7 +1,9 @@
+// Dashboard.tsx - PERBAIKAN
 import React, { useState, useEffect } from 'react';
 import { View, DashboardStats } from '../types';
 import { getDashboardStats } from '../services/api';
 import { useTranslation } from '../hooks/useTranslation';
+import { formatToRupiah } from '../utils/formatters'; // IMPORT FORMATTER
 
 interface DashboardProps {
   navigateTo: (view: View) => void;
@@ -57,14 +59,15 @@ const Dashboard: React.FC<DashboardProps> = ({ navigateTo }) => {
         </div>
         
         <div className="bg-white p-6 rounded-lg shadow-md">
-          <h3 className="text-lg font-semibold text-medium-text">{t('dashboard.total_value')}</h3>
+          <h3 className="text-lg font-semibold text-medium-text">{t('Nilai Asset Keseluruhan')}</h3>
           <p className="text-3xl font-bold text-primary">
-            ${stats.total_value.toLocaleString()}
+            {/* PERBAIKAN: Ganti $ dengan format Rupiah */}
+            {formatToRupiah(stats.total_value)}
           </p>
         </div>
         
         <div className="bg-white p-6 rounded-lg shadow-md">
-          <h3 className="text-lg font-semibold text-medium-text">{t('dashboard.assets_in_use')}</h3>
+          <h3 className="text-lg font-semibold text-medium-text">{t('Asset Yang Digunakan')}</h3>
           <p className="text-3xl font-bold text-secondary">{stats.assets_in_use}</p>
         </div>
         
@@ -74,12 +77,12 @@ const Dashboard: React.FC<DashboardProps> = ({ navigateTo }) => {
         </div>
         
         <div className="bg-white p-6 rounded-lg shadow-md">
-          <h3 className="text-lg font-semibold text-medium-text">{t('dashboard.scheduled_maintenances')}</h3>
+          <h3 className="text-lg font-semibold text-medium-text">{t('Jadwal Maintenance Asset')}</h3>
           <p className="text-3xl font-bold text-yellow-500">{stats.scheduled_maintenances}</p>
         </div>
         
         <div className="bg-white p-6 rounded-lg shadow-md">
-          <h3 className="text-lg font-semibold text-medium-text">{t('dashboard.active_incidents')}</h3>
+          <h3 className="text-lg font-semibold text-medium-text">{t('Insiden Asset Hilang')}</h3>
           <p className="text-3xl font-bold text-red-500">{stats.active_incidents}</p>
         </div>
       </div>
