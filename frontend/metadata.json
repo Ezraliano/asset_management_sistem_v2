@@ -1,0 +1,7 @@
+{
+  "name": "Copy of Asset Management System Fitur Baru V2",
+  "description": "A comprehensive asset management system with QR code integration for tracking, maintenance, and reporting. It allows users to manage the entire lifecycle of assets within an organization.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}

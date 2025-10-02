@@ -1,0 +1,293 @@
+{
+  "sidebar": {
+    "title": "AMS",
+    "dashboard": "Dashboard",
+    "assets": "Assets",
+    "inventory_audit": "Inventory Audit",
+    "bulk_transaction": "Bulk Transaction",
+    "scan_qr": "Scan QR",
+    "reports": "Reports",
+    "users": "Users",
+    "logged_in_as": "Logged in as",
+    "logout": "Logout"
+  },
+  "login": {
+    "title": "Welcome Back!",
+    "description": "Please sign in to continue",
+    "username": "Username",
+    "password": "Password",
+    "login_button": "Login",
+    "logging_in": "Logging in...",
+    "error": "Invalid username or password."
+  },
+  "dashboard": {
+    "title": "Dashboard",
+    "add_asset": "Add Asset",
+    "scan_asset": "Scan Asset",
+    "total_assets": "Total Assets",
+    "total_asset_value": "Total Asset Value",
+    "assets_in_repair": "Assets in Repair",
+    "assets_disposed": "Assets Disposed",
+    "assets_by_category": "Assets by Category",
+    "assets_by_location": "Assets by Location",
+    "number_of_assets": "Number of Assets"
+  },
+  "asset_list": {
+    "title": "Asset Inventory",
+    "add_new_asset": "Add New Asset",
+    "filters": {
+      "all_categories": "All Categories",
+      "all_locations": "All Locations",
+      "all_statuses": "All Statuses"
+    },
+    "table": {
+      "name": "Name",
+      "category": "Category",
+      "location": "Location",
+      "status": "Status",
+      "actions": "Actions"
+    },
+    "loading": "Loading assets...",
+    "delete_confirm": "Are you sure you want to delete this asset?",
+    "download_qr": "Download QR ({count})",
+    "downloading": "Downloading...",
+    "pagination": {
+      "showing_results": "Showing {start} to {end} of {total} results",
+      "previous": "Previous",
+      "next": "Next"
+    }
+  },
+  "asset_detail": {
+    "loading": "Loading asset details...",
+    "not_found": "Asset not found.",
+    "back_to_list": "Back to Asset List",
+    "move_asset": "Move Asset",
+    "report_issue": "Report Issue",
+    "add_maintenance": "Add Maintenance",
+    "download_qr": "Download QR",
+    "labels": {
+      "category": "Category",
+      "location": "Location",
+      "status": "Status",
+      "purchase_date": "Purchase Date",
+      "value": "Value",
+      "useful_life": "Useful Life",
+      "useful_life_months": "{months} months",
+      "depreciation_details": "Depreciation Details",
+      "monthly_depreciation": "Monthly Depreciation",
+      "accumulated_depreciation": "Accumulated Depreciation",
+      "current_value": "Current Book Value"
+    },
+    "tabs": {
+      "history": "History",
+      "maintenance": "Maintenance",
+      "damage_loss": "Damage/Loss"
+    },
+    "history": {
+      "title": "Movement History",
+      "entry": "Moved to {location} by {movedBy} on {date}"
+    },
+    "maintenance": {
+      "title": "Maintenance Log",
+      "entry": "[{status}] {description} on {date}"
+    },
+    "damage_loss": {
+      "damage_title": "Damage Reports",
+      "loss_title": "Loss Reports",
+      "entry": "[{status}] {description} on {date}"
+    }
+  },
+  "asset_form": {
+    "edit_title": "Edit Asset",
+    "add_title": "Add New Asset",
+    "labels": {
+      "name": "Name",
+      "category": "Category",
+      "location": "Location",
+      "value": "Value (Rp)",
+      "purchase_date": "Purchase Date",
+      "useful_life": "Useful Life (Months)",
+      "status": "Status"
+    },
+    "buttons": {
+      "save": "Save Changes",
+      "create": "Create Asset"
+    }
+  },
+  "move_asset_form": {
+    "title": "Move Asset: {assetName}",
+    "current_location": "Current Location",
+    "new_location": "New Location",
+    "moved_by": "Moved By",
+    "placeholders": {
+      "location": "e.g., Office B-301",
+      "name": "e.g., John Doe"
+    },
+    "buttons": {
+      "cancel": "Cancel",
+      "confirm": "Confirm Move",
+      "moving": "Moving..."
+    },
+    "alerts": {
+      "fill_fields": "Please fill in all fields.",
+      "fail": "Failed to move asset. Please try again."
+    }
+  },
+  "add_maintenance_form": {
+    "title": "Add Maintenance for {assetName}",
+    "description": "Description",
+    "date": "Date",
+    "status": "Status",
+    "placeholders": {
+      "description": "e.g., Annual service check"
+    },
+    "buttons": {
+      "cancel": "Cancel",
+      "submit": "Add Record",
+      "submitting": "Adding..."
+    },
+    "alerts": {
+      "success": "Maintenance record added successfully.",
+      "fail": "Failed to add record. Please try again.",
+      "fill_fields": "Please provide a description."
+    }
+  },
+  "report_issue_form": {
+    "title": "Report an Issue for {assetName}",
+    "report_type": "Report Type",
+    "type_damage": "Damage",
+    "type_loss": "Loss",
+    "description": "Description",
+    "date": "Date of Incident",
+    "placeholders": {
+      "description": "Provide a detailed description of the damage or loss..."
+    },
+    "buttons": {
+      "cancel": "Cancel",
+      "submit": "Submit Report",
+      "submitting": "Submitting..."
+    },
+    "alerts": {
+      "success": "Report submitted successfully.",
+      "fail": "Failed to submit report. Please try again.",
+      "fill_fields": "Please select a report type and provide a description."
+    }
+  },
+  "qr_scanner": {
+    "title": "Scan or Enter Asset ID",
+    "description": "Enter the Asset ID manually or use the camera to scan.",
+    "placeholder": "Enter Asset ID (e.g., ASSET-001)",
+    "scan_with_camera": "Scan with Camera",
+    "cancel_scan": "Cancel Scan",
+    "find_asset": "Find Asset",
+    "verifying": "Verifying...",
+    "errors": {
+      "not_found": "Asset not found. Please check the ID and try again.",
+      "required": "Please enter or scan an Asset ID.",
+      "camera_fail": "Could not start camera. Please check permissions and use a secure (HTTPS) connection."
+    }
+  },
+  "user_list": {
+    "title": "User Management",
+    "loading": "Loading users...",
+    "table": {
+      "name": "Name",
+      "role": "Role",
+      "user_id": "User ID"
+    }
+  },
+  "reports": {
+    "title": "Reports & Analytics",
+    "description": "Generate and download reports for various system activities.",
+    "export_csv": "Export CSV",
+    "export_pdf": "Export PDF",
+    "exporting": "Exporting...",
+    "headers": {
+      "id": "ID",
+      "name": "Name",
+      "category": "Category",
+      "location": "Location",
+      "value": "Value",
+      "purchase_date": "Purchase Date",
+      "useful_life": "Useful Life (Months)",
+      "status": "Status",
+      "monthly_depreciation": "Monthly Depreciation",
+      "accumulated_depreciation": "Accumulated Depreciation",
+      "current_value": "Current Value",
+      "asset_id": "Asset ID",
+      "asset_name": "Asset Name",
+      "date": "Date",
+      "description": "Description",
+      "new_location": "New Location",
+      "moved_by": "Moved By",
+      "moved_at": "Moved At",
+      "type": "Type"
+    },
+    "cards": {
+      "full_asset": {
+        "title": "Full Asset Report",
+        "description": "A complete list of all assets with their current status, location, and value."
+      },
+      "maintenance": {
+        "title": "Maintenance History",
+        "description": "Detailed log of all scheduled and completed maintenance tasks for all assets."
+      },
+      "audit": {
+        "title": "Audit Trail",
+        "description": "A comprehensive report of all system actions, including asset creation, updates, and movements."
+      },
+      "damage_loss": {
+        "title": "Damage & Loss Report",
+        "description": "Summary of all reported damages and losses within a specified timeframe."
+      }
+    }
+  },
+  "bulk_transaction": {
+    "title": "Bulk Asset Import",
+    "description": "Paste CSV data below to import multiple assets at once.",
+    "csv_format_title": "CSV Format",
+    "csv_format": "name,category,location,value,purchaseDate,usefulLife,status",
+    "csv_format_note": "Note: `purchaseDate` should be YYYY-MM-DD. `usefulLife` is in months. `status` can be one of: In Use, In Repair, Disposed, Lost.",
+    "placeholder": "Paste CSV data here...",
+    "import_button": "Import Assets",
+    "importing_button": "Importing...",
+    "alerts": {
+      "success": "Successfully imported {count} assets.",
+      "error": "Import failed. Please check the data format and try again.",
+      "validation_error": "Import failed. {errorCount} rows had errors. Please check the details below and in the console.",
+      "no_data": "Please paste some data to import.",
+      "no_valid_data": "No valid asset data found to import."
+    },
+    "errors": {
+      "column_count": "Row {row}: Expected 7 columns, but found {count}.",
+      "invalid_value": "Row {row}: 'value' must be a non-negative number.",
+      "invalid_life": "Row {row}: 'usefulLife' must be a non-negative integer.",
+      "invalid_date": "Row {row}: Invalid purchaseDate format. Expected YYYY-MM-DD.",
+      "invalid_status": "Row {row}: Invalid status \"{status}\". Valid options: {options}"
+    }
+  },
+  "inventory_audit": {
+    "setup_title": "Inventory Audit Setup",
+    "select_location": "Select a location to audit",
+    "start_audit": "Start Audit",
+    "loading_locations": "Loading locations...",
+    "no_locations": "No locations found to audit.",
+    "auditing_location": "Auditing: {location}",
+    "finish_audit": "Finish Audit",
+    "scan_prompt": "Scan asset QR codes to verify their presence.",
+    "scan_again": "Scan another asset",
+    "found": "Found",
+    "missing": "Missing",
+    "misplaced": "Misplaced",
+    "report_loss": "Report Loss",
+    "should_be_at": "Should be at: {location}",
+    "asset_found_msg": "Asset {id} found.",
+    "asset_misplaced_msg": "Asset {id} found, but it belongs to {location}.",
+    "asset_unknown_msg": "Asset with ID {id} is not in the system.",
+    "camera_error": "Could not start camera. Check permissions.",
+    "select_scan_mode": "Select Scan Mode",
+    "camera_mode": "Scan with Camera",
+    "manual_mode": "Manual Input / Scanner",
+    "manual_input_placeholder": "Scan or type Asset ID and press Enter"
+  }
+}

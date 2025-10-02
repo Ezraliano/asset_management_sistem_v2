@@ -1,0 +1,293 @@
+{
+  "sidebar": {
+    "title": "AMS",
+    "dashboard": "Dasbor",
+    "assets": "Aset",
+    "inventory_audit": "Audit Inventaris",
+    "bulk_transaction": "Transaksi Massal",
+    "scan_qr": "Pindai QR",
+    "reports": "Laporan",
+    "users": "Pengguna",
+    "logged_in_as": "Masuk sebagai",
+    "logout": "Keluar"
+  },
+  "login": {
+    "title": "Selamat Datang Kembali!",
+    "description": "Silakan masuk untuk melanjutkan",
+    "username": "Nama Pengguna",
+    "password": "Kata Sandi",
+    "login_button": "Masuk",
+    "logging_in": "Masuk...",
+    "error": "Nama pengguna atau kata sandi tidak valid."
+  },
+  "dashboard": {
+    "title": "Dasbor",
+    "add_asset": "Tambah Aset",
+    "scan_asset": "Pindai Aset",
+    "total_assets": "Total Aset",
+    "total_asset_value": "Total Nilai Aset",
+    "assets_in_repair": "Aset dalam Perbaikan",
+    "assets_disposed": "Aset Dihapus",
+    "assets_by_category": "Aset berdasarkan Kategori",
+    "assets_by_location": "Aset berdasarkan Lokasi",
+    "number_of_assets": "Jumlah Aset"
+  },
+  "asset_list": {
+    "title": "Inventaris Aset",
+    "add_new_asset": "Tambah Aset Baru",
+    "filters": {
+      "all_categories": "Semua Kategori",
+      "all_locations": "Semua Lokasi",
+      "all_statuses": "Semua Status"
+    },
+    "table": {
+      "name": "Nama",
+      "category": "Kategori",
+      "location": "Lokasi",
+      "status": "Status",
+      "actions": "Aksi"
+    },
+    "loading": "Memuat aset...",
+    "delete_confirm": "Apakah Anda yakin ingin menghapus aset ini?",
+    "download_qr": "Unduh QR ({count})",
+    "downloading": "Mengunduh...",
+    "pagination": {
+      "showing_results": "Menampilkan {start} hingga {end} dari {total} hasil",
+      "previous": "Sebelumnya",
+      "next": "Berikutnya"
+    }
+  },
+  "asset_detail": {
+    "loading": "Memuat detail aset...",
+    "not_found": "Aset tidak ditemukan.",
+    "back_to_list": "Kembali ke Daftar Aset",
+    "move_asset": "Pindahkan Aset",
+    "report_issue": "Laporkan Masalah",
+    "add_maintenance": "Tambah Pemeliharaan",
+    "download_qr": "Unduh QR",
+    "labels": {
+      "category": "Kategori",
+      "location": "Lokasi",
+      "status": "Status",
+      "purchase_date": "Tanggal Pembelian",
+      "value": "Nilai",
+      "useful_life": "Masa Pakai",
+      "useful_life_months": "{months} bulan",
+      "depreciation_details": "Detail Penyusutan",
+      "monthly_depreciation": "Penyusutan Bulanan",
+      "accumulated_depreciation": "Akumulasi Penyusutan",
+      "current_value": "Nilai Buku Saat Ini"
+    },
+    "tabs": {
+      "history": "Riwayat",
+      "maintenance": "Pemeliharaan",
+      "damage_loss": "Kerusakan/Hilang"
+    },
+    "history": {
+      "title": "Riwayat Perpindahan",
+      "entry": "Pindah ke {location} oleh {movedBy} pada {date}"
+    },
+    "maintenance": {
+      "title": "Log Pemeliharaan",
+      "entry": "[{status}] {description} pada {date}"
+    },
+    "damage_loss": {
+      "damage_title": "Laporan Kerusakan",
+      "loss_title": "Laporan Kehilangan",
+      "entry": "[{status}] {description} pada {date}"
+    }
+  },
+  "asset_form": {
+    "edit_title": "Edit Aset",
+    "add_title": "Tambah Aset Baru",
+    "labels": {
+      "name": "Nama",
+      "category": "Kategori",
+      "location": "Lokasi",
+      "value": "Nilai (Rp)",
+      "purchase_date": "Tanggal Pembelian",
+      "useful_life": "Masa Pakai (Bulan)",
+      "status": "Status"
+    },
+    "buttons": {
+      "save": "Simpan Perubahan",
+      "create": "Buat Aset"
+    }
+  },
+  "move_asset_form": {
+    "title": "Pindahkan Aset: {assetName}",
+    "current_location": "Lokasi Saat Ini",
+    "new_location": "Lokasi Baru",
+    "moved_by": "Dipindahkan Oleh",
+    "placeholders": {
+      "location": "Contoh: Kantor B-301",
+      "name": "Contoh: Budi"
+    },
+    "buttons": {
+      "cancel": "Batal",
+      "confirm": "Konfirmasi Pindah",
+      "moving": "Memindahkan..."
+    },
+    "alerts": {
+      "fill_fields": "Harap isi semua kolom.",
+      "fail": "Gagal memindahkan aset. Silakan coba lagi."
+    }
+  },
+  "add_maintenance_form": {
+    "title": "Tambah Pemeliharaan untuk {assetName}",
+    "description": "Deskripsi",
+    "date": "Tanggal",
+    "status": "Status",
+    "placeholders": {
+      "description": "Contoh: Pengecekan servis tahunan"
+    },
+    "buttons": {
+      "cancel": "Batal",
+      "submit": "Tambah Catatan",
+      "submitting": "Menambahkan..."
+    },
+    "alerts": {
+      "success": "Catatan pemeliharaan berhasil ditambahkan.",
+      "fail": "Gagal menambah catatan. Silakan coba lagi.",
+      "fill_fields": "Harap berikan deskripsi."
+    }
+  },
+  "report_issue_form": {
+    "title": "Laporkan Masalah untuk {assetName}",
+    "report_type": "Tipe Laporan",
+    "type_damage": "Kerusakan",
+    "type_loss": "Kehilangan",
+    "description": "Deskripsi",
+    "date": "Tanggal Kejadian",
+    "placeholders": {
+      "description": "Berikan deskripsi detail mengenai kerusakan atau kehilangan..."
+    },
+    "buttons": {
+      "cancel": "Batal",
+      "submit": "Kirim Laporan",
+      "submitting": "Mengirim..."
+    },
+    "alerts": {
+      "success": "Laporan berhasil dikirim.",
+      "fail": "Gagal mengirim laporan. Silakan coba lagi.",
+      "fill_fields": "Harap pilih tipe laporan dan berikan deskripsi."
+    }
+  },
+  "qr_scanner": {
+    "title": "Pindai atau Masukkan ID Aset",
+    "description": "Masukkan ID Aset secara manual atau gunakan kamera untuk memindai.",
+    "placeholder": "Masukkan ID Aset (contoh: ASSET-001)",
+    "scan_with_camera": "Pindai dengan Kamera",
+    "cancel_scan": "Batalkan Pindai",
+    "find_asset": "Cari Aset",
+    "verifying": "Memverifikasi...",
+    "errors": {
+      "not_found": "Aset tidak ditemukan. Harap periksa ID dan coba lagi.",
+      "required": "Harap masukkan atau pindai ID Aset.",
+      "camera_fail": "Tidak dapat memulai kamera. Harap periksa izin dan gunakan koneksi aman (HTTPS)."
+    }
+  },
+  "user_list": {
+    "title": "Manajemen Pengguna",
+    "loading": "Memuat pengguna...",
+    "table": {
+      "name": "Nama",
+      "role": "Peran",
+      "user_id": "ID Pengguna"
+    }
+  },
+  "reports": {
+    "title": "Laporan & Analitik",
+    "description": "Buat dan unduh laporan untuk berbagai aktivitas sistem.",
+    "export_csv": "Ekspor CSV",
+    "export_pdf": "Ekspor PDF",
+    "exporting": "Mengekspor...",
+    "headers": {
+      "id": "ID",
+      "name": "Nama",
+      "category": "Kategori",
+      "location": "Lokasi",
+      "value": "Nilai",
+      "purchase_date": "Tanggal Beli",
+      "useful_life": "Masa Pakai (Bulan)",
+      "status": "Status",
+      "monthly_depreciation": "Penyusutan Bulanan",
+      "accumulated_depreciation": "Akumulasi Penyusutan",
+      "current_value": "Nilai Saat Ini",
+      "asset_id": "ID Aset",
+      "asset_name": "Nama Aset",
+      "date": "Tanggal",
+      "description": "Deskripsi",
+      "new_location": "Lokasi Baru",
+      "moved_by": "Dipindahkan Oleh",
+      "moved_at": "Waktu Pindah",
+      "type": "Tipe"
+    },
+    "cards": {
+      "full_asset": {
+        "title": "Laporan Aset Lengkap",
+        "description": "Daftar lengkap semua aset dengan status, lokasi, dan nilai saat ini."
+      },
+      "maintenance": {
+        "title": "Riwayat Pemeliharaan",
+        "description": "Log terperinci dari semua tugas pemeliharaan yang dijadwalkan dan selesai untuk semua aset."
+      },
+      "audit": {
+        "title": "Jejak Audit",
+        "description": "Laporan komprehensif dari semua tindakan sistem, termasuk pembuatan, pembaruan, dan perpindahan aset."
+      },
+      "damage_loss": {
+        "title": "Laporan Kerusakan & Kehilangan",
+        "description": "Ringkasan semua kerusakan dan kehilangan yang dilaporkan dalam jangka waktu tertentu."
+      }
+    }
+  },
+  "bulk_transaction": {
+    "title": "Impor Aset Massal",
+    "description": "Tempel data CSV di bawah ini untuk mengimpor banyak aset sekaligus.",
+    "csv_format_title": "Format CSV",
+    "csv_format": "name,category,location,value,purchaseDate,usefulLife,status",
+    "csv_format_note": "Catatan: `purchaseDate` harus dalam format YYYY-MM-DD. `usefulLife` dalam satuan bulan. `status` dapat berupa salah satu dari: In Use, In Repair, Disposed, Lost.",
+    "placeholder": "Tempel data CSV di sini...",
+    "import_button": "Impor Aset",
+    "importing_button": "Mengimpor...",
+    "alerts": {
+      "success": "Berhasil mengimpor {count} aset.",
+      "error": "Impor gagal. Harap periksa format data dan coba lagi.",
+      "validation_error": "Impor gagal. {errorCount} baris mengandung kesalahan. Silakan periksa detail di bawah dan di konsol.",
+      "no_data": "Harap tempel beberapa data untuk diimpor.",
+      "no_valid_data": "Tidak ada data aset yang valid untuk diimpor."
+    },
+    "errors": {
+        "column_count": "Baris {row}: Diharapkan 7 kolom, tetapi ditemukan {count}.",
+        "invalid_value": "Baris {row}: 'value' harus berupa angka non-negatif.",
+        "invalid_life": "Baris {row}: 'usefulLife' harus berupa bilangan bulat non-negatif.",
+        "invalid_date": "Baris {row}: Format purchaseDate tidak valid. Diharapkan YYYY-MM-DD.",
+        "invalid_status": "Baris {row}: Status \"{status}\" tidak valid. Opsi yang valid: {options}"
+    }
+  },
+  "inventory_audit": {
+    "setup_title": "Pengaturan Audit Inventaris",
+    "select_location": "Pilih lokasi untuk diaudit",
+    "start_audit": "Mulai Audit",
+    "loading_locations": "Memuat lokasi...",
+    "no_locations": "Tidak ada lokasi yang ditemukan untuk diaudit.",
+    "auditing_location": "Mengaudit: {location}",
+    "finish_audit": "Selesaikan Audit",
+    "scan_prompt": "Pindai kode QR aset untuk memverifikasi keberadaannya.",
+    "scan_again": "Pindai aset lain",
+    "found": "Ditemukan",
+    "missing": "Hilang",
+    "misplaced": "Salah Tempat",
+    "report_loss": "Laporkan Kehilangan",
+    "should_be_at": "Seharusnya di: {location}",
+    "asset_found_msg": "Aset {id} ditemukan.",
+    "asset_misplaced_msg": "Aset {id} ditemukan, tetapi seharusnya berada di {location}.",
+    "asset_unknown_msg": "Aset dengan ID {id} tidak ada dalam sistem.",
+    "camera_error": "Tidak dapat memulai kamera. Periksa izin.",
+    "select_scan_mode": "Pilih Mode Pindai",
+    "camera_mode": "Pindai dengan Kamera",
+    "manual_mode": "Input Manual / Scanner",
+    "manual_input_placeholder": "Pindai atau ketik ID Aset lalu tekan Enter"
+  }
+}
