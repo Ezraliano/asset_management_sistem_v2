@@ -1,4 +1,4 @@
-// types.ts - PERBAIKAN
+// types.ts - TAMBAHKAN INTERFACE UNTUK CHART DATA
 export enum AssetStatus {
   IN_USE = 'In Use',
   IN_REPAIR = 'In Repair',
@@ -21,17 +21,16 @@ export interface User {
   role: 'Admin' | 'Staff' | 'Audit';
 }
 
-// PERBAIKAN: Sesuaikan field names dengan backend Laravel
 export interface Asset {
   id: number;
-  asset_tag: string; // Sesuai dengan database
+  asset_tag: string;
   name: string;
   category: string;
   location: string;
   value: number;
-  purchase_date: string; // Sesuai dengan database (bukan purchaseDate)
-  useful_life: number; // Sesuai dengan database (bukan usefulLife)
-  status: AssetStatus; // Gunakan enum untuk type safety
+  purchase_date: string;
+  useful_life: number;
+  status: AssetStatus;
   created_at?: string;
   updated_at?: string;
 }
@@ -70,6 +69,13 @@ export interface IncidentReport {
 export type DamageReport = IncidentReport;
 export type LossReport = IncidentReport;
 
+// TAMBAHKAN INTERFACE UNTUK CHART DATA
+export interface ChartData {
+  name: string;
+  count: number;
+  value?: number; // Untuk future use jika butuh value
+}
+
 export interface DashboardStats {
   total_assets: number;
   total_value: number;
@@ -77,6 +83,8 @@ export interface DashboardStats {
   assets_in_repair: number;
   scheduled_maintenances: number;
   active_incidents: number;
+  assets_by_category: ChartData[];
+  assets_by_location: ChartData[];
 }
 
 export type View = 

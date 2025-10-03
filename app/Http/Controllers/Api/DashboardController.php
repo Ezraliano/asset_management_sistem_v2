@@ -19,6 +19,28 @@ class DashboardController extends Controller
         $scheduledMaintenances = Maintenance::where('status', 'Scheduled')->count();
         $activeIncidents = IncidentReport::whereNotIn('status', ['Resolved', 'Closed'])->count();
 
+        // Data untuk chart berdasarkan kategori
+        $assetsByCategory = Asset::selectRaw('category, COUNT(*) as count')
+            ->groupBy('category')
+            ->get()
+            ->map(function ($item) {
+                return [
+                    'name' => $item->category,
+                    'count' => $item->count
+                ];
+            });
+
+        // Data untuk chart berdasarkan lokasi
+        $assetsByLocation = Asset::selectRaw('location, COUNT(*) as count')
+            ->groupBy('location')
+            ->get()
+            ->map(function ($item) {
+                return [
+                    'name' => $item->location,
+                    'count' => $item->count
+                ];
+            });
+
         return response()->json([
             'success' => true,
             'data' => [
@@ -28,6 +50,8 @@ class DashboardController extends Controller
                 'assets_in_repair' => $assetsInRepair,
                 'scheduled_maintenances' => $scheduledMaintenances,
                 'active_incidents' => $activeIncidents,
+                'assets_by_category' => $assetsByCategory,
+                'assets_by_location' => $assetsByLocation,
             ]
         ]);
     }

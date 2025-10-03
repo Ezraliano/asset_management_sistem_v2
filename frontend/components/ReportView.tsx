@@ -48,6 +48,36 @@ const ReportCard: React.FC<ReportCardProps> = ({ title, description, isLoading, 
     );
 };
 
+// Fungsi format Rupiah
+const formatToRupiah = (value: number): string => {
+    return new Intl.NumberFormat('id-ID', {
+        style: 'currency',
+        currency: 'IDR',
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 0
+    }).format(value);
+};
+
+// Fungsi format tanggal
+const formatDate = (dateString: string): string => {
+    if (!dateString) return 'N/A';
+    try {
+        return new Date(dateString).toLocaleDateString('id-ID', {
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric'
+        });
+    } catch (error) {
+        return 'Invalid Date';
+    }
+};
+
+// Fungsi untuk memotong teks panjang
+const truncateText = (text: string, maxLength: number = 50): string => {
+    if (!text) return 'N/A';
+    if (text.length <= maxLength) return text;
+    return text.substring(0, maxLength) + '...';
+};
 
 const ReportView: React.FC = () => {
     const { t } = useTranslation();
@@ -86,22 +116,39 @@ const ReportView: React.FC = () => {
             const assetMap = new Map(allAssets.map(asset => [asset.id, asset]));
             let headers: string[] = [];
             let data: any[][] = [];
-            let filename = `${reportKey}_report.${format === 'PDF' ? 'pdf' : 'csv'}`;
+            let filename = `${reportKey}_report_${new Date().toISOString().split('T')[0]}.${format === 'PDF' ? 'pdf' : 'csv'}`;
 
             switch (reportKey) {
                 case 'full_asset': {
                     headers = [
-                        t('reports.headers.id'), t('reports.headers.name'), t('reports.headers.category'), 
-                        t('reports.headers.location'), t('reports.headers.value'), t('reports.headers.purchase_date'), 
-                        t('reports.headers.useful_life'), t('reports.headers.status'), t('reports.headers.monthly_depreciation'), 
-                        t('reports.headers.accumulated_depreciation'), t('reports.headers.current_value')
+                        t('reports.headers.id'), 
+                        t('reports.headers.name'), 
+                        t('reports.headers.category'), 
+                        t('reports.headers.location'), 
+                        t('reports.headers.value'), 
+                        t('reports.headers.purchase_date'), 
+                        t('reports.headers.useful_life'), 
+                        t('reports.headers.status'), 
+                        t('reports.headers.monthly_depreciation'), 
+                        t('reports.headers.accumulated_depreciation'), 
+                        t('reports.headers.current_value')
                     ];
                     data = allAssets.map(asset => {
                         const { monthlyDepreciation, accumulatedDepreciation, currentValue } = calculateDepreciation(asset);
+                        
+                        // Format data dengan field yang benar dari backend
                         return [
-                            asset.id, asset.name, asset.category, asset.location,
-                            asset.value, asset.purchaseDate, asset.usefulLife, asset.status,
-                            monthlyDepreciation.toFixed(2), accumulatedDepreciation.toFixed(2), currentValue.toFixed(2)
+                            asset.id, 
+                            truncateText(asset.name, 30), // Potong nama yang terlalu panjang
+                            asset.category, 
+                            truncateText(asset.location, 25), // Potong lokasi yang terlalu panjang
+                            formatToRupiah(asset.value),
+                            formatDate(asset.purchase_date),
+                            asset.useful_life ? `${asset.useful_life} bulan` : 'N/A',
+                            asset.status,
+                            formatToRupiah(monthlyDepreciation),
+                            formatToRupiah(accumulatedDepreciation), 
+                            formatToRupiah(currentValue)
                         ];
                     });
                     break;
@@ -109,33 +156,65 @@ const ReportView: React.FC = () => {
                 case 'maintenance': {
                     const allMaintenance = await getAllMaintenance();
                     headers = [
-                        t('reports.headers.asset_id'), t('reports.headers.asset_name'), t('reports.headers.date'), 
-                        t('reports.headers.description'), t('reports.headers.status')
+                        t('reports.headers.asset_id'), 
+                        t('reports.headers.asset_name'), 
+                        t('reports.headers.date'), 
+                        t('reports.headers.description'), 
+                        t('reports.headers.status')
                     ];
                     data = allMaintenance.map(m => [
-                        m.assetId, assetMap.get(m.assetId)?.name || 'N/A', m.date, m.description, m.status
+                        m.assetId, 
+                        truncateText(assetMap.get(m.assetId)?.name || 'N/A', 30), 
+                        formatDate(m.date), 
+                        truncateText(m.description, 40), // Potong deskripsi yang panjang
+                        m.status
                     ]);
                     break;
                 }
                 case 'audit': {
                     const allMovements = await getAllMovements();
                     headers = [
-                        t('reports.headers.asset_id'), t('reports.headers.asset_name'), t('reports.headers.new_location'), 
-                        t('reports.headers.moved_by'), t('reports.headers.moved_at')
+                        t('reports.headers.asset_id'), 
+                        t('reports.headers.asset_name'), 
+                        t('reports.headers.new_location'), 
+                        t('reports.headers.moved_by'), 
+                        t('reports.headers.moved_at')
                     ];
                     data = allMovements.map(m => [
-                        m.assetId, assetMap.get(m.assetId)?.name || 'N/A', m.location, m.movedBy, m.movedAt
+                        m.assetId, 
+                        truncateText(assetMap.get(m.assetId)?.name || 'N/A', 30), 
+                        truncateText(m.location, 25), 
+                        truncateText(m.movedBy, 20), 
+                        formatDate(m.movedAt)
                     ]);
                     break;
                 }
                 case 'damage_loss': {
                     const [damageReports, lossReports] = await Promise.all([getAllDamageReports(), getAllLossReports()]);
                     headers = [
-                        t('reports.headers.type'), t('reports.headers.asset_id'), t('reports.headers.asset_name'), 
-                        t('reports.headers.description'), t('reports.headers.date'), t('reports.headers.status')
+                        t('reports.headers.type'), 
+                        t('reports.headers.asset_id'), 
+                        t('reports.headers.asset_name'), 
+                        t('reports.headers.description'), 
+                        t('reports.headers.date'), 
+                        t('reports.headers.status')
                     ];
-                    const damageData = damageReports.map(d => ['Damage', d.assetId, assetMap.get(d.assetId)?.name || 'N/A', d.description, d.date, d.status]);
-                    const lossData = lossReports.map(l => ['Loss', l.assetId, assetMap.get(l.assetId)?.name || 'N/A', l.description, l.date, l.status]);
+                    const damageData = damageReports.map(d => [
+                        'Damage', 
+                        d.assetId, 
+                        truncateText(assetMap.get(d.assetId)?.name || 'N/A', 30), 
+                        truncateText(d.description, 40), 
+                        formatDate(d.date), 
+                        d.status
+                    ]);
+                    const lossData = lossReports.map(l => [
+                        'Loss', 
+                        l.assetId, 
+                        truncateText(assetMap.get(l.assetId)?.name || 'N/A', 30), 
+                        truncateText(l.description, 40), 
+                        formatDate(l.date), 
+                        l.status
+                    ]);
                     data = [...damageData, ...lossData];
                     break;
                 }
@@ -157,7 +236,6 @@ const ReportView: React.FC = () => {
             setLoadingReport(null);
         }
     };
-
 
     return (
         <div className="space-y-6">

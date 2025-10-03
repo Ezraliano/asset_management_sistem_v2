@@ -9,10 +9,32 @@ use Illuminate\Http\Response;
 
 class AssetController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $assets = Asset::all();
-        
+        // Ambil parameter filter dari request
+        $category = $request->query('category');
+        $location = $request->query('location');
+        $status = $request->query('status');
+
+        // Mulai query
+        $query = Asset::query();
+
+        // Terapkan filter jika ada
+        if (!empty($category)) {
+            $query->where('category', $category);
+        }
+
+        if (!empty($location)) {
+            $query->where('location', $location);
+        }
+
+        if (!empty($status)) {
+            $query->where('status', $status);
+        }
+
+        // Dapatkan assets dengan filter
+        $assets = $query->get();
+
         return response()->json([
             'success' => true,
             'data' => $assets
