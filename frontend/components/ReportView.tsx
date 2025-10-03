@@ -125,7 +125,7 @@ const ReportView: React.FC = () => {
                         t('reports.headers.name'), 
                         t('reports.headers.category'), 
                         t('reports.headers.location'), 
-                        t('reports.headers.value'), 
+                        'Nilai Asset Awal', // Ganti dari 'Nilai' menjadi 'Nilai Asset Awal'
                         t('reports.headers.purchase_date'), 
                         t('reports.headers.useful_life'), 
                         t('reports.headers.status'), 
@@ -142,7 +142,7 @@ const ReportView: React.FC = () => {
                             truncateText(asset.name, 30), // Potong nama yang terlalu panjang
                             asset.category, 
                             truncateText(asset.location, 25), // Potong lokasi yang terlalu panjang
-                            formatToRupiah(asset.value),
+                            formatToRupiah(asset.value), // Ini adalah nilai asset awal
                             formatDate(asset.purchase_date),
                             asset.useful_life ? `${asset.useful_life} bulan` : 'N/A',
                             asset.status,
