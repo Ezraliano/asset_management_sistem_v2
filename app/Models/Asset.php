@@ -16,7 +16,7 @@ class Asset extends Model
         'name',
         'category',
         'location',
-        'value',
+        'value', // ✅ Pastikan ini 'value' bukan 'asset_value'
         'purchase_date',
         'useful_life',
         'status',
@@ -54,6 +54,9 @@ class Asset extends Model
     // Method untuk menghitung depresiasi bulanan
     public function calculateMonthlyDepreciation(): float
     {
+        if ($this->useful_life <= 0) {
+            return 0;
+        }
         return $this->value / $this->useful_life;
     }
 
@@ -87,9 +90,27 @@ class Asset extends Model
         return $latestDepreciation ? $latestDepreciation->month_sequence : 0;
     }
 
-    // ✅ PERBAIKAN: Tambahkan method isActive()
+    // Method untuk cek status aktif
     public function isActive(): bool
     {
         return !in_array($this->status, ['Disposed', 'Lost']);
+    }
+
+    // ✅ METHOD BARU: Cek apakah masih bisa didepresiasi
+    public function canDepreciate(): bool
+    {
+        if (!$this->isActive()) {
+            return false;
+        }
+
+        $lastSequence = $this->getLastDepreciationMonth();
+        if ($lastSequence >= $this->useful_life) {
+            return false;
+        }
+
+        $currentValue = $this->getCurrentBookValue();
+        $monthlyDepreciation = $this->calculateMonthlyDepreciation();
+
+        return $currentValue > $monthlyDepreciation;
     }
 }

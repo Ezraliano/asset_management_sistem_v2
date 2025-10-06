@@ -31,11 +31,16 @@ Route::middleware(['auth:sanctum'])->group(function () {
     // Assets
     Route::apiResource('assets', AssetController::class);
 
-    // Depreciation Routes
+ // ✅ PERBAIKAN: Depreciation Routes dengan method baru
     Route::get('/assets/{id}/depreciation', [AssetDepreciationController::class, 'show']);
     Route::get('/assets/{id}/depreciation-preview', [AssetDepreciationController::class, 'preview']);
+    Route::get('/assets/{id}/depreciation-status', [AssetDepreciationController::class, 'getStatus']); // ✅ BARU
     Route::post('/assets/{id}/generate-depreciation', [AssetDepreciationController::class, 'generateForAsset']);
+    Route::post('/assets/{id}/generate-multiple-depreciation', [AssetDepreciationController::class, 'generateMultipleForAsset']); // ✅ BARU
+    Route::post('/assets/{id}/generate-until-value', [AssetDepreciationController::class, 'generateUntilValue']); // ✅ BARU
+    Route::post('/assets/{id}/reset-depreciation', [AssetDepreciationController::class, 'resetForAsset']); // ✅ BARU
     Route::post('/depreciation/generate-all', [AssetDepreciationController::class, 'generateAll']);
+    Route::post('/assets/{id}/generate-until-zero', [AssetDepreciationController::class, 'generateUntilZero']);
     
     // Asset Movements
     Route::apiResource('asset-movements', AssetMovementController::class);
