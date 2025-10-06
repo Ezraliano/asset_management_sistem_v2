@@ -65,7 +65,10 @@ class AssetController extends Controller
 
     public function show($id)
     {
-        $asset = Asset::find($id);
+        // ✅ UPDATE: Include depresiasi data
+        $asset = Asset::with(['depreciations' => function($query) {
+            $query->orderBy('month_sequence', 'asc');
+        }])->find($id);
 
         if (!$asset) {
             return response()->json([

@@ -2,7 +2,7 @@ import { Asset, AssetMovement, Maintenance, User, DamageReport, LossReport, Dash
 
 const API_BASE_URL = 'http://localhost:8000/api';
 
-// Helper function untuk API calls
+// ✅ PERBAIKAN: Enhanced API request function dengan error handling yang lebih baik
 const apiRequest = async (endpoint: string, options: RequestInit = {}) => {
   const token = localStorage.getItem('auth_token');
   
@@ -16,20 +16,41 @@ const apiRequest = async (endpoint: string, options: RequestInit = {}) => {
     ...options,
   };
 
-  const response = await fetch(`${API_BASE_URL}${endpoint}`, config);
-  
-  if (!response.ok) {
-    if (response.status === 401) {
-      localStorage.removeItem('auth_token');
-      window.location.href = '/';
+  try {
+    const response = await fetch(`${API_BASE_URL}${endpoint}`, config);
+    
+    if (!response.ok) {
+      // ✅ PERBAIKAN: Coba parse error response untuk detail
+      let errorDetail = `API error: ${response.status}`;
+      try {
+        const errorData = await response.json();
+        errorDetail = errorData.message || errorData.error || errorDetail;
+      } catch {
+        // Jika response bukan JSON, gunakan status text
+        errorDetail = response.statusText || errorDetail;
+      }
+      
+      if (response.status === 401) {
+        localStorage.removeItem('auth_token');
+        window.location.href = '/';
+      }
+      throw new Error(errorDetail);
     }
-    throw new Error(`API error: ${response.status}`);
-  }
 
-  return response.json();
+    return response.json();
+  } catch (error: any) {
+    console.error('API Request failed:', error);
+    
+    // Handle network errors
+    if (error.name === 'TypeError' && error.message.includes('fetch')) {
+      throw new Error('Network error: Please check your internet connection');
+    }
+    
+    throw error;
+  }
 };
 
-// Auth API
+// Auth API - TETAP SAMA struktur return type
 export const loginUser = async (username: string, password: string): Promise<User | null> => {
   try {
     const data = await apiRequest('/login', {
@@ -68,13 +89,13 @@ export const getCurrentUser = async (): Promise<User | null> => {
   }
 };
 
-// Dashboard API
+// Dashboard API - TETAP SAMA
 export const getDashboardStats = async (): Promise<DashboardStats> => {
   const data = await apiRequest('/dashboard/stats');
   return data.data;
 };
 
-// Assets API - DIPERBAIKI DENGAN getAssetById
+// Assets API - TETAP SAMA
 export const getAssets = async (filters: { category?: string; location?: string; status?: string } = {}): Promise<Asset[]> => {
   const queryParams = new URLSearchParams();
   if (filters.category) queryParams.append('category', filters.category);
@@ -88,7 +109,100 @@ export const getAssets = async (filters: { category?: string; location?: string;
   return data.data;
 };
 
-// FUNCTION YANG DITAMBAHKAN:
+// ==================== DEPRECIATION API ====================
+
+// ✅ PERBAIKAN: Tambah error handling khusus untuk depreciation
+export const getAssetDepreciation = async (assetId: string): Promise<any> => {
+  try {
+    const data = await apiRequest(`/assets/${assetId}/depreciation`);
+    return data.data;
+  } catch (error: any) {
+    console.error('Get asset depreciation error:', error);
+    
+    // Return null atau empty object jika error
+    if (error.message.includes('404') || error.message.includes('not found')) {
+      return null;
+    }
+    throw error; // Re-throw error lainnya
+  }
+};
+
+export const getAssetDepreciationPreview = async (assetId: string): Promise<any> => {
+  try {
+    const data = await apiRequest(`/assets/${assetId}/depreciation-preview`);
+    return data.data;
+  } catch (error: any) {
+    console.error('Get asset depreciation preview error:', error);
+    
+    if (error.message.includes('404') || error.message.includes('not found')) {
+      return null;
+    }
+    throw error;
+  }
+};
+
+// ✅ PERBAIKAN YANG PENTING: Generate Asset Depreciation dengan better error handling
+export const generateAssetDepreciation = async (assetId: string): Promise<any> => {
+  try {
+    const data = await apiRequest(`/assets/${assetId}/generate-depreciation`, {
+      method: 'POST',
+    });
+    
+    // ✅ PERBAIKAN: Return full response agar frontend bisa cek success status
+    return {
+      success: data.success,
+      message: data.message,
+      data: data.data
+    };
+  } catch (error: any) {
+    console.error('Generate asset depreciation error:', error);
+    
+    // ✅ PERBAIKAN: Handle specific depreciation errors
+    let errorMessage = error.message || 'Failed to generate depreciation';
+    
+    if (error.message.includes('500')) {
+      if (error.message.includes('unique') || error.message.includes('duplicate')) {
+        errorMessage = 'Depreciation record already exists for this period';
+      } else if (error.message.includes('useful life') || error.message.includes('maximum')) {
+        errorMessage = 'Maximum depreciation period reached';
+      }
+    }
+    
+    // Return error object yang konsisten
+    return {
+      success: false,
+      message: errorMessage,
+      data: null,
+      error: errorMessage
+    };
+  }
+};
+
+export const generateAllDepreciation = async (): Promise<any> => {
+  try {
+    const data = await apiRequest('/depreciation/generate-all', {
+      method: 'POST',
+    });
+    
+    // Return full response
+    return {
+      success: data.success,
+      message: data.message,
+      data: data.data
+    };
+  } catch (error: any) {
+    console.error('Generate all depreciation error:', error);
+    
+    return {
+      success: false,
+      message: error.message || 'Failed to generate depreciation for all assets',
+      data: null,
+      error: error.message
+    };
+  }
+};
+
+// FUNCTION YANG DITAMBAHKAN: - TETAP SAMA
 export const getAssetById = async (id: string): Promise<Asset | undefined> => {
   try {
     const data = await apiRequest(`/assets/${id}`);
@@ -125,7 +239,7 @@ export const deleteAsset = async (id: string): Promise<boolean> => {
   }
 };
 
-// Asset Movements API
+// Asset Movements API - TETAP SAMA
 export const getAssetHistory = async (assetId: string): Promise<AssetMovement[]> => {
   const data = await apiRequest(`/assets/${assetId}/movements`);
   return data.data;
@@ -144,7 +258,7 @@ export const addAssetMovement = async (movementData: { assetId: string; location
   return data.data;
 };
 
-// Maintenance API
+// Maintenance API - TETAP SAMA
 export const getMaintenanceHistory = async (assetId: string): Promise<Maintenance[]> => {
   const data = await apiRequest(`/assets/${assetId}/maintenances`);
   return data.data;
@@ -163,7 +277,7 @@ export const addMaintenance = async (maintData: Omit<Maintenance, 'id'>): Promis
   return data.data;
 };
 
-// Incident Reports API
+// Incident Reports API - TETAP SAMA
 export const getDamageReports = async (assetId: string): Promise<DamageReport[]> => {
   const data = await apiRequest(`/assets/${assetId}/incident-reports`);
   return data.data.filter((report: any) => report.type === 'Damage');
@@ -200,13 +314,19 @@ export const addLossReport = async (reportData: Omit<LossReport, 'id'>): Promise
   return data.data;
 };
 
-// Users API
+// Users API - TETAP SAMA
 export const getUsers = async (): Promise<User[]> => {
   return [];
 };
 
-// Bulk Assets
+// Bulk Assets - TETAP SAMA
 export const addBulkAssets = async (assetsData: Omit<Asset, 'id'>[]): Promise<Asset[]> => {
   const promises = assetsData.map(asset => addAsset(asset));
   return Promise.all(promises);
+};
+
+// ✅ PERBAIKAN: Tambah utility function untuk check auth (OPTIONAL)
+export const checkAuthStatus = (): boolean => {
+  const token = localStorage.getItem('auth_token');
+  return !!token;
 };

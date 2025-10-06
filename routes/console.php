@@ -2,6 +2,9 @@
 
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\Schedule;
+
+Schedule::command('depreciation:generate')->dailyAt('00:05')->timezone('Asia/Jakarta');
 
 Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());

@@ -4,6 +4,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\AssetController;
+use App\Http\Controllers\Api\AssetDepreciationController;
 use App\Http\Controllers\Api\AssetMovementController;
 use App\Http\Controllers\Api\MaintenanceController;
 use App\Http\Controllers\Api\IncidentReportController;
@@ -29,6 +30,12 @@ Route::middleware(['auth:sanctum'])->group(function () {
     
     // Assets
     Route::apiResource('assets', AssetController::class);
+
+    // Depreciation Routes
+    Route::get('/assets/{id}/depreciation', [AssetDepreciationController::class, 'show']);
+    Route::get('/assets/{id}/depreciation-preview', [AssetDepreciationController::class, 'preview']);
+    Route::post('/assets/{id}/generate-depreciation', [AssetDepreciationController::class, 'generateForAsset']);
+    Route::post('/depreciation/generate-all', [AssetDepreciationController::class, 'generateAll']);
     
     // Asset Movements
     Route::apiResource('asset-movements', AssetMovementController::class);

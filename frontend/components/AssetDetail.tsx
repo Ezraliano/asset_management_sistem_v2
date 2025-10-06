@@ -1,6 +1,13 @@
-// AssetDetail.tsx - PERBAIKAN LENGKAP
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { getAssetById, getAssetHistory, getMaintenanceHistory, getDamageReports, getLossReports } from '../services/api';
+import { 
+  getAssetById, 
+  getAssetHistory, 
+  getMaintenanceHistory, 
+  getDamageReports, 
+  getLossReports,
+  getAssetDepreciation,
+  generateAssetDepreciation
+} from '../services/api';
 import { Asset, AssetMovement, Maintenance, DamageReport, LossReport, View } from '../types';
 import { QRCodeCanvas } from 'qrcode.react';
 import { BackIcon, HistoryIcon, MaintenanceIcon, DamageIcon, MoveIcon, DownloadIcon, DepreciationIcon } from './icons';
@@ -10,14 +17,13 @@ import MoveAssetForm from './MoveAssetForm';
 import ReportIssueForm from './ReportIssueForm';
 import AddMaintenanceForm from './AddMaintenanceForm';
 import { useTranslation } from '../hooks/useTranslation';
-import { calculateDepreciation } from '../utils/depreciation';
 
 interface AssetDetailProps {
   assetId: string;
   navigateTo: (view: View) => void;
 }
 
-type Tab = 'history' | 'maintenance' | 'damage_loss';
+type Tab = 'history' | 'maintenance' | 'damage_loss' | 'depreciation';
 
 const AssetDetail: React.FC<AssetDetailProps> = ({ assetId, navigateTo }) => {
   const { t } = useTranslation();
@@ -26,12 +32,16 @@ const AssetDetail: React.FC<AssetDetailProps> = ({ assetId, navigateTo }) => {
   const [maintenance, setMaintenance] = useState<Maintenance[]>([]);
   const [damageReports, setDamageReports] = useState<DamageReport[]>([]);
   const [lossReports, setLossReports] = useState<LossReport[]>([]);
+  const [depreciationData, setDepreciationData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [loadingDepreciation, setLoadingDepreciation] = useState(false);
+  const [generatingDepreciation, setGeneratingDepreciation] = useState(false);
   const [activeTab, setActiveTab] = useState<Tab>('history');
   const [isMoveModalOpen, setMoveModalOpen] = useState(false);
   const [isReportModalOpen, setReportModalOpen] = useState(false);
   const [isMaintModalOpen, setMaintModalOpen] = useState(false);
   const [error, setError] = useState<string>('');
+  const [successMessage, setSuccessMessage] = useState<string>('');
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -63,11 +73,72 @@ const AssetDetail: React.FC<AssetDetailProps> = ({ assetId, navigateTo }) => {
     }
   }, [assetId]);
 
+  const fetchDepreciationData = useCallback(async () => {
+    if (!assetId) return;
+    
+    setLoadingDepreciation(true);
+    try {
+      const data = await getAssetDepreciation(assetId);
+      setDepreciationData(data);
+    } catch (error) {
+      console.error('Failed to fetch depreciation data:', error);
+      setDepreciationData(null);
+    } finally {
+      setLoadingDepreciation(false);
+    }
+  }, [assetId]);
+
   useEffect(() => {
     fetchData();
-  }, [fetchData]);
+    fetchDepreciationData();
+  }, [fetchData, fetchDepreciationData]);
 
-  const depreciation = useMemo(() => (asset ? calculateDepreciation(asset) : null), [asset]);
+  // ✅ PERBAIKAN: Handle Generate Depreciation dengan error handling yang lebih baik
+  const handleGenerateDepreciation = async () => {
+    if (!asset) return;
+    
+    setGeneratingDepreciation(true);
+    setError('');
+    setSuccessMessage('');
+    
+    try {
+      const result = await generateAssetDepreciation(asset.id.toString());
+      
+      // ✅ PERBAIKAN: Cek response success
+      if (result.success) {
+        setSuccessMessage(result.message || 'Depreciation generated successfully!');
+        
+        // Refresh data depresiasi
+        await fetchDepreciationData();
+        
+        // Auto-hide success message setelah 3 detik
+        setTimeout(() => {
+          setSuccessMessage('');
+        }, 3000);
+      } else {
+        setError(result.message || 'Failed to generate depreciation');
+      }
+    } catch (error: any) {
+      console.error('Depreciation generation error:', error);
+      
+      // ✅ PERBAIKAN: Tampilkan error yang lebih spesifik
+      let errorMessage = 'Failed to generate depreciation';
+      
+      if (error.message.includes('500')) {
+        errorMessage = 'Server error: Please check if depreciation record already exists or contact administrator';
+      } else if (error.message.includes('404')) {
+        errorMessage = 'Asset not found';
+      } else if (error.message.includes('Network Error')) {
+        errorMessage = 'Network error: Please check your connection';
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
+      setError(errorMessage);
+    } finally {
+      setGeneratingDepreciation(false);
+    }
+  };
 
   const handleDownloadQR = () => {
     const sourceCanvas = document.getElementById('qr-code-canvas') as HTMLCanvasElement;
@@ -102,7 +173,6 @@ const AssetDetail: React.FC<AssetDetailProps> = ({ assetId, navigateTo }) => {
         const textX = canvas.width / 2;
         const textY = padding + qrSize + (textHeight / 2);
         
-        // PERBAIKAN: Gunakan asset_tag bukan id
         ctx.fillText(asset.asset_tag, textX, textY);
         
         // Trigger download
@@ -111,11 +181,37 @@ const AssetDetail: React.FC<AssetDetailProps> = ({ assetId, navigateTo }) => {
             .replace("image/png", "image/octet-stream");
         const downloadLink = document.createElement("a");
         downloadLink.href = pngUrl;
-        downloadLink.download = `${asset.asset_tag}_qr_code.png`; // PERBAIKAN: gunakan asset_tag
+        downloadLink.download = `${asset.asset_tag}_qr_code.png`;
         document.body.appendChild(downloadLink);
         downloadLink.click();
         document.body.removeChild(downloadLink);
     }
+  };
+
+  // ✅ PERBAIKAN: Reset messages ketika tab berubah
+  useEffect(() => {
+    setError('');
+    setSuccessMessage('');
+  }, [activeTab]);
+
+  // ✅ PERBAIKAN: Format date function
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('id-ID', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+  };
+
+  // ✅ PERBAIKAN: Format datetime function
+  const formatDateTime = (dateString: string) => {
+    return new Date(dateString).toLocaleString('id-ID', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
   };
 
   if (loading) {
@@ -127,13 +223,13 @@ const AssetDetail: React.FC<AssetDetailProps> = ({ assetId, navigateTo }) => {
     );
   }
 
-  if (error) {
+  if (error && !asset) {
     return (
       <div className="text-center py-8">
         <p className="text-red-500 text-lg">{error}</p>
         <button 
           onClick={() => navigateTo({ type: 'ASSET_LIST' })}
-          className="mt-4 bg-primary text-white px-4 py-2 rounded-lg hover:bg-primary-dark"
+          className="mt-4 bg-primary text-white px-4 py-2 rounded-lg hover:bg-primary-dark transition-colors"
         >
           Back to Asset List
         </button>
@@ -144,10 +240,10 @@ const AssetDetail: React.FC<AssetDetailProps> = ({ assetId, navigateTo }) => {
   if (!asset) {
     return (
       <div className="text-center py-8">
-        <p>Asset not found</p>
+        <p className="text-gray-500 text-lg">Asset not found</p>
         <button 
           onClick={() => navigateTo({ type: 'ASSET_LIST' })}
-          className="mt-4 bg-primary text-white px-4 py-2 rounded-lg hover:bg-primary-dark"
+          className="mt-4 bg-primary text-white px-4 py-2 rounded-lg hover:bg-primary-dark transition-colors"
         >
           Back to Asset List
         </button>
@@ -161,7 +257,7 @@ const AssetDetail: React.FC<AssetDetailProps> = ({ assetId, navigateTo }) => {
           className={`flex-shrink-0 flex items-center px-4 py-2 text-sm font-medium rounded-t-lg transition-colors ${
             activeTab === tabName 
               ? 'border-b-2 border-primary text-primary bg-blue-50' 
-              : 'text-gray-500 hover:text-primary'
+              : 'text-gray-500 hover:text-primary hover:bg-gray-50'
           }`}
       >
           {icon}
@@ -171,9 +267,40 @@ const AssetDetail: React.FC<AssetDetailProps> = ({ assetId, navigateTo }) => {
 
   return (
     <div className="space-y-6">
+      {/* ✅ PERBAIKAN: Success & Error Messages */}
+      {successMessage && (
+        <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+          <div className="flex items-center">
+            <div className="flex-shrink-0">
+              <svg className="h-5 w-5 text-green-400" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+              </svg>
+            </div>
+            <div className="ml-3">
+              <p className="text-sm font-medium text-green-800">{successMessage}</p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {error && (
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+          <div className="flex items-center">
+            <div className="flex-shrink-0">
+              <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+              </svg>
+            </div>
+            <div className="ml-3">
+              <p className="text-sm font-medium text-red-800">{error}</p>
+            </div>
+          </div>
+        </div>
+      )}
+
       <button 
         onClick={() => navigateTo({ type: 'ASSET_LIST' })} 
-        className="flex items-center text-primary hover:underline"
+        className="flex items-center text-primary hover:underline transition-colors"
       >
         <BackIcon />
         <span className="ml-2">{t('asset_detail.back_to_list')}</span>
@@ -182,7 +309,6 @@ const AssetDetail: React.FC<AssetDetailProps> = ({ assetId, navigateTo }) => {
       <div className="bg-white p-6 rounded-xl shadow-md">
         <div className="flex flex-col md:flex-row items-center md:items-start gap-8">
             <div className="flex-shrink-0 text-center">
-                {/* PERBAIKAN: Gunakan asset_tag untuk QR code value */}
                 <QRCodeCanvas 
                   id="qr-code-canvas" 
                   value={asset.asset_tag} 
@@ -192,47 +318,146 @@ const AssetDetail: React.FC<AssetDetailProps> = ({ assetId, navigateTo }) => {
             
             <div className="flex-grow flex flex-col w-full">
                  <div>
-                    <h1 className="text-3xl font-bold text-center md:text-left">{asset.name}</h1>
-                    {/* PERBAIKAN: Tampilkan asset_tag bukan id */}
-                    <p className="text-lg text-gray-500 text-center md:text-left">{asset.asset_tag}</p>
+                    <h1 className="text-3xl font-bold text-center md:text-left text-gray-900">{asset.name}</h1>
+                    <p className="text-lg text-gray-500 text-center md:text-left mt-1">{asset.asset_tag}</p>
                 </div>
                 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
-                    <div><strong>{t('asset_detail.labels.category')}:</strong> {asset.category}</div>
-                    <div><strong>{t('asset_detail.labels.location')}:</strong> {asset.location}</div>
-                    <div><strong>{t('asset_detail.labels.status')}:</strong> {asset.status}</div>
-                    {/* PERBAIKAN: Gunakan purchase_date dan useful_life */}
-                    <div><strong>{t('asset_detail.labels.purchase_date')}:</strong> {new Date(asset.purchase_date).toLocaleDateString()}</div>
-                    <div><strong>{t('asset_detail.labels.value')}:</strong> {formatToRupiah(asset.value)}</div>
-                    <div><strong>{t('asset_detail.labels.useful_life')}:</strong> {asset.useful_life} months</div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-6">
+                    <div className="flex flex-col">
+                        <span className="text-sm font-medium text-gray-500">{t('asset_detail.labels.category')}</span>
+                        <span className="text-gray-900">{asset.category}</span>
+                    </div>
+                    <div className="flex flex-col">
+                        <span className="text-sm font-medium text-gray-500">{t('asset_detail.labels.location')}</span>
+                        <span className="text-gray-900">{asset.location}</span>
+                    </div>
+                    <div className="flex flex-col">
+                        <span className="text-sm font-medium text-gray-500">{t('asset_detail.labels.status')}</span>
+                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                          asset.status === 'In Use' ? 'bg-green-100 text-green-800' :
+                          asset.status === 'In Repair' ? 'bg-yellow-100 text-yellow-800' :
+                          asset.status === 'Disposed' ? 'bg-red-100 text-red-800' :
+                          'bg-gray-100 text-gray-800'
+                        }`}>
+                          {asset.status}
+                        </span>
+                    </div>
+                    <div className="flex flex-col">
+                        <span className="text-sm font-medium text-gray-500">{t('asset_detail.labels.purchase_date')}</span>
+                        <span className="text-gray-900">{formatDate(asset.purchase_date)}</span>
+                    </div>
+                    <div className="flex flex-col">
+                        <span className="text-sm font-medium text-gray-500">{t('asset_detail.labels.value')}</span>
+                        <span className="text-gray-900 font-semibold">{formatToRupiah(asset.value)}</span>
+                    </div>
+                    <div className="flex flex-col">
+                        <span className="text-sm font-medium text-gray-500">{t('asset_detail.labels.useful_life')}</span>
+                        <span className="text-gray-900">{asset.useful_life} months</span>
+                    </div>
                 </div>
 
                 {/* Depreciation Details Section */}
-                {depreciation && (
-                    <div className="mt-6 pt-4 border-t border-gray-200">
-                        <h3 className="text-lg font-semibold text-dark-text mb-2 flex items-center">
-                            <DepreciationIcon />
-                            <span className="ml-2">{t('asset_detail.labels.depreciation_details')}</span>
-                        </h3>
-                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm">
-                            <div>
-                                <span className="font-semibold text-gray-600 block">{t('asset_detail.labels.monthly_depreciation')}</span>
-                                <span className="text-gray-800">{formatToRupiah(depreciation.monthlyDepreciation)}</span>
-                            </div>
-                            <div>
-                                <span className="font-semibold text-gray-600 block">{t('asset_detail.labels.accumulated_depreciation')}</span>
-                                <span className="text-gray-800">{formatToRupiah(depreciation.accumulatedDepreciation)}</span>
-                            </div>
-                            <div>
-                                <span className="font-semibold text-gray-600 block">{t('asset_detail.labels.current_value')}</span>
-                                <span className="font-bold text-green-700">{formatToRupiah(depreciation.currentValue)}</span>
-                            </div>
-                        </div>
+                <div className="mt-8 pt-6 border-t border-gray-200">
+                  <div className="flex justify-between items-center mb-6">
+                    <h3 className="text-lg font-semibold text-gray-900 flex items-center">
+                        <DepreciationIcon />
+                        <span className="ml-2">Depreciation Details</span>
+                    </h3>
+                    <button
+                      onClick={fetchDepreciationData}
+                      disabled={loadingDepreciation}
+                      className="flex items-center text-sm bg-gray-100 text-gray-700 px-3 py-2 rounded-lg hover:bg-gray-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      <span className="mr-1">🔄</span>
+                      <span className="ml-1">{loadingDepreciation ? 'Refreshing...' : 'Refresh'}</span>
+                    </button>
+                  </div>
+
+                  {loadingDepreciation ? (
+                    <div className="text-center py-8">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
+                      <p className="mt-2 text-gray-600">Loading depreciation data...</p>
                     </div>
-                )}
+                  ) : depreciationData ? (
+                    <>
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+                        <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                          <p className="text-sm text-blue-600 font-medium">Monthly Depreciation</p>
+                          <p className="text-lg font-bold text-blue-800">
+                            {formatToRupiah(depreciationData.monthly_depreciation)}
+                          </p>
+                        </div>
+                        <div className="bg-green-50 p-4 rounded-lg border border-green-200">
+                          <p className="text-sm text-green-600 font-medium">Accumulated Depreciation</p>
+                          <p className="text-lg font-bold text-green-800">
+                            {formatToRupiah(depreciationData.accumulated_depreciation)}
+                          </p>
+                        </div>
+                        <div className="bg-purple-50 p-4 rounded-lg border border-purple-200">
+                          <p className="text-sm text-purple-600 font-medium">Current Book Value</p>
+                          <p className="text-lg font-bold text-purple-800">
+                            {formatToRupiah(depreciationData.current_value)}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 text-sm bg-gray-50 p-4 rounded-lg">
+                        <div className="text-gray-600">
+                          <div><strong>Next Depreciation:</strong> {formatDate(depreciationData.next_depreciation_date)}</div>
+                          <div className="mt-1"><strong>Remaining Months:</strong> {depreciationData.remaining_months}</div>
+                          <div className="mt-1"><strong>Total Depreciated:</strong> {depreciationData.depreciation_history?.length || 0} months</div>
+                        </div>
+                        
+                        {depreciationData.is_depreciable && depreciationData.remaining_months > 0 ? (
+                          <button
+                            onClick={handleGenerateDepreciation}
+                            disabled={generatingDepreciation}
+                            className="flex items-center bg-primary text-white px-4 py-2 rounded-lg hover:bg-primary-dark transition-colors disabled:opacity-50 disabled:cursor-not-allowed min-w-[160px] justify-center"
+                          >
+                            {generatingDepreciation ? (
+                              <>
+                                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                                Generating...
+                              </>
+                            ) : (
+                              <>
+                                <DepreciationIcon />
+                                <span className="ml-2">Generate Depreciation</span>
+                              </>
+                            )}
+                          </button>
+                        ) : (
+                          <div className="text-orange-600 bg-orange-50 px-3 py-2 rounded-lg border border-orange-200">
+                            <span className="font-medium">Depreciation Complete</span>
+                            <p className="text-sm mt-1">All {asset.useful_life} months have been depreciated</p>
+                          </div>
+                        )}
+                      </div>
+                    </>
+                  ) : (
+                    <div className="text-center py-8 text-gray-500 bg-gray-50 rounded-lg">
+                      <p className="text-lg">No depreciation data available</p>
+                      <p className="text-sm mt-2">Generate initial depreciation to start tracking</p>
+                      <button
+                        onClick={handleGenerateDepreciation}
+                        disabled={generatingDepreciation}
+                        className="mt-4 bg-primary text-white px-6 py-3 rounded-lg hover:bg-primary-dark transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {generatingDepreciation ? (
+                          <>
+                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                            Generating Initial Depreciation...
+                          </>
+                        ) : (
+                          'Generate Initial Depreciation'
+                        )}
+                      </button>
+                    </div>
+                  )}
+                </div>
 
                 {/* Action Buttons Bar */}
-                <div className="mt-6 pt-4 border-t border-gray-200 flex flex-wrap gap-3 justify-center md:justify-start">
+                <div className="mt-8 pt-6 border-t border-gray-200 flex flex-wrap gap-3 justify-center md:justify-start">
                     <button 
                         onClick={() => setMoveModalOpen(true)}
                         className="flex items-center justify-center text-sm font-medium bg-green-50 text-green-700 px-4 py-2 rounded-lg shadow-sm hover:bg-green-100 border border-green-200 transition-colors"
@@ -273,32 +498,39 @@ const AssetDetail: React.FC<AssetDetailProps> = ({ assetId, navigateTo }) => {
                 <TabButton tabName="history" label={t('asset_detail.tabs.history')} icon={<HistoryIcon />} />
                 <TabButton tabName="maintenance" label={t('asset_detail.tabs.maintenance')} icon={<MaintenanceIcon />} />
                 <TabButton tabName="damage_loss" label={t('asset_detail.tabs.damage_loss')} icon={<DamageIcon />} />
+                <TabButton tabName="depreciation" label="Depreciation" icon={<DepreciationIcon />} />
             </nav>
         </div>
         
         <div className="p-6">
             {activeTab === 'history' && (
                 <div>
-                    <h3 className="text-xl font-semibold mb-4">{t('asset_detail.history.title')}</h3>
+                    <h3 className="text-xl font-semibold mb-4 text-gray-900">{t('asset_detail.history.title')}</h3>
                     {history.length === 0 ? (
-                        <p className="text-gray-500">No movement history found</p>
+                        <div className="text-center py-8 text-gray-500 bg-gray-50 rounded-lg">
+                            <p>No movement history found</p>
+                        </div>
                     ) : (
                         <ul className="space-y-3">
                             {history.map(movement => (
-                                <li key={movement.id} className="p-3 bg-gray-50 rounded-md border">
+                                <li key={movement.id} className="p-4 bg-gray-50 rounded-lg border border-gray-200 hover:bg-gray-100 transition-colors">
                                     <div className="flex justify-between items-start">
-                                        <div>
-                                            <strong>Location:</strong> {movement.location}
+                                        <div className="flex-1">
+                                            <div className="flex items-center mb-2">
+                                                <span className="font-medium text-gray-900">Location:</span>
+                                                <span className="ml-2 text-gray-700">{movement.location}</span>
+                                            </div>
+                                            {movement.moved_by && (
+                                                <div className="flex items-center text-sm text-gray-600">
+                                                    <span className="font-medium">Moved by:</span>
+                                                    <span className="ml-2">{movement.moved_by.name}</span>
+                                                </div>
+                                            )}
                                         </div>
-                                        <div className="text-sm text-gray-500">
-                                            {new Date(movement.moved_at).toLocaleString()}
+                                        <div className="text-sm text-gray-500 whitespace-nowrap">
+                                            {formatDateTime(movement.moved_at)}
                                         </div>
                                     </div>
-                                    {movement.moved_by && (
-                                        <div className="mt-1 text-sm text-gray-600">
-                                            <strong>Moved by:</strong> {movement.moved_by.name}
-                                        </div>
-                                    )}
                                 </li>
                             ))}
                         </ul>
@@ -308,23 +540,33 @@ const AssetDetail: React.FC<AssetDetailProps> = ({ assetId, navigateTo }) => {
             
             {activeTab === 'maintenance' && (
                 <div>
-                    <h3 className="text-xl font-semibold mb-4">{t('asset_detail.maintenance.title')}</h3>
+                    <h3 className="text-xl font-semibold mb-4 text-gray-900">{t('asset_detail.maintenance.title')}</h3>
                     {maintenance.length === 0 ? (
-                        <p className="text-gray-500">No maintenance records found</p>
+                        <div className="text-center py-8 text-gray-500 bg-gray-50 rounded-lg">
+                            <p>No maintenance records found</p>
+                        </div>
                     ) : (
                         <ul className="space-y-3">
                             {maintenance.map(maint => (
-                                <li key={maint.id} className="p-3 bg-gray-50 rounded-md border">
-                                    <div className="flex justify-between items-start">
+                                <li key={maint.id} className="p-4 bg-yellow-50 rounded-lg border border-yellow-200 hover:bg-yellow-100 transition-colors">
+                                    <div className="flex justify-between items-start mb-2">
                                         <div>
-                                            <strong>Status:</strong> {maint.status}
+                                            <span className="font-medium text-gray-900">Status:</span>
+                                            <span className={`ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                                                maint.status === 'Completed' ? 'bg-green-100 text-green-800' :
+                                                maint.status === 'In Progress' ? 'bg-blue-100 text-blue-800' :
+                                                'bg-yellow-100 text-yellow-800'
+                                            }`}>
+                                                {maint.status}
+                                            </span>
                                         </div>
                                         <div className="text-sm text-gray-500">
-                                            {new Date(maint.date).toLocaleDateString()}
+                                            {formatDate(maint.date)}
                                         </div>
                                     </div>
-                                    <div className="mt-1">
-                                        <strong>Description:</strong> {maint.description}
+                                    <div className="mt-2">
+                                        <span className="font-medium text-gray-900">Description:</span>
+                                        <p className="mt-1 text-gray-700">{maint.description}</p>
                                     </div>
                                 </li>
                             ))}
@@ -335,27 +577,38 @@ const AssetDetail: React.FC<AssetDetailProps> = ({ assetId, navigateTo }) => {
             
             {activeTab === 'damage_loss' && (
                 <div>
-                    <h3 className="text-xl font-semibold mb-4">{t('asset_detail.damage_loss.damage_title')}</h3>
+                    <h3 className="text-xl font-semibold mb-4 text-gray-900">{t('asset_detail.damage_loss.damage_title')}</h3>
                     {damageReports.length === 0 ? (
-                        <p className="text-gray-500 mb-6">No damage reports found</p>
+                        <div className="text-center py-8 text-gray-500 bg-gray-50 rounded-lg mb-6">
+                            <p>No damage reports found</p>
+                        </div>
                     ) : (
                         <ul className="space-y-3 mb-6">
                             {damageReports.map(report => (
-                                <li key={report.id} className="p-3 bg-red-50 rounded-md border border-red-200">
-                                    <div className="flex justify-between items-start">
+                                <li key={report.id} className="p-4 bg-red-50 rounded-lg border border-red-200 hover:bg-red-100 transition-colors">
+                                    <div className="flex justify-between items-start mb-2">
                                         <div>
-                                            <strong>Status:</strong> {report.status}
+                                            <span className="font-medium text-gray-900">Status:</span>
+                                            <span className={`ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                                                report.status === 'Resolved' ? 'bg-green-100 text-green-800' :
+                                                report.status === 'In Progress' ? 'bg-blue-100 text-blue-800' :
+                                                'bg-red-100 text-red-800'
+                                            }`}>
+                                                {report.status}
+                                            </span>
                                         </div>
                                         <div className="text-sm text-gray-500">
-                                            {new Date(report.date).toLocaleDateString()}
+                                            {formatDate(report.date)}
                                         </div>
                                     </div>
-                                    <div className="mt-1">
-                                        <strong>Description:</strong> {report.description}
+                                    <div className="mt-2">
+                                        <span className="font-medium text-gray-900">Description:</span>
+                                        <p className="mt-1 text-gray-700">{report.description}</p>
                                     </div>
                                     {report.reporter && (
-                                        <div className="mt-1 text-sm text-gray-600">
-                                            <strong>Reported by:</strong> {report.reporter.name}
+                                        <div className="mt-2 text-sm text-gray-600">
+                                            <span className="font-medium">Reported by:</span>
+                                            <span className="ml-2">{report.reporter.name}</span>
                                         </div>
                                     )}
                                 </li>
@@ -363,32 +616,99 @@ const AssetDetail: React.FC<AssetDetailProps> = ({ assetId, navigateTo }) => {
                         </ul>
                     )}
                     
-                    <h3 className="text-xl font-semibold mb-4">{t('asset_detail.damage_loss.loss_title')}</h3>
+                    <h3 className="text-xl font-semibold mb-4 text-gray-900">{t('asset_detail.damage_loss.loss_title')}</h3>
                     {lossReports.length === 0 ? (
-                        <p className="text-gray-500">No loss reports found</p>
+                        <div className="text-center py-8 text-gray-500 bg-gray-50 rounded-lg">
+                            <p>No loss reports found</p>
+                        </div>
                     ) : (
                         <ul className="space-y-3">
                             {lossReports.map(report => (
-                                <li key={report.id} className="p-3 bg-red-50 rounded-md border border-red-200">
-                                    <div className="flex justify-between items-start">
+                                <li key={report.id} className="p-4 bg-orange-50 rounded-lg border border-orange-200 hover:bg-orange-100 transition-colors">
+                                    <div className="flex justify-between items-start mb-2">
                                         <div>
-                                            <strong>Status:</strong> {report.status}
+                                            <span className="font-medium text-gray-900">Status:</span>
+                                            <span className={`ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                                                report.status === 'Resolved' ? 'bg-green-100 text-green-800' :
+                                                report.status === 'In Progress' ? 'bg-blue-100 text-blue-800' :
+                                                'bg-orange-100 text-orange-800'
+                                            }`}>
+                                                {report.status}
+                                            </span>
                                         </div>
                                         <div className="text-sm text-gray-500">
-                                            {new Date(report.date).toLocaleDateString()}
+                                            {formatDate(report.date)}
                                         </div>
                                     </div>
-                                    <div className="mt-1">
-                                        <strong>Description:</strong> {report.description}
+                                    <div className="mt-2">
+                                        <span className="font-medium text-gray-900">Description:</span>
+                                        <p className="mt-1 text-gray-700">{report.description}</p>
                                     </div>
                                     {report.reporter && (
-                                        <div className="mt-1 text-sm text-gray-600">
-                                            <strong>Reported by:</strong> {report.reporter.name}
+                                        <div className="mt-2 text-sm text-gray-600">
+                                            <span className="font-medium">Reported by:</span>
+                                            <span className="ml-2">{report.reporter.name}</span>
                                         </div>
                                     )}
                                 </li>
                             ))}
                         </ul>
+                    )}
+                </div>
+            )}
+
+            {activeTab === 'depreciation' && (
+                <div>
+                    <h3 className="text-xl font-semibold mb-4 text-gray-900">Depreciation History</h3>
+                    {loadingDepreciation ? (
+                        <div className="text-center py-8">
+                            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
+                            <p className="mt-2 text-gray-600">Loading depreciation history...</p>
+                        </div>
+                    ) : depreciationData && depreciationData.depreciation_history.length > 0 ? (
+                        <div className="overflow-x-auto">
+                            <table className="min-w-full divide-y divide-gray-200">
+                                <thead className="bg-gray-50">
+                                    <tr>
+                                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Month</th>
+                                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Depreciation Amount</th>
+                                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Accumulated</th>
+                                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Book Value</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="bg-white divide-y divide-gray-200">
+                                    {depreciationData.depreciation_history.map((record: any) => (
+                                        <tr key={record.id} className="hover:bg-gray-50 transition-colors">
+                                            <td className="px-4 py-3 text-sm font-medium text-gray-900">Month {record.month_sequence}</td>
+                                            <td className="px-4 py-3 text-sm text-gray-500">{formatDate(record.depreciation_date)}</td>
+                                            <td className="px-4 py-3 text-sm text-red-600 font-medium">{formatToRupiah(record.depreciation_amount)}</td>
+                                            <td className="px-4 py-3 text-sm text-orange-600 font-medium">{formatToRupiah(record.accumulated_depreciation)}</td>
+                                            <td className="px-4 py-3 text-sm text-green-600 font-medium">{formatToRupiah(record.current_value)}</td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    ) : (
+                        <div className="text-center py-8 text-gray-500 bg-gray-50 rounded-lg">
+                            <p className="text-lg">No depreciation history found</p>
+                            <p className="text-sm mt-2">Generate depreciation to see the history</p>
+                            <button
+                                onClick={handleGenerateDepreciation}
+                                disabled={generatingDepreciation}
+                                className="mt-4 bg-primary text-white px-6 py-3 rounded-lg hover:bg-primary-dark transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                {generatingDepreciation ? (
+                                    <>
+                                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                                        Generating Depreciation...
+                                    </>
+                                ) : (
+                                    'Generate Depreciation'
+                                )}
+                            </button>
+                        </div>
                     )}
                 </div>
             )}
