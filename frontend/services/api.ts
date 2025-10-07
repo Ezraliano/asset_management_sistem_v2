@@ -1,8 +1,9 @@
+// api.ts - PERBAIKAN RESPONSE HANDLING
 import { Asset, AssetMovement, Maintenance, User, DamageReport, LossReport, DashboardStats } from '../types';
 
 const API_BASE_URL = 'http://localhost:8000/api';
 
-// Enhanced API request function dengan error handling yang lebih baik
+// Enhanced API request function dengan response handling yang lebih baik
 const apiRequest = async (endpoint: string, options: RequestInit = {}) => {
   const token = localStorage.getItem('auth_token');
   
@@ -20,13 +21,11 @@ const apiRequest = async (endpoint: string, options: RequestInit = {}) => {
     const response = await fetch(`${API_BASE_URL}${endpoint}`, config);
     
     if (!response.ok) {
-      // Coba parse error response untuk detail
       let errorDetail = `API error: ${response.status}`;
       try {
         const errorData = await response.json();
         errorDetail = errorData.message || errorData.error || errorDetail;
       } catch {
-        // Jika response bukan JSON, gunakan status text
         errorDetail = response.statusText || errorDetail;
       }
       
@@ -37,17 +36,39 @@ const apiRequest = async (endpoint: string, options: RequestInit = {}) => {
       throw new Error(errorDetail);
     }
 
-    return response.json();
+    const data = await response.json();
+    console.log(`API Response ${endpoint}:`, data); // Debug log
+    return data;
   } catch (error: any) {
     console.error('API Request failed:', error);
     
-    // Handle network errors
     if (error.name === 'TypeError' && error.message.includes('fetch')) {
       throw new Error('Network error: Please check your internet connection');
     }
     
     throw error;
   }
+};
+
+// ✅ PERBAIKAN: Generic response handler
+const handleApiResponse = <T>(response: any): T => {
+  console.log('Raw API response:', response); // Debug log
+  
+  if (typeof response !== 'object' || response === null) {
+    throw new Error('Invalid API response format');
+  }
+
+  // Jika response memiliki structure {success, data, message}
+  if ('success' in response) {
+    if (response.success) {
+      return response.data !== undefined ? response.data : response;
+    } else {
+      throw new Error(response.message || 'API request failed');
+    }
+  }
+  
+  // Jika response langsung data (tanpa wrapper)
+  return response;
 };
 
 // Auth API
@@ -92,10 +113,10 @@ export const getCurrentUser = async (): Promise<User | null> => {
 // Dashboard API
 export const getDashboardStats = async (): Promise<DashboardStats> => {
   const data = await apiRequest('/dashboard/stats');
-  return data.data;
+  return handleApiResponse<DashboardStats>(data);
 };
 
-// Assets API
+// Assets API - ✅ PERBAIKAN UTAMA: Fix response handling
 export const getAssets = async (filters: { category?: string; location?: string; status?: string } = {}): Promise<Asset[]> => {
   const queryParams = new URLSearchParams();
   if (filters.category) queryParams.append('category', filters.category);
@@ -105,8 +126,26 @@ export const getAssets = async (filters: { category?: string; location?: string;
   const queryString = queryParams.toString();
   const endpoint = queryString ? `/assets?${queryString}` : '/assets';
   
-  const data = await apiRequest(endpoint);
-  return data.data;
+  try {
+    const response = await apiRequest(endpoint);
+    const handledResponse = handleApiResponse<any>(response);
+
+    // Check for Laravel pagination structure
+    if (handledResponse && typeof handledResponse === 'object' && Array.isArray(handledResponse.data)) {
+      return handledResponse.data;
+    }
+
+    // Fallback for direct array response
+    if (Array.isArray(handledResponse)) {
+      return handledResponse;
+    }
+    
+    console.warn('Assets response is not in a recognized format:', handledResponse);
+    return [];
+  } catch (error: any) {
+    console.error('Error in getAssets:', error);
+    return [];
+  }
 };
 
 // ==================== DEPRECIATION API ====================
@@ -115,11 +154,10 @@ export const getAssets = async (filters: { category?: string; location?: string;
 export const getAssetDepreciation = async (assetId: string): Promise<any> => {
   try {
     const data = await apiRequest(`/assets/${assetId}/depreciation`);
-    return data.data;
+    return handleApiResponse(data);
   } catch (error: any) {
     console.error('Get asset depreciation error:', error);
     
-    // Return null jika error 404
     if (error.message.includes('404') || error.message.includes('not found')) {
       return null;
     }
@@ -131,7 +169,7 @@ export const getAssetDepreciation = async (assetId: string): Promise<any> => {
 export const getAssetDepreciationPreview = async (assetId: string): Promise<any> => {
   try {
     const data = await apiRequest(`/assets/${assetId}/depreciation-preview`);
-    return data.data;
+    return handleApiResponse(data);
   } catch (error: any) {
     console.error('Get asset depreciation preview error:', error);
     
@@ -148,7 +186,7 @@ export const getAssetDepreciationStatus = async (assetId: string): Promise<any> 
     const data = await apiRequest(`/assets/${assetId}/depreciation-status`);
     return {
       success: data.success,
-      data: data.data
+      data: handleApiResponse(data)
     };
   } catch (error: any) {
     console.error('Get asset depreciation status error:', error);
@@ -172,7 +210,7 @@ export const generateAssetDepreciation = async (assetId: string): Promise<any> =
     return {
       success: data.success,
       message: data.message,
-      data: data.data,
+      data: handleApiResponse(data),
       debug_info: data.debug_info
     };
   } catch (error: any) {
@@ -208,7 +246,7 @@ export const generateMultipleDepreciations = async (assetId: string, count: numb
     return {
       success: data.success,
       message: data.message,
-      data: data.data,
+      data: handleApiResponse(data),
       processed_count: data.processed_count,
       remaining_depreciable_amount: data.remaining_depreciable_amount,
       is_fully_depreciated: data.is_fully_depreciated
@@ -236,7 +274,7 @@ export const generateDepreciationUntilZero = async (assetId: string): Promise<an
     return {
       success: data.success,
       message: data.message,
-      data: data.data,
+      data: handleApiResponse(data),
       processed_count: data.processed_count,
       reached_zero: data.reached_zero,
       is_fully_depreciated: data.is_fully_depreciated,
@@ -267,7 +305,7 @@ export const generateDepreciationUntilValue = async (assetId: string, targetValu
     return {
       success: data.success,
       message: data.message,
-      data: data.data,
+      data: handleApiResponse(data),
       processed_count: data.processed_count,
       target_achieved: data.target_achieved,
       remaining_depreciable_amount: data.remaining_depreciable_amount
@@ -296,7 +334,7 @@ export const generateAllDepreciation = async (): Promise<any> => {
     return {
       success: data.success,
       message: data.message,
-      data: data.data,
+      data: handleApiResponse(data),
       processed_count: data.data?.processed_count || 0
     };
   } catch (error: any) {
@@ -322,7 +360,7 @@ export const resetAssetDepreciation = async (assetId: string): Promise<any> => {
     return {
       success: data.success,
       message: data.message,
-      data: data.data
+      data: handleApiResponse(data)
     };
   } catch (error: any) {
     console.error('Reset asset depreciation error:', error);
@@ -342,7 +380,7 @@ export const getDepreciationSchedule = async (assetId: string): Promise<any> => 
     const data = await apiRequest(`/assets/${assetId}/depreciation-schedule`);
     return {
       success: data.success,
-      data: data.data
+      data: handleApiResponse(data)
     };
   } catch (error: any) {
     console.error('Get depreciation schedule error:', error);
@@ -362,7 +400,7 @@ export const getTotalDepreciatedAmount = async (assetId: string): Promise<any> =
     const data = await apiRequest(`/assets/${assetId}/total-depreciated`);
     return {
       success: data.success,
-      data: data.data
+      data: handleApiResponse(data)
     };
   } catch (error: any) {
     console.error('Get total depreciated amount error:', error);
@@ -378,13 +416,25 @@ export const getTotalDepreciatedAmount = async (assetId: string): Promise<any> =
 
 // ==================== ASSET MANAGEMENT API ====================
 
-export const getAssetById = async (id: string): Promise<Asset | undefined> => {
+export const getAssetById = async (id: string): Promise<Asset | null> => {
   try {
     const data = await apiRequest(`/assets/${id}`);
-    return data.data;
-  } catch (error) {
+    const asset = handleApiResponse<Asset>(data);
+    
+    if (!asset || typeof asset !== 'object') {
+      console.warn('Invalid asset data:', asset);
+      return null;
+    }
+    
+    return asset;
+  } catch (error: any) {
     console.error('Get asset by ID error:', error);
-    return undefined;
+    
+    if (error.message.includes('404') || error.message.includes('not found')) {
+      return null;
+    }
+    
+    return null;
   }
 };
 
@@ -393,7 +443,7 @@ export const addAsset = async (assetData: Omit<Asset, 'id'>): Promise<Asset> => 
     method: 'POST',
     body: JSON.stringify(assetData),
   });
-  return data.data;
+  return handleApiResponse<Asset>(data);
 };
 
 export const updateAsset = async (id: string, assetData: Partial<Asset>): Promise<Asset> => {
@@ -401,13 +451,13 @@ export const updateAsset = async (id: string, assetData: Partial<Asset>): Promis
     method: 'PUT',
     body: JSON.stringify(assetData),
   });
-  return data.data;
+  return handleApiResponse<Asset>(data);
 };
 
 export const deleteAsset = async (id: string): Promise<boolean> => {
   try {
-    await apiRequest(`/assets/${id}`, { method: 'DELETE' });
-    return true;
+    const data = await apiRequest(`/assets/${id}`, { method: 'DELETE' });
+    return data.success || true;
   } catch (error) {
     console.error('Delete asset error:', error);
     return false;
@@ -416,13 +466,19 @@ export const deleteAsset = async (id: string): Promise<boolean> => {
 
 // Asset Movements API
 export const getAssetHistory = async (assetId: string): Promise<AssetMovement[]> => {
-  const data = await apiRequest(`/assets/${assetId}/movements`);
-  return data.data;
+  try {
+    const data = await apiRequest(`/assets/${assetId}/movements`);
+    const history = handleApiResponse<AssetMovement[]>(data);
+    return Array.isArray(history) ? history : [];
+  } catch (error) {
+    console.error('Get asset history error:', error);
+    return [];
+  }
 };
 
 export const getAllMovements = async (): Promise<AssetMovement[]> => {
   const data = await apiRequest('/asset-movements');
-  return data.data;
+  return handleApiResponse<AssetMovement[]>(data);
 };
 
 export const addAssetMovement = async (movementData: { assetId: string; location: string; movedBy: string }): Promise<AssetMovement> => {
@@ -430,18 +486,24 @@ export const addAssetMovement = async (movementData: { assetId: string; location
     method: 'POST',
     body: JSON.stringify(movementData),
   });
-  return data.data;
+  return handleApiResponse<AssetMovement>(data);
 };
 
 // Maintenance API
 export const getMaintenanceHistory = async (assetId: string): Promise<Maintenance[]> => {
-  const data = await apiRequest(`/assets/${assetId}/maintenances`);
-  return data.data;
+  try {
+    const data = await apiRequest(`/assets/${assetId}/maintenances`);
+    const maintenance = handleApiResponse<Maintenance[]>(data);
+    return Array.isArray(maintenance) ? maintenance : [];
+  } catch (error) {
+    console.error('Get maintenance history error:', error);
+    return [];
+  }
 };
 
 export const getAllMaintenance = async (): Promise<Maintenance[]> => {
   const data = await apiRequest('/maintenances');
-  return data.data;
+  return handleApiResponse<Maintenance[]>(data);
 };
 
 export const addMaintenance = async (maintData: Omit<Maintenance, 'id'>): Promise<Maintenance> => {
@@ -449,18 +511,31 @@ export const addMaintenance = async (maintData: Omit<Maintenance, 'id'>): Promis
     method: 'POST',
     body: JSON.stringify(maintData),
   });
-  return data.data;
+  return handleApiResponse<Maintenance>(data);
 };
 
 // Incident Reports API
 export const getDamageReports = async (assetId: string): Promise<DamageReport[]> => {
-  const data = await apiRequest(`/assets/${assetId}/incident-reports`);
-  return data.data.filter((report: any) => report.type === 'Damage');
+  try {
+    const data = await apiRequest(`/assets/${assetId}/incident-reports`);
+    const reports = handleApiResponse<any[]>(data);
+    
+    if (!Array.isArray(reports)) return [];
+    
+    return reports.filter((report: any) => report.type === 'Damage');
+  } catch (error) {
+    console.error('Get damage reports error:', error);
+    return [];
+  }
 };
 
 export const getAllDamageReports = async (): Promise<DamageReport[]> => {
   const data = await apiRequest('/incident-reports');
-  return data.data.filter((report: any) => report.type === 'Damage');
+  const reports = handleApiResponse<any[]>(data);
+  
+  if (!Array.isArray(reports)) return [];
+  
+  return reports.filter((report: any) => report.type === 'Damage');
 };
 
 export const addDamageReport = async (reportData: Omit<DamageReport, 'id'>): Promise<DamageReport> => {
@@ -468,17 +543,30 @@ export const addDamageReport = async (reportData: Omit<DamageReport, 'id'>): Pro
     method: 'POST',
     body: JSON.stringify({ ...reportData, type: 'Damage' }),
   });
-  return data.data;
+  return handleApiResponse<DamageReport>(data);
 };
 
 export const getLossReports = async (assetId: string): Promise<LossReport[]> => {
-  const data = await apiRequest(`/assets/${assetId}/incident-reports`);
-  return data.data.filter((report: any) => report.type === 'Loss');
+  try {
+    const data = await apiRequest(`/assets/${assetId}/incident-reports`);
+    const reports = handleApiResponse<any[]>(data);
+    
+    if (!Array.isArray(reports)) return [];
+    
+    return reports.filter((report: any) => report.type === 'Loss');
+  } catch (error) {
+    console.error('Get loss reports error:', error);
+    return [];
+  }
 };
 
 export const getAllLossReports = async (): Promise<LossReport[]> => {
   const data = await apiRequest('/incident-reports');
-  return data.data.filter((report: any) => report.type === 'Loss');
+  const reports = handleApiResponse<any[]>(data);
+  
+  if (!Array.isArray(reports)) return [];
+  
+  return reports.filter((report: any) => report.type === 'Loss');
 };
 
 export const addLossReport = async (reportData: Omit<LossReport, 'id'>): Promise<LossReport> => {
@@ -486,7 +574,7 @@ export const addLossReport = async (reportData: Omit<LossReport, 'id'>): Promise
     method: 'POST',
     body: JSON.stringify({ ...reportData, type: 'Loss' }),
   });
-  return data.data;
+  return handleApiResponse<LossReport>(data);
 };
 
 // Users API
@@ -546,11 +634,15 @@ export const formatCurrency = (amount: number): string => {
 
 // Helper function untuk format date
 export const formatDate = (dateString: string): string => {
-  return new Date(dateString).toLocaleDateString('id-ID', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric'
-  });
+  try {
+    return new Date(dateString).toLocaleDateString('id-ID', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+  } catch {
+    return 'Invalid Date';
+  }
 };
 
 // Helper function untuk check jika asset bisa didepresiasi

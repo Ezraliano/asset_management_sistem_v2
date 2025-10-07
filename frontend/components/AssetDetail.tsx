@@ -1,3 +1,4 @@
+// AssetDetail.tsx - PERBAIKAN LENGKAP DENGAN ERROR HANDLING DAN SAFE DATA ACCESS
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { 
   getAssetById, 
@@ -25,6 +26,22 @@ interface AssetDetailProps {
 
 type Tab = 'history' | 'maintenance' | 'damage_loss' | 'depreciation';
 
+interface DepreciationData {
+  monthly_depreciation?: number;
+  accumulated_depreciation?: number;
+  current_value?: number;
+  remaining_months?: number;
+  depreciated_months?: number;
+  next_depreciation_date?: string;
+  is_depreciable?: boolean;
+  depreciation_history?: any[];
+  completion_percentage?: number;
+  elapsed_months_since_purchase?: number;
+  pending_depreciation_months?: number;
+  expected_depreciated_months?: number;
+  is_up_to_date?: boolean;
+}
+
 const AssetDetail: React.FC<AssetDetailProps> = ({ assetId, navigateTo }) => {
   const { t } = useTranslation();
   const [asset, setAsset] = useState<Asset | null>(null);
@@ -32,7 +49,7 @@ const AssetDetail: React.FC<AssetDetailProps> = ({ assetId, navigateTo }) => {
   const [maintenance, setMaintenance] = useState<Maintenance[]>([]);
   const [damageReports, setDamageReports] = useState<DamageReport[]>([]);
   const [lossReports, setLossReports] = useState<LossReport[]>([]);
-  const [depreciationData, setDepreciationData] = useState<any>(null);
+  const [depreciationData, setDepreciationData] = useState<DepreciationData | null>(null);
   const [loading, setLoading] = useState(true);
   const [loadingDepreciation, setLoadingDepreciation] = useState(false);
   const [generatingDepreciation, setGeneratingDepreciation] = useState(false);
@@ -55,19 +72,39 @@ const AssetDetail: React.FC<AssetDetailProps> = ({ assetId, navigateTo }) => {
         getLossReports(assetId)
       ]);
       
-      if (!assetData) {
+      // ✅ PERBAIKAN: Handle response format dengan aman
+      if (!assetData || (typeof assetData === 'object' && 'success' in assetData && !assetData.success)) {
         setError('Asset not found');
+        setLoading(false);
+        return;
+      }
+
+      // ✅ PERBAIKAN: Extract data dari response object jika diperlukan
+      const actualAssetData = (assetData as any).data || assetData;
+      
+      if (!actualAssetData || typeof actualAssetData !== 'object') {
+        setError('Invalid asset data format');
+        setLoading(false);
         return;
       }
       
-      setAsset(assetData);
-      setHistory(historyData);
-      setMaintenance(maintenanceData);
-      setDamageReports(damageData);
-      setLossReports(lossData);
-    } catch (err) {
+      setAsset(actualAssetData as Asset);
+      
+      // ✅ PERBAIKAN: Ensure arrays dengan safety check
+      setHistory(Array.isArray(historyData) ? historyData : 
+                Array.isArray((historyData as any)?.data) ? (historyData as any).data : []);
+      
+      setMaintenance(Array.isArray(maintenanceData) ? maintenanceData : 
+                    Array.isArray((maintenanceData as any)?.data) ? (maintenanceData as any).data : []);
+      
+      setDamageReports(Array.isArray(damageData) ? damageData : 
+                      Array.isArray((damageData as any)?.data) ? (damageData as any).data : []);
+      
+      setLossReports(Array.isArray(lossData) ? lossData : 
+                    Array.isArray((lossData as any)?.data) ? (lossData as any).data : []);
+    } catch (err: any) {
       console.error('Error fetching asset details:', err);
-      setError('Failed to load asset details');
+      setError(err.message || 'Failed to load asset details');
     } finally {
       setLoading(false);
     }
@@ -79,8 +116,21 @@ const AssetDetail: React.FC<AssetDetailProps> = ({ assetId, navigateTo }) => {
     setLoadingDepreciation(true);
     try {
       const data = await getAssetDepreciation(assetId);
-      setDepreciationData(data);
-    } catch (error) {
+      
+      // ✅ PERBAIKAN: Handle depreciation data format dengan aman
+      if (data && typeof data === 'object') {
+        if ('success' in data && data.success === false) {
+          setDepreciationData(null);
+          return;
+        }
+        
+        // Extract data dari response
+        const actualData = data.data || data;
+        setDepreciationData(actualData as DepreciationData);
+      } else {
+        setDepreciationData(null);
+      }
+    } catch (error: any) {
       console.error('Failed to fetch depreciation data:', error);
       setDepreciationData(null);
     } finally {
@@ -104,8 +154,8 @@ const AssetDetail: React.FC<AssetDetailProps> = ({ assetId, navigateTo }) => {
     try {
       const result = await generateAssetDepreciation(asset.id.toString());
       
-      // ✅ PERBAIKAN: Cek response success
-      if (result.success) {
+      // ✅ PERBAIKAN: Cek response success dengan format yang konsisten
+      if (result && result.success) {
         setSuccessMessage(result.message || 'Depreciation generated successfully!');
         
         // Refresh data depresiasi
@@ -116,7 +166,7 @@ const AssetDetail: React.FC<AssetDetailProps> = ({ assetId, navigateTo }) => {
           setSuccessMessage('');
         }, 3000);
       } else {
-        setError(result.message || 'Failed to generate depreciation');
+        setError(result?.message || 'Failed to generate depreciation');
       }
     } catch (error: any) {
       console.error('Depreciation generation error:', error);
@@ -124,11 +174,11 @@ const AssetDetail: React.FC<AssetDetailProps> = ({ assetId, navigateTo }) => {
       // ✅ PERBAIKAN: Tampilkan error yang lebih spesifik
       let errorMessage = 'Failed to generate depreciation';
       
-      if (error.message.includes('500')) {
+      if (error.message?.includes('500')) {
         errorMessage = 'Server error: Please check if depreciation record already exists or contact administrator';
-      } else if (error.message.includes('404')) {
+      } else if (error.message?.includes('404')) {
         errorMessage = 'Asset not found';
-      } else if (error.message.includes('Network Error')) {
+      } else if (error.message?.includes('Network Error')) {
         errorMessage = 'Network error: Please check your connection';
       } else if (error.message) {
         errorMessage = error.message;
@@ -139,6 +189,28 @@ const AssetDetail: React.FC<AssetDetailProps> = ({ assetId, navigateTo }) => {
       setGeneratingDepreciation(false);
     }
   };
+
+  // ✅ PERBAIKAN: Safe array access untuk depreciation history
+  const depreciationHistory = useMemo(() => {
+    if (!depreciationData) return [];
+    return Array.isArray(depreciationData.depreciation_history) 
+      ? depreciationData.depreciation_history 
+      : [];
+  }, [depreciationData]);
+
+  // ✅ PERBAIKAN: Safe values untuk depreciation data
+  const monthlyDepreciation = depreciationData?.monthly_depreciation || 0;
+  const accumulatedDepreciation = depreciationData?.accumulated_depreciation || 0;
+  const currentValue = depreciationData?.current_value ?? asset?.value ?? 0;
+  const remainingMonths = depreciationData?.remaining_months ?? asset?.useful_life ?? 0;
+  const depreciatedMonths = depreciationData?.depreciated_months || 0;
+  const nextDepreciationDate = depreciationData?.next_depreciation_date;
+  const isDepreciable = depreciationData?.is_depreciable !== false;
+  const completionPercentage = depreciationData?.completion_percentage || 0;
+  const elapsedMonths = depreciationData?.elapsed_months_since_purchase || 0;
+  const pendingMonths = depreciationData?.pending_depreciation_months || 0;
+  const expectedMonths = depreciationData?.expected_depreciated_months || 0;
+  const isUpToDate = depreciationData?.is_up_to_date || false;
 
   const handleDownloadQR = () => {
     const sourceCanvas = document.getElementById('qr-code-canvas') as HTMLCanvasElement;
@@ -194,25 +266,40 @@ const AssetDetail: React.FC<AssetDetailProps> = ({ assetId, navigateTo }) => {
     setSuccessMessage('');
   }, [activeTab]);
 
-  // ✅ PERBAIKAN: Format date function
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('id-ID', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
-    });
+  // ✅ PERBAIKAN: Format date function dengan safety check
+  const formatDate = (dateString: string | undefined): string => {
+    if (!dateString) return 'N/A';
+    try {
+      return new Date(dateString).toLocaleDateString('id-ID', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      });
+    } catch {
+      return 'Invalid Date';
+    }
   };
 
-  // ✅ PERBAIKAN: Format datetime function
-  const formatDateTime = (dateString: string) => {
-    return new Date(dateString).toLocaleString('id-ID', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
+  // ✅ PERBAIKAN: Format datetime function dengan safety check
+  const formatDateTime = (dateString: string | undefined): string => {
+    if (!dateString) return 'N/A';
+    try {
+      return new Date(dateString).toLocaleString('id-ID', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+    } catch {
+      return 'Invalid Date';
+    }
   };
+
+  // ✅ PERBAIKAN: Cek apakah bisa generate depreciation
+  const canGenerateDepreciation = useMemo(() => {
+    return isDepreciable && remainingMonths > 0 && currentValue > 0;
+  }, [isDepreciable, remainingMonths, currentValue]);
 
   if (loading) {
     return (
@@ -384,31 +471,71 @@ const AssetDetail: React.FC<AssetDetailProps> = ({ assetId, navigateTo }) => {
                         <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
                           <p className="text-sm text-blue-600 font-medium">Monthly Depreciation</p>
                           <p className="text-lg font-bold text-blue-800">
-                            {formatToRupiah(depreciationData.monthly_depreciation)}
+                            {formatToRupiah(monthlyDepreciation)}
                           </p>
                         </div>
                         <div className="bg-green-50 p-4 rounded-lg border border-green-200">
                           <p className="text-sm text-green-600 font-medium">Accumulated Depreciation</p>
                           <p className="text-lg font-bold text-green-800">
-                            {formatToRupiah(depreciationData.accumulated_depreciation)}
+                            {formatToRupiah(accumulatedDepreciation)}
                           </p>
                         </div>
                         <div className="bg-purple-50 p-4 rounded-lg border border-purple-200">
                           <p className="text-sm text-purple-600 font-medium">Current Book Value</p>
                           <p className="text-lg font-bold text-purple-800">
-                            {formatToRupiah(depreciationData.current_value)}
+                            {formatToRupiah(currentValue)}
                           </p>
+                        </div>
+                      </div>
+
+                      {/* ✅ PERBAIKAN: Additional Depreciation Info */}
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                        <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                          <p className="text-sm text-gray-600 font-medium">Progress</p>
+                          <div className="mt-2">
+                            <div className="flex justify-between text-sm text-gray-600 mb-1">
+                              <span>{completionPercentage.toFixed(1)}% Complete</span>
+                              <span>{depreciatedMonths} / {asset.useful_life} months</span>
+                            </div>
+                            <div className="w-full bg-gray-200 rounded-full h-2">
+                              <div 
+                                className="bg-primary h-2 rounded-full" 
+                                style={{ width: `${completionPercentage}%` }}
+                              ></div>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                          <p className="text-sm text-gray-600 font-medium">Timeline</p>
+                          <div className="mt-2 space-y-1 text-sm text-gray-600">
+                            <div className="flex justify-between">
+                              <span>Elapsed Months:</span>
+                              <span className="font-medium">{elapsedMonths}</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span>Pending Depreciation:</span>
+                              <span className={`font-medium ${pendingMonths > 0 ? 'text-orange-600' : 'text-green-600'}`}>
+                                {pendingMonths} months
+                              </span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span>Status:</span>
+                              <span className={`font-medium ${isUpToDate ? 'text-green-600' : 'text-orange-600'}`}>
+                                {isUpToDate ? 'Up to Date' : 'Pending Updates'}
+                              </span>
+                            </div>
+                          </div>
                         </div>
                       </div>
 
                       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 text-sm bg-gray-50 p-4 rounded-lg">
                         <div className="text-gray-600">
-                          <div><strong>Next Depreciation:</strong> {formatDate(depreciationData.next_depreciation_date)}</div>
-                          <div className="mt-1"><strong>Remaining Months:</strong> {depreciationData.remaining_months}</div>
-                          <div className="mt-1"><strong>Total Depreciated:</strong> {depreciationData.depreciation_history?.length || 0} months</div>
+                          <div><strong>Next Depreciation:</strong> {formatDate(nextDepreciationDate)}</div>
+                          <div className="mt-1"><strong>Remaining Months:</strong> {remainingMonths}</div>
+                          <div className="mt-1"><strong>Total Depreciated:</strong> {depreciatedMonths} months</div>
                         </div>
                         
-                        {depreciationData.is_depreciable && depreciationData.remaining_months > 0 ? (
+                        {canGenerateDepreciation ? (
                           <button
                             onClick={handleGenerateDepreciation}
                             disabled={generatingDepreciation}
@@ -665,7 +792,7 @@ const AssetDetail: React.FC<AssetDetailProps> = ({ assetId, navigateTo }) => {
                             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
                             <p className="mt-2 text-gray-600">Loading depreciation history...</p>
                         </div>
-                    ) : depreciationData && depreciationData.depreciation_history.length > 0 ? (
+                    ) : depreciationHistory.length > 0 ? (
                         <div className="overflow-x-auto">
                             <table className="min-w-full divide-y divide-gray-200">
                                 <thead className="bg-gray-50">
@@ -678,7 +805,7 @@ const AssetDetail: React.FC<AssetDetailProps> = ({ assetId, navigateTo }) => {
                                     </tr>
                                 </thead>
                                 <tbody className="bg-white divide-y divide-gray-200">
-                                    {depreciationData.depreciation_history.map((record: any) => (
+                                    {depreciationHistory.map((record: any) => (
                                         <tr key={record.id} className="hover:bg-gray-50 transition-colors">
                                             <td className="px-4 py-3 text-sm font-medium text-gray-900">Month {record.month_sequence}</td>
                                             <td className="px-4 py-3 text-sm text-gray-500">{formatDate(record.depreciation_date)}</td>

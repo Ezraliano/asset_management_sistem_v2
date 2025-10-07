@@ -1,4 +1,4 @@
-// AssetList.tsx - PERBAIKAN FILTER BACKEND
+// AssetList.tsx - PERBAIKAN KOMPREHENSIF
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { getAssets, deleteAsset } from '../services/api';
 import { Asset, AssetStatus, View } from '../types';
@@ -12,6 +12,24 @@ interface AssetListProps {
   navigateTo: (view: View) => void;
 }
 
+interface ApiResponse {
+  success: boolean;
+  data: Asset[];
+  message?: string;
+}
+
+interface ApiPaginatedResponse {
+  success: boolean;
+  data: {
+    data: Asset[];
+    current_page: number;
+    total: number;
+    per_page: number;
+    last_page: number;
+  };
+  message?: string;
+}
+
 const AssetList: React.FC<AssetListProps> = ({ navigateTo }) => {
   const { t } = useTranslation();
   const [assets, setAssets] = useState<Asset[]>([]);
@@ -20,19 +38,34 @@ const AssetList: React.FC<AssetListProps> = ({ navigateTo }) => {
   const [editingAsset, setEditingAsset] = useState<Asset | undefined>(undefined);
   const [filters, setFilters] = useState({ category: '', location: '', status: '' });
   const [showFilters, setShowFilters] = useState(false);
+  const [error, setError] = useState<string>('');
+  const [totalAssets, setTotalAssets] = useState(0);
 
   const fetchAssets = useCallback(async () => {
     setLoading(true);
+    setError('');
     try {
-      // Kirim filters ke backend
-      const fetchedAssets = await getAssets(filters);
-      setAssets(fetchedAssets);
-    } catch (error) {
-      console.error('Failed to fetch assets:', error);
+      console.log('🔄 Fetching assets with filters:', filters);
+      const assetsData = await getAssets(filters);
+      console.log('📦 API response:', assetsData);
+
+      if (Array.isArray(assetsData)) {
+        setAssets(assetsData);
+        setTotalAssets(assetsData.length);
+      } else {
+        console.warn('Expected an array of assets, but received:', assetsData);
+        setAssets([]);
+        setTotalAssets(0);
+      }
+    } catch (error: any) {
+      console.error('❌ Failed to fetch assets:', error);
+      setError(error.message || 'Failed to load assets');
+      setAssets([]);
+      setTotalAssets(0);
     } finally {
       setLoading(false);
     }
-  }, [filters]); // fetchAssets akan dipanggil ulang ketika filters berubah
+  }, [filters]);
 
   useEffect(() => {
     fetchAssets();
@@ -65,21 +98,30 @@ const AssetList: React.FC<AssetListProps> = ({ navigateTo }) => {
     fetchAssets(); // Refresh data setelah add/edit
   };
 
-  // Get unique values for filters dari data yang sudah difilter
+  // ✅ PERBAIKAN: Get unique values for filters dengan safety check
   const uniqueCategories = useMemo(() => {
-    const categories = [...new Set(assets.map(a => a.category))].filter(Boolean);
-    return categories.sort();
+    if (!Array.isArray(assets)) return [];
+    const categories = assets
+      .map(a => a.category)
+      .filter((category): category is string => 
+        category !== undefined && category !== null && category !== ''
+      );
+    return [...new Set(categories)].sort();
   }, [assets]);
 
   const uniqueLocations = useMemo(() => {
-    const locations = [...new Set(assets.map(a => a.location))].filter(Boolean);
-    return locations.sort();
+    if (!Array.isArray(assets)) return [];
+    const locations = assets
+      .map(a => a.location)
+      .filter((location): location is string => 
+        location !== undefined && location !== null && location !== ''
+      );
+    return [...new Set(locations)].sort();
   }, [assets]);
 
   const handleFilterChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const { name, value } = e.target;
     setFilters(prev => ({ ...prev, [name]: value }));
-    // Filter akan otomatis trigger fetchAssets karena ada dependency di useCallback
   };
 
   const handleClearFilters = () => {
@@ -148,7 +190,7 @@ const AssetList: React.FC<AssetListProps> = ({ navigateTo }) => {
         <div>
           <h1 className="text-3xl font-bold text-dark-text">{t('asset_list.title')}</h1>
           <p className="text-gray-600 mt-1">
-            {loading ? 'Loading...' : `${assets.length} assets found`}
+            {loading ? 'Loading...' : `${totalAssets} assets found`}
             {hasActiveFilters && ' (filtered)'}
           </p>
         </div>
@@ -181,6 +223,26 @@ const AssetList: React.FC<AssetListProps> = ({ navigateTo }) => {
           </button>
         </div>
       </div>
+
+      {/* Error Message */}
+      {error && (
+        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center">
+              <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+              </svg>
+              <span>{error}</span>
+            </div>
+            <button 
+              onClick={() => setError('')}
+              className="text-red-700 hover:text-red-900"
+            >
+              <XIcon />
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Filters Section */}
       {(showFilters || hasActiveFilters) && (
@@ -293,7 +355,7 @@ const AssetList: React.FC<AssetListProps> = ({ navigateTo }) => {
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
             <p className="mt-2 text-gray-600">Loading assets...</p>
           </div>
-        ) : assets.length === 0 ? (
+        ) : !Array.isArray(assets) || assets.length === 0 ? (
           <div className="p-8 text-center">
             <div className="text-gray-400 mb-4">
               <AssetIcon />

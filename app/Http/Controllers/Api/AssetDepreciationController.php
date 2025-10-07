@@ -10,6 +10,7 @@ use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
+use Carbon\Carbon;
 
 class AssetDepreciationController extends Controller
 {
@@ -150,6 +151,74 @@ class AssetDepreciationController extends Controller
     }
 
     /**
+     * ✅ METHOD BARU: Generate depresiasi yang tertunda berdasarkan purchase date
+     */
+    public function generatePendingForAsset($assetId)
+    {
+        try {
+            DB::beginTransaction();
+            
+            Log::info("🔄 Generating PENDING depreciation for asset: {$assetId}");
+            
+            $asset = Asset::with('depreciations')->find($assetId);
+            
+            if (!$asset) {
+                Log::warning("❌ Asset not found: {$assetId}");
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Asset not found'
+                ], Response::HTTP_NOT_FOUND);
+            }
+
+            // Cek status asset
+            if (in_array($asset->status, ['Disposed', 'Lost'])) {
+                Log::warning("⏸️ Asset {$assetId} is not active, status: {$asset->status}");
+                return response()->json([
+                    'success' => false,
+                    'message' => "Cannot generate depreciation for asset with status: {$asset->status}"
+                ], Response::HTTP_BAD_REQUEST);
+            }
+
+            $pendingMonthsBefore = $asset->getPendingDepreciationMonths();
+            $processed = $this->depreciationService->generatePendingDepreciation($asset);
+            
+            // Refresh data untuk mendapatkan summary terbaru
+            $asset->refresh();
+            $asset->load('depreciations');
+            $updatedSummary = $this->depreciationService->getDepreciationSummary($asset);
+            
+            DB::commit();
+
+            Log::info("✅ Successfully generated {$processed} PENDING depreciations for asset: {$assetId}");
+            
+            return response()->json([
+                'success' => true,
+                'message' => "Generated {$processed} pending depreciation(s) based on purchase date",
+                'data' => $updatedSummary,
+                'processed_count' => $processed,
+                'pending_info' => [
+                    'pending_months_before' => $pendingMonthsBefore,
+                    'pending_months_after' => $asset->getPendingDepreciationMonths(),
+                    'elapsed_months' => $asset->getElapsedMonths(),
+                    'expected_months' => $asset->getExpectedDepreciationMonths(),
+                    'is_up_to_date' => $asset->getPendingDepreciationMonths() === 0
+                ]
+            ]);
+            
+        } catch (\Exception $e) {
+            DB::rollBack();
+            
+            Log::error("❌ Error generating pending depreciation for asset {$assetId}: " . $e->getMessage());
+            Log::error("📋 Stack trace: " . $e->getTraceAsString());
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to generate pending depreciation: ' . $e->getMessage()
+            ], Response::HTTP_INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    /**
      * Generate multiple depreciations sekaligus
      */
     public function generateMultipleForAsset($assetId, Request $request)
@@ -245,64 +314,64 @@ class AssetDepreciationController extends Controller
      * Generate depresiasi sampai nilai asset 0
      */
     public function generateUntilZero($assetId)
-{
-    try {
-        DB::beginTransaction();
-        
-        Log::info("🔄 Generating depreciation until zero for asset: {$assetId}");
-        
-        $asset = Asset::with('depreciations')->find($assetId);
-        
-        if (!$asset) {
-            Log::warning("❌ Asset not found: {$assetId}");
+    {
+        try {
+            DB::beginTransaction();
+            
+            Log::info("🔄 Generating depreciation until zero for asset: {$assetId}");
+            
+            $asset = Asset::with('depreciations')->find($assetId);
+            
+            if (!$asset) {
+                Log::warning("❌ Asset not found: {$assetId}");
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Asset not found'
+                ], Response::HTTP_NOT_FOUND);
+            }
+
+            // Cek status asset
+            if (in_array($asset->status, ['Disposed', 'Lost'])) {
+                Log::warning("⏸️ Asset {$assetId} is not active, status: {$asset->status}");
+                return response()->json([
+                    'success' => false,
+                    'message' => "Cannot generate depreciation for asset with status: {$asset->status}"
+                ], Response::HTTP_BAD_REQUEST);
+            }
+
+            $processed = $this->depreciationService->generateDepreciationUntilZero($asset);
+            
+            // Refresh asset data untuk mendapatkan summary terbaru
+            $asset->refresh();
+            $asset->load('depreciations');
+            $updatedSummary = $this->depreciationService->getDepreciationSummary($asset);
+            
+            DB::commit();
+
+            Log::info("✅ Successfully generated {$processed} depreciations until zero for asset: {$assetId}");
+            
+            return response()->json([
+                'success' => true,
+                'message' => "Generated {$processed} depreciation(s) until zero value",
+                'data' => $updatedSummary,
+                'processed_count' => $processed,
+                'reached_zero' => $updatedSummary['current_value'] <= 0,
+                'is_fully_depreciated' => $this->depreciationService->isFullyDepreciated($asset),
+                'total_depreciated_amount' => $this->depreciationService->getTotalDepreciatedAmount($asset)
+            ]);
+            
+        } catch (\Exception $e) {
+            DB::rollBack();
+            
+            Log::error("❌ Error generating depreciation until zero for asset {$assetId}: " . $e->getMessage());
+            Log::error("📋 Stack trace: " . $e->getTraceAsString());
+            
             return response()->json([
                 'success' => false,
-                'message' => 'Asset not found'
-            ], Response::HTTP_NOT_FOUND);
+                'message' => 'Failed to generate depreciation until zero: ' . $e->getMessage()
+            ], Response::HTTP_INTERNAL_SERVER_ERROR);
         }
-
-        // Cek status asset
-        if (in_array($asset->status, ['Disposed', 'Lost'])) {
-            Log::warning("⏸️ Asset {$assetId} is not active, status: {$asset->status}");
-            return response()->json([
-                'success' => false,
-                'message' => "Cannot generate depreciation for asset with status: {$asset->status}"
-            ], Response::HTTP_BAD_REQUEST);
-        }
-
-        $processed = $this->depreciationService->generateDepreciationUntilZero($asset);
-        
-        // ✅ FIX: Refresh asset data untuk mendapatkan summary terbaru
-        $asset->refresh();
-        $asset->load('depreciations');
-        $updatedSummary = $this->depreciationService->getDepreciationSummary($asset);
-        
-        DB::commit();
-
-        Log::info("✅ Successfully generated {$processed} depreciations until zero for asset: {$assetId}");
-        
-        return response()->json([
-            'success' => true,
-            'message' => "Generated {$processed} depreciation(s) until zero value",
-            'data' => $updatedSummary,
-            'processed_count' => $processed,
-            'reached_zero' => $updatedSummary['current_value'] <= 0,
-            'is_fully_depreciated' => $this->depreciationService->isFullyDepreciated($asset),
-            'total_depreciated_amount' => $this->depreciationService->getTotalDepreciatedAmount($asset)
-        ]);
-        
-    } catch (\Exception $e) {
-        DB::rollBack();
-        
-        Log::error("❌ Error generating depreciation until zero for asset {$assetId}: " . $e->getMessage());
-        Log::error("📋 Stack trace: " . $e->getTraceAsString());
-        
-        return response()->json([
-            'success' => false,
-            'message' => 'Failed to generate depreciation until zero: ' . $e->getMessage()
-        ], Response::HTTP_INTERNAL_SERVER_ERROR);
     }
-}
 
     /**
      * Generate depresiasi untuk semua asset (manual)
@@ -332,6 +401,35 @@ class AssetDepreciationController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to generate depreciation: ' . $e->getMessage()
+            ], Response::HTTP_INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    /**
+     * ✅ METHOD BARU: Generate batch pending depreciation untuk semua asset
+     */
+    public function generateBatchPending(Request $request)
+    {
+        try {
+            Log::info("🔄 Generating BATCH pending depreciation for all assets");
+            
+            $results = $this->depreciationService->generateBatchPendingDepreciation();
+
+            Log::info("✅ Batch pending depreciation completed. Total processed: {$results['total_processed']} months across {$results['assets_processed']} assets");
+            
+            return response()->json([
+                'success' => true,
+                'message' => "Batch depreciation completed. Processed {$results['total_processed']} months across {$results['assets_processed']} assets",
+                'data' => $results
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error("❌ Error generating batch pending depreciation: " . $e->getMessage());
+            Log::error("📋 Stack trace: " . $e->getTraceAsString());
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to generate batch depreciation: ' . $e->getMessage()
             ], Response::HTTP_INTERNAL_SERVER_ERROR);
         }
     }
@@ -398,6 +496,7 @@ class AssetDepreciationController extends Controller
                 'asset_id' => $asset->id,
                 'asset_tag' => $asset->asset_tag,
                 'asset_name' => $asset->name,
+                'purchase_date' => $asset->purchase_date,
                 'original_value' => (float) $asset->value,
                 'useful_life' => $asset->useful_life,
                 'current_book_value' => $summary['current_value'],
@@ -413,6 +512,11 @@ class AssetDepreciationController extends Controller
                 'remaining_depreciable_amount' => $this->depreciationService->getRemainingDepreciableAmount($asset),
                 'total_depreciated_amount' => $this->depreciationService->getTotalDepreciatedAmount($asset),
                 'depreciation_schedule' => $this->depreciationService->getDepreciationSchedule($asset),
+                // ✅ DATA BARU: Informasi bulan tertunda
+                'elapsed_months_since_purchase' => $asset->getElapsedMonths(),
+                'pending_depreciation_months' => $asset->getPendingDepreciationMonths(),
+                'expected_depreciated_months' => $asset->getExpectedDepreciationMonths(),
+                'is_up_to_date' => $asset->getPendingDepreciationMonths() === 0,
                 'status_details' => $status
             ];
 
@@ -467,7 +571,8 @@ class AssetDepreciationController extends Controller
                         'asset_tag' => $asset->asset_tag,
                         'reset_at' => now()->toDateTimeString(),
                         'original_value' => (float) $asset->value,
-                        'current_book_value' => (float) $asset->value
+                        'current_book_value' => (float) $asset->value,
+                        'pending_depreciation_months' => $asset->getPendingDepreciationMonths()
                     ]
                 ]);
             } else {
@@ -536,7 +641,15 @@ class AssetDepreciationController extends Controller
                 ], Response::HTTP_BAD_REQUEST);
             }
 
-            // Gunakan method baru dari service
+            // Validasi target value
+            $currentValue = $this->depreciationService->calculateCurrentBookValue($asset);
+            if ($targetValue >= $currentValue) {
+                return response()->json([
+                    'success' => false,
+                    'message' => "Target value must be less than current book value ({$currentValue})"
+                ], Response::HTTP_BAD_REQUEST);
+            }
+
             $processed = $this->depreciationService->generateDepreciationUntilValue($asset, $targetValue);
             $finalSummary = $this->depreciationService->getDepreciationSummary($asset);
             
@@ -606,11 +719,13 @@ class AssetDepreciationController extends Controller
                     'asset_id' => $asset->id,
                     'asset_tag' => $asset->asset_tag,
                     'asset_name' => $asset->name,
+                    'purchase_date' => $asset->purchase_date,
                     'original_value' => (float) $asset->value,
                     'current_book_value' => $this->depreciationService->calculateCurrentBookValue($asset),
                     'monthly_depreciation' => $asset->calculateMonthlyDepreciation(),
                     'depreciation_schedule' => $schedule,
-                    'total_future_depreciation' => array_sum(array_column($schedule, 'depreciation_amount'))
+                    'total_future_depreciation' => array_sum(array_column($schedule, 'depreciation_amount')),
+                    'remaining_useful_life' => $asset->useful_life - $asset->getLastDepreciationMonth()
                 ]
             ]);
 
@@ -653,11 +768,13 @@ class AssetDepreciationController extends Controller
                     'asset_id' => $asset->id,
                     'asset_tag' => $asset->asset_tag,
                     'asset_name' => $asset->name,
+                    'purchase_date' => $asset->purchase_date,
                     'original_value' => (float) $asset->value,
                     'current_book_value' => $currentValue,
                     'total_depreciated_amount' => $totalDepreciated,
                     'depreciation_percentage' => $asset->value > 0 ? ($totalDepreciated / $asset->value) * 100 : 0,
-                    'is_fully_depreciated' => $this->depreciationService->isFullyDepreciated($asset)
+                    'is_fully_depreciated' => $this->depreciationService->isFullyDepreciated($asset),
+                    'remaining_depreciable_amount' => $this->depreciationService->getRemainingDepreciableAmount($asset)
                 ]
             ]);
 
@@ -667,6 +784,158 @@ class AssetDepreciationController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to get total depreciated amount: ' . $e->getMessage()
+            ], Response::HTTP_INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    /**
+     * ✅ METHOD BARU: Get system-wide depreciation summary
+     */
+    public function getSystemSummary()
+    {
+        try {
+            Log::info("🔄 Getting system depreciation summary");
+            
+            $summary = $this->depreciationService->getSystemDepreciationSummary();
+
+            Log::info("✅ Successfully fetched system depreciation summary");
+            
+            return response()->json([
+                'success' => true,
+                'data' => $summary
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error("❌ Error getting system depreciation summary: " . $e->getMessage());
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to get system depreciation summary: ' . $e->getMessage()
+            ], Response::HTTP_INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    /**
+     * ✅ METHOD BARU: Validate asset for depreciation
+     */
+    public function validateAsset($assetId)
+    {
+        try {
+            Log::info("🔄 Validating asset for depreciation: {$assetId}");
+            
+            $asset = Asset::find($assetId);
+            
+            if (!$asset) {
+                Log::warning("❌ Asset not found: {$assetId}");
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Asset not found'
+                ], Response::HTTP_NOT_FOUND);
+            }
+
+            $validationResults = [];
+            
+            // Validasi status asset
+            if (in_array($asset->status, ['Disposed', 'Lost'])) {
+                $validationResults[] = [
+                    'check' => 'asset_status',
+                    'valid' => false,
+                    'message' => "Asset status is '{$asset->status}' - cannot depreciate"
+                ];
+            } else {
+                $validationResults[] = [
+                    'check' => 'asset_status',
+                    'valid' => true,
+                    'message' => "Asset status is '{$asset->status}' - can depreciate"
+                ];
+            }
+
+            // Validasi purchase date
+            $purchaseDate = Carbon::parse($asset->purchase_date);
+            $today = Carbon::today();
+            
+            if ($purchaseDate->greaterThan($today)) {
+                $validationResults[] = [
+                    'check' => 'purchase_date',
+                    'valid' => false,
+                    'message' => 'Purchase date is in the future - cannot depreciate'
+                ];
+            } else {
+                $validationResults[] = [
+                    'check' => 'purchase_date',
+                    'valid' => true,
+                    'message' => 'Purchase date is valid'
+                ];
+            }
+
+            // Validasi useful life
+            if ($asset->useful_life <= 0) {
+                $validationResults[] = [
+                    'check' => 'useful_life',
+                    'valid' => false,
+                    'message' => 'Useful life must be greater than 0'
+                ];
+            } else {
+                $validationResults[] = [
+                    'check' => 'useful_life',
+                    'valid' => true,
+                    'message' => 'Useful life is valid'
+                ];
+            }
+
+            // Validasi value
+            if ($asset->value <= 0) {
+                $validationResults[] = [
+                    'check' => 'asset_value',
+                    'valid' => false,
+                    'message' => 'Asset value must be greater than 0'
+                ];
+            } else {
+                $validationResults[] = [
+                    'check' => 'asset_value',
+                    'valid' => true,
+                    'message' => 'Asset value is valid'
+                ];
+            }
+
+            // Validasi depresiasi status
+            $canDepreciate = $this->depreciationService->canGenerateManualDepreciation($asset);
+            $pendingMonths = $asset->getPendingDepreciationMonths();
+            
+            $validationResults[] = [
+                'check' => 'depreciation_status',
+                'valid' => $canDepreciate,
+                'message' => $canDepreciate ? 
+                    "Can generate depreciation ({$pendingMonths} months pending)" : 
+                    "Cannot generate depreciation - fully depreciated or no pending months"
+            ];
+
+            $isValid = collect($validationResults)->every(fn($result) => $result['valid']);
+
+            Log::info("✅ Asset validation completed for: {$assetId} - " . ($isValid ? 'VALID' : 'INVALID'));
+            
+            return response()->json([
+                'success' => true,
+                'valid' => $isValid,
+                'validation_results' => $validationResults,
+                'asset_info' => [
+                    'asset_tag' => $asset->asset_tag,
+                    'asset_name' => $asset->name,
+                    'purchase_date' => $asset->purchase_date,
+                    'original_value' => (float) $asset->value,
+                    'useful_life' => $asset->useful_life,
+                    'current_status' => $asset->status,
+                    'pending_depreciation_months' => $pendingMonths,
+                    'can_depreciate' => $canDepreciate
+                ]
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error("❌ Error validating asset {$assetId}: " . $e->getMessage());
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to validate asset: ' . $e->getMessage()
             ], Response::HTTP_INTERNAL_SERVER_ERROR);
         }
     }

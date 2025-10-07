@@ -12,67 +12,48 @@ use Illuminate\Support\Facades\Log;
 class DepreciationService
 {
     /**
-     * Generate depresiasi untuk bulan berjalan (auto)
+     * Generate depresiasi untuk bulan berjalan (auto) - VERSI DIPERBAIKI
      */
     public function generateCurrentMonthDepreciation(): int
     {
         $assets = Asset::whereNotIn('status', ['Disposed', 'Lost'])->get();
         $processedCount = 0;
         
-        Log::info("Starting depreciation generation for {$assets->count()} assets");
+        Log::info("Starting AUTO depreciation generation for {$assets->count()} assets");
         
         foreach ($assets as $asset) {
             try {
-                if ($this->shouldGenerateAutoDepreciation($asset)) {
-                    $this->generateNextDepreciation($asset);
-                    $processedCount++;
-                    Log::info("Generated depreciation for asset {$asset->asset_tag}");
+                $pendingMonths = $asset->getPendingDepreciationMonths();
+                
+                if ($pendingMonths > 0) {
+                    Log::info("Asset {$asset->asset_tag} has {$pendingMonths} pending depreciation months");
+                    
+                    // Generate semua bulan yang tertunda
+                    for ($i = 0; $i < $pendingMonths; $i++) {
+                        if ($this->generateNextDepreciation($asset)) {
+                            $processedCount++;
+                            Log::info("Generated depreciation month " . ($i+1) . " for asset {$asset->asset_tag}");
+                        } else {
+                            Log::warning("Failed to generate depreciation month " . ($i+1) . " for asset {$asset->asset_tag}");
+                            break;
+                        }
+                    }
                 }
             } catch (\Exception $e) {
                 Log::error("Failed to generate depreciation for asset {$asset->asset_tag}: " . $e->getMessage());
             }
         }
         
-        Log::info("Depreciation generation completed. Processed: {$processedCount} assets");
+        Log::info("Auto depreciation generation completed. Processed: {$processedCount} months");
         return $processedCount;
     }
 
     /**
-     * Cek apakah asset perlu generate depresiasi OTOMATIS (berdasarkan tanggal)
+     * Cek apakah asset perlu generate depresiasi OTOMATIS (berdasarkan purchase date)
      */
     private function shouldGenerateAutoDepreciation(Asset $asset): bool
     {
-        // Cek status asset
-        if (in_array($asset->status, ['Disposed', 'Lost'])) {
-            return false;
-        }
-
-        // Hitung sequence berikutnya dengan benar
-        $nextSequence = $this->getNextSequenceNumber($asset);
-        
-        // Cek apakah masih dalam masa useful life
-        if ($nextSequence > $asset->useful_life) {
-            Log::info("Asset {$asset->asset_tag} has reached maximum useful life ({$asset->useful_life} months)");
-            return false;
-        }
-
-        // Hitung nilai buku dengan benar
-        $currentBookValue = $this->calculateCurrentBookValue($asset);
-        
-        // Hanya stop jika nilai buku sudah 0
-        if ($currentBookValue <= 0) {
-            Log::info("Asset {$asset->asset_tag} has zero book value: {$currentBookValue}");
-            return false;
-        }
-
-        // Untuk auto depreciation, cek tanggal dengan logika yang benar
-        $today = Carbon::now();
-        $lastDepreciation = $asset->depreciations()->orderBy('month_sequence', 'desc')->first();
-        $nextDepreciationDate = $this->calculateNextDepreciationDate($asset, $lastDepreciation);
-        
-        Log::info("Asset {$asset->asset_tag} - Today: {$today->format('Y-m-d')}, Next Date: {$nextDepreciationDate->format('Y-m-d')}, Sequence: {$nextSequence}, Book Value: {$currentBookValue}");
-        
-        return $today->greaterThanOrEqualTo($nextDepreciationDate);
+        return $asset->canAutoDepreciate();
     }
 
     /**
@@ -239,39 +220,36 @@ class DepreciationService
     }
 
     /**
-     * Generate semua depresiasi yang tertunda (auto)
+     * Generate semua depresiasi yang tertunda (auto) - VERSI DIPERBAIKI
      */
     public function generateAllPendingDepreciation(): int
     {
         $assets = Asset::whereNotIn('status', ['Disposed', 'Lost'])->get();
         $totalProcessed = 0;
         
-        Log::info("Starting generation of all pending depreciation for {$assets->count()} assets");
+        Log::info("Starting generation of ALL pending depreciation for {$assets->count()} assets");
         
         foreach ($assets as $asset) {
+            $pendingMonths = $asset->getPendingDepreciationMonths();
             $assetProcessed = 0;
             
-            // Generate sampai useful life habis atau nilai 0
-            while ($this->shouldGenerateAutoDepreciation($asset)) {
+            Log::info("Asset {$asset->asset_tag} has {$pendingMonths} pending months");
+            
+            // Generate semua bulan yang tertunda
+            for ($i = 0; $i < $pendingMonths; $i++) {
                 $success = $this->generateNextDepreciation($asset);
                 if ($success) {
                     $assetProcessed++;
                     $totalProcessed++;
-                    Log::info("Generated depreciation {$assetProcessed} for asset {$asset->asset_tag}");
+                    Log::info("Generated pending depreciation {$assetProcessed} for asset {$asset->asset_tag}");
                 } else {
                     Log::info("Stopping depreciation generation for asset {$asset->asset_tag} - generation failed");
-                    break;
-                }
-                
-                // Safety limit
-                if ($assetProcessed >= $asset->useful_life) {
-                    Log::info("Safety limit reached for asset {$asset->asset_tag}");
                     break;
                 }
             }
             
             if ($assetProcessed > 0) {
-                Log::info("Generated {$assetProcessed} depreciation records for asset {$asset->asset_tag}");
+                Log::info("Generated {$assetProcessed} pending depreciation records for asset {$asset->asset_tag}");
             }
         }
         
@@ -310,6 +288,10 @@ class DepreciationService
             ->orderBy('month_sequence', 'asc')
             ->get();
 
+        // ✅ TAMBAHAN: Hitung informasi bulan tertunda
+        $elapsedMonths = $asset->getElapsedMonths();
+        $pendingMonths = $asset->getPendingDepreciationMonths();
+
         return [
             'monthly_depreciation' => (float) $monthlyDepreciation,
             'accumulated_depreciation' => (float) $accumulatedDepreciation,
@@ -319,7 +301,12 @@ class DepreciationService
             'next_depreciation_date' => $nextDepreciationDate->format('Y-m-d'),
             'depreciation_history' => $depreciationHistory,
             'is_depreciable' => $isDepreciable,
-            'completion_percentage' => min(100, ($depreciatedMonths / $asset->useful_life) * 100)
+            'completion_percentage' => min(100, ($depreciatedMonths / $asset->useful_life) * 100),
+            // ✅ DATA BARU: Informasi bulan tertunda
+            'elapsed_months_since_purchase' => $elapsedMonths,
+            'pending_depreciation_months' => $pendingMonths,
+            'expected_depreciated_months' => $asset->getExpectedDepreciationMonths(),
+            'is_up_to_date' => $pendingMonths === 0
         ];
     }
 
@@ -369,26 +356,24 @@ class DepreciationService
     }
 
     /**
-     * Hitung depresiasi preview (hitung tanpa save)
+     * Hitung depresiasi preview (hitung tanpa save) - VERSI DIPERBAIKI
      */
     public function calculateDepreciationPreview(Asset $asset): array
     {
         $monthlyDepreciation = $asset->calculateMonthlyDepreciation();
-        $purchaseDate = Carbon::parse($asset->purchase_date);
-        $currentDate = Carbon::now();
+        $expectedMonths = $asset->getExpectedDepreciationMonths();
         
-        $monthsPassed = $purchaseDate->diffInMonths($currentDate);
-        $monthsToCalculate = min($monthsPassed, $asset->useful_life);
-        
-        $accumulatedDepreciation = $monthlyDepreciation * $monthsToCalculate;
+        $accumulatedDepreciation = $monthlyDepreciation * $expectedMonths;
         $currentValue = max(0, $asset->value - $accumulatedDepreciation);
         
         return [
             'monthly_depreciation' => (float) $monthlyDepreciation,
             'accumulated_depreciation' => (float) $accumulatedDepreciation,
             'current_value' => (float) $currentValue,
-            'months_depreciated' => $monthsToCalculate,
-            'remaining_months' => max(0, $asset->useful_life - $monthsToCalculate)
+            'months_depreciated' => $expectedMonths,
+            'remaining_months' => max(0, $asset->useful_life - $expectedMonths),
+            'elapsed_months_since_purchase' => $asset->getElapsedMonths(),
+            'pending_depreciation_months' => $asset->getPendingDepreciationMonths()
         ];
     }
 
@@ -518,6 +503,36 @@ class DepreciationService
     }
 
     /**
+     * ✅ METHOD BARU: Generate depresiasi berdasarkan bulan yang tertunda
+     */
+    public function generatePendingDepreciation(Asset $asset): int
+    {
+        if (in_array($asset->status, ['Disposed', 'Lost'])) {
+            Log::info("Cannot generate depreciation for inactive asset {$asset->asset_tag}");
+            return 0;
+        }
+
+        $pendingMonths = $asset->getPendingDepreciationMonths();
+        $processed = 0;
+        
+        Log::info("🔄 Generating {$pendingMonths} pending depreciations for asset {$asset->asset_tag}");
+        
+        for ($i = 0; $i < $pendingMonths; $i++) {
+            $success = $this->generateNextDepreciation($asset);
+            if ($success) {
+                $processed++;
+                Log::info("✅ Successfully generated pending depreciation {$processed} for asset {$asset->asset_tag}");
+            } else {
+                Log::info("❌ Stopping pending depreciation generation for asset {$asset->asset_tag}");
+                break;
+            }
+        }
+        
+        Log::info("🏁 Completed pending depreciation generation for asset {$asset->asset_tag}: {$processed} processed");
+        return $processed;
+    }
+
+    /**
      * Cek status depresiasi detail
      */
     public function getDepreciationStatus(Asset $asset): array
@@ -526,6 +541,11 @@ class DepreciationService
         
         // Hitung next sequence dengan benar
         $nextSequence = $this->getNextSequenceNumber($asset);
+
+        // ✅ TAMBAHAN: Informasi bulan tertunda
+        $elapsedMonths = $asset->getElapsedMonths();
+        $pendingMonths = $asset->getPendingDepreciationMonths();
+        $expectedMonths = $asset->getExpectedDepreciationMonths();
 
         return [
             'can_generate_manual' => $this->canGenerateManualDepreciation($asset),
@@ -537,7 +557,14 @@ class DepreciationService
             'current_status' => $asset->status,
             'current_value' => $summary['current_value'],
             'remaining_months' => $summary['remaining_months'],
-            'depreciated_months' => $summary['depreciated_months']
+            'depreciated_months' => $summary['depreciated_months'],
+            // ✅ DATA BARU: Informasi bulan tertunda
+            'elapsed_months_since_purchase' => $elapsedMonths,
+            'pending_depreciation_months' => $pendingMonths,
+            'expected_depreciated_months' => $expectedMonths,
+            'is_up_to_date' => $pendingMonths === 0,
+            'purchase_date' => $asset->purchase_date,
+            'current_date' => Carbon::now()->format('Y-m-d')
         ];
     }
 
@@ -599,5 +626,107 @@ class DepreciationService
         }
 
         return $schedule;
+    }
+
+    /**
+     * ✅ METHOD BARU: Generate depresiasi untuk semua asset yang tertunda (batch)
+     */
+    public function generateBatchPendingDepreciation(): array
+    {
+        $assets = Asset::whereNotIn('status', ['Disposed', 'Lost'])->get();
+        $results = [
+            'total_assets' => $assets->count(),
+            'total_processed' => 0,
+            'assets_processed' => 0,
+            'details' => []
+        ];
+        
+        Log::info("Starting BATCH pending depreciation generation for {$assets->count()} assets");
+        
+        foreach ($assets as $asset) {
+            try {
+                $pendingMonths = $asset->getPendingDepreciationMonths();
+                
+                if ($pendingMonths > 0) {
+                    $processed = $this->generatePendingDepreciation($asset);
+                    
+                    $results['details'][] = [
+                        'asset_id' => $asset->id,
+                        'asset_tag' => $asset->asset_tag,
+                        'asset_name' => $asset->name,
+                        'pending_months' => $pendingMonths,
+                        'processed_months' => $processed,
+                        'success' => $processed > 0
+                    ];
+                    
+                    $results['total_processed'] += $processed;
+                    $results['assets_processed']++;
+                    
+                    Log::info("Batch processed: {$processed}/{$pendingMonths} months for asset {$asset->asset_tag}");
+                }
+            } catch (\Exception $e) {
+                Log::error("Failed in batch depreciation for asset {$asset->asset_tag}: " . $e->getMessage());
+                
+                $results['details'][] = [
+                    'asset_id' => $asset->id,
+                    'asset_tag' => $asset->asset_tag,
+                    'asset_name' => $asset->name,
+                    'pending_months' => $pendingMonths ?? 0,
+                    'processed_months' => 0,
+                    'success' => false,
+                    'error' => $e->getMessage()
+                ];
+            }
+        }
+        
+        Log::info("Batch depreciation generation completed. Total processed: {$results['total_processed']} months across {$results['assets_processed']} assets");
+        
+        return $results;
+    }
+
+    /**
+     * ✅ METHOD BARU: Validasi purchase date untuk asset baru
+     */
+    public function validatePurchaseDate($purchaseDate): bool
+    {
+        $purchaseDate = Carbon::parse($purchaseDate);
+        $today = Carbon::now();
+        
+        return $purchaseDate->lessThanOrEqualTo($today);
+    }
+
+    /**
+     * ✅ METHOD BARU: Dapatkan ringkasan depresiasi sistem
+     */
+    public function getSystemDepreciationSummary(): array
+    {
+        $totalAssets = Asset::count();
+        $activeAssets = Asset::whereNotIn('status', ['Disposed', 'Lost'])->count();
+        
+        $assetsWithPending = Asset::whereNotIn('status', ['Disposed', 'Lost'])
+            ->get()
+            ->filter(function ($asset) {
+                return $asset->getPendingDepreciationMonths() > 0;
+            })
+            ->count();
+        
+        $totalPendingMonths = Asset::whereNotIn('status', ['Disposed', 'Lost'])
+            ->get()
+            ->sum(function ($asset) {
+                return $asset->getPendingDepreciationMonths();
+            });
+        
+        $totalDepreciationRecords = AssetDepreciation::count();
+        $totalDepreciatedAmount = AssetDepreciation::sum('depreciation_amount');
+        
+        return [
+            'total_assets' => $totalAssets,
+            'active_assets' => $activeAssets,
+            'assets_with_pending_depreciation' => $assetsWithPending,
+            'total_pending_months' => $totalPendingMonths,
+            'total_depreciation_records' => $totalDepreciationRecords,
+            'total_depreciated_amount' => (float) $totalDepreciatedAmount,
+            'last_updated' => Carbon::now()->format('Y-m-d H:i:s')
+        ];
     }
 }

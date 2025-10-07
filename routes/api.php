@@ -41,6 +41,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::post('/assets/{id}/reset-depreciation', [AssetDepreciationController::class, 'resetForAsset']); // ✅ BARU
     Route::post('/depreciation/generate-all', [AssetDepreciationController::class, 'generateAll']);
     Route::post('/assets/{id}/generate-until-zero', [AssetDepreciationController::class, 'generateUntilZero']);
+    Route::post('/assets/{id}/generate-pending-depreciation', [AssetDepreciationController::class, 'generatePendingForAsset']);
     
     // Asset Movements
     Route::apiResource('asset-movements', AssetMovementController::class);

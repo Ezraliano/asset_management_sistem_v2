@@ -6,6 +6,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Carbon\Carbon;
 
 class Asset extends Model
 {
@@ -16,7 +17,7 @@ class Asset extends Model
         'name',
         'category',
         'location',
-        'value', // ✅ Pastikan ini 'value' bukan 'asset_value'
+        'value',
         'purchase_date',
         'useful_life',
         'status',
@@ -45,7 +46,6 @@ class Asset extends Model
         return $this->hasMany(IncidentReport::class);
     }
 
-    // Tambahkan relasi ke depresiasi
     public function depreciations(): HasMany
     {
         return $this->hasMany(AssetDepreciation::class)->orderBy('month_sequence');
@@ -96,21 +96,50 @@ class Asset extends Model
         return !in_array($this->status, ['Disposed', 'Lost']);
     }
 
-    // ✅ METHOD BARU: Cek apakah masih bisa didepresiasi
-    public function canDepreciate(): bool
+    // ✅ METHOD BARU: Hitung bulan yang telah berlalu sejak purchase date
+    public function getElapsedMonths(): int
+    {
+        $purchaseDate = Carbon::parse($this->purchase_date);
+        $currentDate = Carbon::now();
+        
+        return $purchaseDate->diffInMonths($currentDate);
+    }
+
+    // ✅ METHOD BARU: Hitung bulan depresiasi yang harusnya sudah dilakukan
+    public function getExpectedDepreciationMonths(): int
+    {
+        $elapsedMonths = $this->getElapsedMonths();
+        return min($elapsedMonths, $this->useful_life);
+    }
+
+    // ✅ METHOD BARU: Cek apakah masih bisa didepresiasi (versi otomatis)
+    public function canAutoDepreciate(): bool
     {
         if (!$this->isActive()) {
             return false;
         }
 
-        $lastSequence = $this->getLastDepreciationMonth();
-        if ($lastSequence >= $this->useful_life) {
-            return false;
+        $expectedMonths = $this->getExpectedDepreciationMonths();
+        $actualMonths = $this->getLastDepreciationMonth();
+
+        // Jika bulan yang diharapkan lebih besar dari yang sudah dilakukan
+        if ($expectedMonths > $actualMonths) {
+            $currentValue = $this->getCurrentBookValue();
+            $monthlyDepreciation = $this->calculateMonthlyDepreciation();
+            
+            // Hanya depresiasi jika nilai buku masih cukup
+            return $currentValue >= $monthlyDepreciation;
         }
 
-        $currentValue = $this->getCurrentBookValue();
-        $monthlyDepreciation = $this->calculateMonthlyDepreciation();
+        return false;
+    }
 
-        return $currentValue > $monthlyDepreciation;
+    // ✅ METHOD BARU: Dapatkan jumlah bulan depresiasi yang tertunda
+    public function getPendingDepreciationMonths(): int
+    {
+        $expectedMonths = $this->getExpectedDepreciationMonths();
+        $actualMonths = $this->getLastDepreciationMonth();
+        
+        return max(0, $expectedMonths - $actualMonths);
     }
 }
