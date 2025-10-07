@@ -182,18 +182,8 @@ class DepreciationService
     {
         $purchaseDate = Carbon::parse($asset->purchase_date);
         
-        // Hitung tanggal berdasarkan bulan dari purchase date
-        $depreciationDate = $purchaseDate->copy()->addMonths($monthSequence);
-        
-        // Handle akhir bulan - jika tanggal purchase melebihi hari dalam bulan target
-        $purchaseDay = $purchaseDate->day;
-        $lastDayOfMonth = $depreciationDate->daysInMonth;
-        
-        if ($purchaseDay > $lastDayOfMonth) {
-            $depreciationDate->lastOfMonth();
-        } else {
-            $depreciationDate->day($purchaseDay);
-        }
+        // Hitung tanggal berdasarkan bulan dari purchase date, tanpa overflow
+        $depreciationDate = $purchaseDate->copy()->addMonthsNoOverflow($monthSequence);
         
         Log::info("Calculated depreciation date for asset {$asset->asset_tag}, sequence {$monthSequence}: {$depreciationDate->format('Y-m-d')}");
         
@@ -207,12 +197,12 @@ class DepreciationService
     {
         if ($lastDepreciation) {
             // Jika sudah ada depresiasi sebelumnya, tambah 1 bulan dari tanggal terakhir
-            $nextDate = Carbon::parse($lastDepreciation->depreciation_date)->addMonth();
+            $nextDate = Carbon::parse($lastDepreciation->depreciation_date)->addMonthNoOverflow();
             Log::info("Next depreciation date from last record: {$nextDate->format('Y-m-d')}");
         } else {
             // Jika belum ada depresiasi, gunakan purchase date + 1 bulan
             $purchaseDate = Carbon::parse($asset->purchase_date);
-            $nextDate = $purchaseDate->copy()->addMonth();
+            $nextDate = $purchaseDate->copy()->addMonthNoOverflow();
             Log::info("Next depreciation date from purchase date: {$nextDate->format('Y-m-d')}");
         }
         
