@@ -509,13 +509,13 @@ const AssetDetail: React.FC<AssetDetailProps> = ({ assetId, navigateTo }) => {
                           <p className="text-sm text-gray-600 font-medium">Timeline</p>
                           <div className="mt-2 space-y-1 text-sm text-gray-600">
                             <div className="flex justify-between">
-                              <span>Elapsed Months:</span>
-                              <span className="font-medium">{elapsedMonths}</span>
+                              <span>Bulan Depresiasi:</span>
+                              <span className="font-medium">{depreciatedMonths}</span>
                             </div>
                             <div className="flex justify-between">
-                              <span>Pending Depreciation:</span>
-                              <span className={`font-medium ${pendingMonths > 0 ? 'text-orange-600' : 'text-green-600'}`}>
-                                {pendingMonths} months
+                              <span>Sisa Bulan Depresiasi:</span>
+                              <span className={`font-medium ${remainingMonths > 0 ? 'text-orange-600' : 'text-green-600'}`}>
+                                {remainingMonths} months
                               </span>
                             </div>
                             <div className="flex justify-between">

@@ -84,19 +84,16 @@ const Dashboard: React.FC<DashboardProps> = ({ navigateTo }) => {
       );
     }
 
-    let currentAngle = 0;
+    let currentPercentage = 0;
     const segments = data.map((item, index) => {
-      const percentage = (item.count / total) * 100;
-      const angle = (item.count / total) * 360;
+      const percentage = total > 0 ? (item.count / total) * 100 : 0;
       const segment = {
         ...item,
         percentage,
-        angle,
-        startAngle: currentAngle,
-        endAngle: currentAngle + angle,
+        startPercentage: currentPercentage,
         color: CHART_COLORS[index % CHART_COLORS.length]
       };
-      currentAngle += angle;
+      currentPercentage += percentage;
       return segment;
     });
 
@@ -105,7 +102,7 @@ const Dashboard: React.FC<DashboardProps> = ({ navigateTo }) => {
         {/* SVG Pie Chart */}
         <div className="relative">
           <svg width="200" height="200" viewBox="0 0 42 42" className="transform -rotate-90">
-            {segments.map((segment, index) => (
+            {segments.map((segment) => (
               <circle
                 key={segment.name}
                 cx="21"
@@ -114,8 +111,8 @@ const Dashboard: React.FC<DashboardProps> = ({ navigateTo }) => {
                 fill="transparent"
                 stroke={segment.color}
                 strokeWidth="8"
-                strokeDasharray={`${segment.angle} ${360 - segment.angle}`}
-                strokeDashoffset={-segment.startAngle}
+                strokeDasharray={`${segment.percentage} ${100 - segment.percentage}`}
+                strokeDashoffset={-segment.startPercentage}
                 className="transition-all duration-500"
               />
             ))}
@@ -124,7 +121,7 @@ const Dashboard: React.FC<DashboardProps> = ({ navigateTo }) => {
         
         {/* Legend */}
         <div className="space-y-2 min-w-48">
-          {segments.map((segment, index) => (
+          {segments.map((segment) => (
             <div key={segment.name} className="flex items-center text-sm">
               <div 
                 className="w-3 h-3 rounded-full mr-2"
