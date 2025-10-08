@@ -520,9 +520,15 @@ const AssetDetail: React.FC<AssetDetailProps> = ({ assetId, navigateTo }) => {
                             </div>
                             <div className="flex justify-between">
                               <span>Status:</span>
-                              <span className={`font-medium ${isUpToDate ? 'text-green-600' : 'text-orange-600'}`}>
-                                {isUpToDate ? 'Up to Date' : 'Pending Updates'}
-                              </span>
+                              {remainingMonths <= 0 ? (
+                                <span className="font-medium text-green-600">
+                                  Asset sudah selesai di depresiasi
+                                </span>
+                              ) : (
+                                <span className={`font-medium ${isUpToDate ? 'text-blue-600' : 'text-orange-600'}`}>
+                                  {isUpToDate ? 'Tepat Waktu' : 'Asset Masih Proses Depresiasi'}
+                                </span>
+                              )}
                             </div>
                           </div>
                         </div>

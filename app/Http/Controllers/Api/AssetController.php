@@ -108,7 +108,6 @@ class AssetController extends Controller
         
         try {
             $validated = $request->validate([
-                'asset_tag' => 'required|string|unique:assets,asset_tag',
                 'name' => 'required|string|max:255',
                 'category' => 'required|string|max:255',
                 'location' => 'required|string|max:255',

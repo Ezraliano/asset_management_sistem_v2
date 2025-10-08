@@ -30,6 +30,32 @@ class Asset extends Model
             'value' => 'decimal:2',
         ];
     }
+
+    protected static function booted(): void
+    {
+        static::creating(function (Asset $asset) {
+            if (empty($asset->asset_tag)) {
+                $asset->asset_tag = self::generateAssetTag();
+            }
+        });
+    }
+
+    private static function generateAssetTag(): string
+    {
+        // Dapatkan asset terakhir berdasarkan ID untuk mendapatkan nomor urut terakhir
+        $lastAsset = self::orderBy('id', 'desc')->first();
+        
+        $number = 1;
+        if ($lastAsset) {
+            // Coba ekstrak nomor dari asset_tag terakhir
+            if (preg_match('/(\d+)$/', $lastAsset->asset_tag, $matches)) {
+                $number = (int)$matches[1] + 1;
+            }
+        }
+
+        // Format nomor dengan padding nol di depan (misal: AST-00001)
+        return 'AST-' . str_pad($number, 5, '0', STR_PAD_LEFT);
+    }
     
     public function movements(): HasMany
     {
