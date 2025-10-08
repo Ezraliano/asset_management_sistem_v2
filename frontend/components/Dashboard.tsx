@@ -189,13 +189,13 @@ const Dashboard: React.FC<DashboardProps> = ({ navigateTo }) => {
         </div>
         
         <div className="bg-white p-6 rounded-lg shadow-md border border-gray-200">
-          <h3 className="text-lg font-semibold text-medium-text">{t('Jadwal Maintenance')}</h3>
+          <h3 className="text-lg font-semibold text-medium-text">{t('Asset Yang Dipinjam')}</h3>
           <p className="text-3xl font-bold text-yellow-500">{stats.scheduled_maintenances}</p>
-          <p className="text-sm text-gray-500 mt-1">Maintenance terjadwal</p>
+          <p className="text-sm text-gray-500 mt-1">Asset Yang Dipinjam</p>
         </div>
         
         <div className="bg-white p-6 rounded-lg shadow-md border border-gray-200">
-          <h3 className="text-lg font-semibold text-medium-text">{t('Insiden Asset')}</h3>
+          <h3 className="text-lg font-semibold text-medium-text">{t('Insiden Kerusakan Asset')}</h3>
           <p className="text-3xl font-bold text-red-500">{stats.active_incidents}</p>
           <p className="text-sm text-gray-500 mt-1">Insiden aktif</p>
         </div>

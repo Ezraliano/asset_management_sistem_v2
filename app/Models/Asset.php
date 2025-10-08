@@ -12,6 +12,8 @@ class Asset extends Model
 {
     use HasFactory;
 
+    public $timestamps = false;
+
     protected $fillable = [
         'asset_tag',
         'name',
@@ -21,13 +23,17 @@ class Asset extends Model
         'purchase_date',
         'useful_life',
         'status',
+        'created_at',
+        'updated_at',
     ];
 
     protected function casts(): array
     {
         return [
-            'purchase_date' => 'date',
+            'purchase_date' => 'datetime', 
             'value' => 'decimal:2',
+            'created_at' => 'datetime',
+            'updated_at' => 'datetime',
         ];
     }
 
@@ -42,18 +48,11 @@ class Asset extends Model
 
     private static function generateAssetTag(): string
     {
-        // Dapatkan asset terakhir berdasarkan ID untuk mendapatkan nomor urut terakhir
         $lastAsset = self::orderBy('id', 'desc')->first();
-        
         $number = 1;
-        if ($lastAsset) {
-            // Coba ekstrak nomor dari asset_tag terakhir
-            if (preg_match('/(\d+)$/', $lastAsset->asset_tag, $matches)) {
-                $number = (int)$matches[1] + 1;
-            }
+        if ($lastAsset && preg_match('/(\d+)$/', $lastAsset->asset_tag, $matches)) {
+            $number = (int)$matches[1] + 1;
         }
-
-        // Format nomor dengan padding nol di depan (misal: AST-00001)
         return 'AST-' . str_pad($number, 5, '0', STR_PAD_LEFT);
     }
     
@@ -77,7 +76,6 @@ class Asset extends Model
         return $this->hasMany(AssetDepreciation::class)->orderBy('month_sequence');
     }
 
-    // Method untuk menghitung depresiasi bulanan
     public function calculateMonthlyDepreciation(): float
     {
         if ($this->useful_life <= 0) {
@@ -86,86 +84,65 @@ class Asset extends Model
         return $this->value / $this->useful_life;
     }
 
-    // Method untuk mendapatkan nilai buku terkini
     public function getCurrentBookValue(): float
     {
-        $latestDepreciation = $this->depreciations()
-            ->orderBy('depreciation_date', 'desc')
-            ->first();
-        
+        $latestDepreciation = $this->depreciations()->orderBy('depreciation_date', 'desc')->first();
         return $latestDepreciation ? $latestDepreciation->current_value : $this->value;
     }
 
-    // Method untuk mendapatkan total akumulasi depresiasi
     public function getAccumulatedDepreciation(): float
     {
-        $latestDepreciation = $this->depreciations()
-            ->orderBy('depreciation_date', 'desc')
-            ->first();
-        
+        $latestDepreciation = $this->depreciations()->orderBy('depreciation_date', 'desc')->first();
         return $latestDepreciation ? $latestDepreciation->accumulated_depreciation : 0;
     }
 
-    // Method untuk mendapatkan bulan depresiasi terakhir
     public function getLastDepreciationMonth(): int
     {
-        $latestDepreciation = $this->depreciations()
-            ->orderBy('month_sequence', 'desc')
-            ->first();
-        
+        $latestDepreciation = $this->depreciations()->orderBy('month_sequence', 'desc')->first();
         return $latestDepreciation ? $latestDepreciation->month_sequence : 0;
     }
 
-    // Method untuk cek status aktif
     public function isActive(): bool
     {
         return !in_array($this->status, ['Disposed', 'Lost']);
     }
 
-    // ✅ METHOD BARU: Hitung bulan yang telah berlalu sejak purchase date
     public function getElapsedMonths(): int
     {
         $purchaseDate = Carbon::parse($this->purchase_date);
         $currentDate = Carbon::now();
-        
-        return $purchaseDate->diffInMonths($currentDate);
+
+        if ($purchaseDate->greaterThan($currentDate)) {
+            return 0;
+        }
+
+        $yearDiff = $currentDate->year - $purchaseDate->year;
+        $monthDiff = $currentDate->month - $purchaseDate->month;
+        $elapsedMonths = $yearDiff * 12 + $monthDiff;
+
+        $dayCorrection = 0;
+        if ($currentDate->day < $purchaseDate->day) {
+            $dayCorrection = 1;
+        } elseif ($currentDate->day == $purchaseDate->day) {
+            if ($currentDate->format('H:i:s') < $purchaseDate->format('H:i:s')) {
+                $dayCorrection = 1;
+            }
+        }
+
+        return max(0, $elapsedMonths - $dayCorrection);
     }
 
-    // ✅ METHOD BARU: Hitung bulan depresiasi yang harusnya sudah dilakukan
+    public function getPendingDepreciationMonths(): int
+    {
+        $expectedMonths = min($this->getElapsedMonths(), $this->useful_life);
+        $actualMonths = $this->getLastDepreciationMonth();
+        return max(0, $expectedMonths - $actualMonths);
+    }
+
     public function getExpectedDepreciationMonths(): int
     {
         $elapsedMonths = $this->getElapsedMonths();
         return min($elapsedMonths, $this->useful_life);
     }
 
-    // ✅ METHOD BARU: Cek apakah masih bisa didepresiasi (versi otomatis)
-    public function canAutoDepreciate(): bool
-    {
-        if (!$this->isActive()) {
-            return false;
-        }
-
-        $expectedMonths = $this->getExpectedDepreciationMonths();
-        $actualMonths = $this->getLastDepreciationMonth();
-
-        // Jika bulan yang diharapkan lebih besar dari yang sudah dilakukan
-        if ($expectedMonths > $actualMonths) {
-            $currentValue = $this->getCurrentBookValue();
-            $monthlyDepreciation = $this->calculateMonthlyDepreciation();
-            
-            // Hanya depresiasi jika nilai buku masih cukup
-            return $currentValue >= $monthlyDepreciation;
-        }
-
-        return false;
-    }
-
-    // ✅ METHOD BARU: Dapatkan jumlah bulan depresiasi yang tertunda
-    public function getPendingDepreciationMonths(): int
-    {
-        $expectedMonths = $this->getExpectedDepreciationMonths();
-        $actualMonths = $this->getLastDepreciationMonth();
-        
-        return max(0, $expectedMonths - $actualMonths);
-    }
 }

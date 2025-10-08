@@ -18,7 +18,7 @@ return new class extends Migration
             $table->string('category');
             $table->string('location');
             $table->decimal('value', 15, 2);
-            $table->date('purchase_date');
+            $table->datetime('purchase_date');
             $table->integer('useful_life')->comment('in months');
             $table->enum('status', ['In Use', 'In Repair', 'Disposed', 'Lost']);
             $table->timestamps();

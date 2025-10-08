@@ -12,40 +12,60 @@ use Illuminate\Support\Facades\Log;
 class DepreciationService
 {
     /**
-     * Generate depresiasi untuk bulan berjalan (auto) - VERSI DIPERBAIKI
+     * ✅ METHOD UTAMA: Generate depresiasi otomatis berdasarkan waktu presisi
+     * Ini adalah satu-satunya metode yang harus dipanggil oleh scheduler.
      */
-    public function generateCurrentMonthDepreciation(): int
+    public function generateAutoDepreciation(): array
     {
-        $assets = Asset::whereNotIn('status', ['Disposed', 'Lost'])->get();
-        $processedCount = 0;
+        $now = Carbon::now('Asia/Jakarta');
+        $assets = Asset::whereNotIn('status', ['Disposed', 'Lost'])
+            ->where('purchase_date', '<=', $now->toDateTimeString())
+            ->get();
         
-        Log::info("Starting AUTO depreciation generation for {$assets->count()} assets");
+        $results = [
+            'total_assets' => $assets->count(),
+            'total_processed' => 0,
+            'assets_processed' => 0,
+            'details' => [],
+            'timestamp' => $now->format('Y-m-d H:i:s'),
+            'timezone' => 'Asia/Jakarta'
+        ];
+        
+        Log::info("🔄 Starting PRECISE AUTO depreciation at {$now->format('Y-m-d H:i:s')} for {$assets->count()} assets");
         
         foreach ($assets as $asset) {
             try {
                 $pendingMonths = $asset->getPendingDepreciationMonths();
                 
                 if ($pendingMonths > 0) {
-                    Log::info("Asset {$asset->asset_tag} has {$pendingMonths} pending depreciation months");
+                    $processed = $this->generatePendingDepreciation($asset);
                     
-                    // Generate semua bulan yang tertunda
-                    for ($i = 0; $i < $pendingMonths; $i++) {
-                        if ($this->generateNextDepreciation($asset)) {
-                            $processedCount++;
-                            Log::info("Generated depreciation month " . ($i+1) . " for asset {$asset->asset_tag}");
-                        } else {
-                            Log::warning("Failed to generate depreciation month " . ($i+1) . " for asset {$asset->asset_tag}");
-                            break;
-                        }
+                    $results['details'][] = [
+                        'asset_id' => $asset->id,
+                        'asset_tag' => $asset->asset_tag,
+                        'pending_months' => $pendingMonths,
+                        'processed_months' => $processed,
+                    ];
+                    
+                    if ($processed > 0) {
+                        $results['assets_processed']++;
+                        $results['total_processed'] += $processed;
+                        Log::info("✅ Auto processed: {$processed}/{$pendingMonths} months for asset {$asset->asset_tag}");
                     }
                 }
             } catch (\Exception $e) {
-                Log::error("Failed to generate depreciation for asset {$asset->asset_tag}: " . $e->getMessage());
+                Log::error("Failed in precise auto depreciation for asset {$asset->asset_tag}: " . $e->getMessage());
+                $results['details'][] = [
+                    'asset_id' => $asset->id,
+                    'asset_tag' => $asset->asset_tag,
+                    'error' => $e->getMessage()
+                ];
             }
         }
         
-        Log::info("Auto depreciation generation completed. Processed: {$processedCount} months");
-        return $processedCount;
+        Log::info("🏁 Precise auto depreciation completed. Total processed: {$results['total_processed']} months across {$results['assets_processed']} assets");
+        cache()->put('last_auto_depreciation_run', $results['timestamp'], 86400);
+        return $results;
     }
 
     /**
@@ -160,6 +180,8 @@ class DepreciationService
                 'current_value' => $newBookValue,
                 'depreciation_date' => $depreciationDate,
                 'month_sequence' => $nextSequence,
+                'created_at' => $depreciationDate,
+                'updated_at' => $depreciationDate,
             ]);
 
             DB::commit();
@@ -719,84 +741,10 @@ class DepreciationService
             'last_updated' => Carbon::now()->format('Y-m-d H:i:s')
         ];
     }
- /**
-     * ✅ METHOD BARU: Generate depresiasi otomatis berdasarkan purchase date
-     * Ini adalah core logic untuk automation
-     */
-    public function generateAutoDepreciation(): array
-    {
-        $assets = Asset::whereNotIn('status', ['Disposed', 'Lost'])->get();
-        $results = [
-            'total_assets' => $assets->count(),
-            'total_processed' => 0,
-            'assets_processed' => 0,
-            'details' => [],
-            'timestamp' => now()->toDateTimeString()
-        ];
-        
-        Log::info("🔄 Starting AUTO depreciation generation for {$assets->count()} assets");
-        
-        foreach ($assets as $asset) {
-            try {
-                // Hitung bulan yang tertunda berdasarkan purchase date vs current date
-                $pendingMonths = $asset->getPendingDepreciationMonths();
-                
-                if ($pendingMonths > 0) {
-                    Log::info("Asset {$asset->asset_tag} has {$pendingMonths} pending months for auto depreciation");
-                    
-                    $processed = $this->generatePendingDepreciation($asset);
-                    
-                    $results['details'][] = [
-                        'asset_id' => $asset->id,
-                        'asset_tag' => $asset->asset_tag,
-                        'asset_name' => $asset->name,
-                        'pending_months' => $pendingMonths,
-                        'processed_months' => $processed,
-                        'success' => $processed > 0,
-                        'auto_generated' => true
-                    ];
-                    
-                    if ($processed > 0) {
-                        $results['assets_processed']++;
-                        $results['total_processed'] += $processed;
-                        Log::info("✅ Auto processed: {$processed}/{$pendingMonths} months for asset {$asset->asset_tag}");
-                    }
-                } else {
-                    $results['details'][] = [
-                        'asset_id' => $asset->id,
-                        'asset_tag' => $asset->asset_tag,
-                        'asset_name' => $asset->name,
-                        'pending_months' => 0,
-                        'processed_months' => 0,
-                        'success' => true,
-                        'auto_generated' => false,
-                        'message' => 'No pending depreciation'
-                    ];
-                }
-                
-            } catch (\Exception $e) {
-                Log::error("Failed in auto depreciation for asset {$asset->asset_tag}: " . $e->getMessage());
-                
-                $results['details'][] = [
-                    'asset_id' => $asset->id,
-                    'asset_tag' => $asset->asset_tag,
-                    'asset_name' => $asset->name,
-                    'pending_months' => $pendingMonths ?? 0,
-                    'processed_months' => 0,
-                    'success' => false,
-                    'auto_generated' => false,
-                    'error' => $e->getMessage()
-                ];
-            }
-        }
-        
-        Log::info("🏁 Auto depreciation generation completed. Total processed: {$results['total_processed']} months across {$results['assets_processed']} assets");
-        
-        // Cache last run timestamp
-        cache()->put('last_auto_depreciation_run', $results['timestamp'], 86400); // 24 hours
-        
-        return $results;
-    }
+/**
+ * Update method generateAutoDepreciation untuk menggunakan method baru
+ */
+// Removed duplicate method declaration to fix redeclaration error.
 
     /**
      * ✅ METHOD BARU: Cek dan generate depresiasi untuk asset baru/updated
@@ -831,46 +779,103 @@ class DepreciationService
         ];
     }
 
-    /**
-     * ✅ METHOD BARU: Get system status untuk auto depreciation
-     */
-    public function getAutoDepreciationSystemStatus(): array
-    {
-        $assets = Asset::whereNotIn('status', ['Disposed', 'Lost'])->get();
-        
-        $status = [
-            'total_assets' => $assets->count(),
-            'assets_needing_depreciation' => 0,
-            'total_pending_months' => 0,
-            'assets_with_pending' => [],
-            'next_scheduled_run' => now()->addDay()->format('Y-m-d 00:05:00'),
-            'last_auto_run' => cache()->get('last_auto_depreciation_run'),
-            'system_time' => now()->toDateTimeString(),
-        ];
-        
-        foreach ($assets as $asset) {
-            $pendingMonths = $asset->getPendingDepreciationMonths();
+/**
+ * ✅ METHOD BARU: Generate depresiasi otomatis dengan presisi waktu
+ */
+public function generatePreciseAutoDepreciation(): array
+{
+    $now = Carbon::now('Asia/Jakarta');
+    $assets = Asset::whereNotIn('status', ['Disposed', 'Lost'])
+        ->where('purchase_date', '<=', $now->format('Y-m-d H:i:s'))
+        ->get();
+    
+    $results = [
+        'total_assets' => $assets->count(),
+        'total_processed' => 0,
+        'assets_processed' => 0,
+        'details' => [],
+        'timestamp' => $now->format('Y-m-d H:i:s'),
+        'timezone' => 'Asia/Jakarta'
+    ];
+    
+    Log::info("🔄 Starting PRECISE AUTO depreciation at {$now->format('Y-m-d H:i:s')} for {$assets->count()} assets");
+    
+    foreach ($assets as $asset) {
+        try {
+            // Gunakan method dengan presisi waktu
+            $pendingMonths = $asset->getPendingDepreciationMonthsWithTime();
+            $needsDepreciation = $asset->needsAutoDepreciation();
             
-            if ($pendingMonths > 0 && $asset->needsAutoDepreciation()) {
-                $status['assets_needing_depreciation']++;
-                $status['total_pending_months'] += $pendingMonths;
+            Log::info("Asset {$asset->asset_tag}: pending={$pendingMonths}, needs={$needsDepreciation}");
+            
+            if ($needsDepreciation && $pendingMonths > 0) {
+                $processed = 0;
                 
-                $status['assets_with_pending'][] = [
+                // Generate hanya bulan yang benar-benar perlu
+                for ($i = 0; $i < $pendingMonths; $i++) {
+                    if ($this->generateNextDepreciation($asset)) {
+                        $processed++;
+                    } else {
+                        break;
+                    }
+                }
+                
+                $results['details'][] = [
                     'asset_id' => $asset->id,
                     'asset_tag' => $asset->asset_tag,
                     'asset_name' => $asset->name,
                     'pending_months' => $pendingMonths,
-                    'current_value' => $asset->getCurrentBookValue(),
-                    'monthly_depreciation' => $asset->calculateMonthlyDepreciation(),
-                    'next_depreciation_date' => $asset->getNextAutoDepreciationDate(),
+                    'processed_months' => $processed,
+                    'success' => $processed > 0,
+                    'auto_generated' => true,
                     'purchase_date' => $asset->purchase_date,
-                    'elapsed_months' => $asset->getElapsedMonths(),
+                    'current_value' => $asset->getCurrentBookValue()
+                ];
+                
+                if ($processed > 0) {
+                    $results['assets_processed']++;
+                    $results['total_processed'] += $processed;
+                    Log::info("✅ Auto processed: {$processed}/{$pendingMonths} months for asset {$asset->asset_tag}");
+                }
+            } else {
+                $results['details'][] = [
+                    'asset_id' => $asset->id,
+                    'asset_tag' => $asset->asset_tag,
+                    'asset_name' => $asset->name,
+                    'pending_months' => $pendingMonths,
+                    'processed_months' => 0,
+                    'success' => true,
+                    'auto_generated' => false,
+                    'message' => $needsDepreciation ? 'No pending depreciation' : 'Not yet time for depreciation',
+                    'purchase_date' => $asset->purchase_date
                 ];
             }
+            
+        } catch (\Exception $e) {
+            Log::error("Failed in precise auto depreciation for asset {$asset->asset_tag}: " . $e->getMessage());
+            
+            $results['details'][] = [
+                'asset_id' => $asset->id,
+                'asset_tag' => $asset->asset_tag,
+                'asset_name' => $asset->name,
+                'pending_months' => $pendingMonths ?? 0,
+                'processed_months' => 0,
+                'success' => false,
+                'auto_generated' => false,
+                'error' => $e->getMessage()
+            ];
         }
-        
-        return $status;
     }
+    
+    Log::info("🏁 Precise auto depreciation completed. Total processed: {$results['total_processed']} months across {$results['assets_processed']} assets");
+    
+    // Cache last run timestamp
+    cache()->put('last_auto_depreciation_run', $results['timestamp'], 86400);
+    
+    return $results;
+}
+
+ 
 
 }
 

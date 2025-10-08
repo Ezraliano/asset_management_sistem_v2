@@ -36,8 +36,10 @@ const AssetList: React.FC<AssetListProps> = ({ navigateTo }) => {
     try {
       const assetsData = await getAssets(filters);
       if (Array.isArray(assetsData)) {
-        setAssets(assetsData);
-        setTotalAssets(assetsData.length);
+        // Sort assets by asset_tag in ascending order
+        const sortedAssets = assetsData.sort((a, b) => a.asset_tag.localeCompare(b.asset_tag));
+        setAssets(sortedAssets);
+        setTotalAssets(sortedAssets.length);
       } else {
         setAssets([]);
         setTotalAssets(0);
@@ -148,6 +150,24 @@ const AssetList: React.FC<AssetListProps> = ({ navigateTo }) => {
     });
   };
 
+  const handleDeleteSelected = async () => {
+    if (selectedAssets.size === 0) return;
+
+    if (window.confirm(`Are you sure you want to delete ${selectedAssets.size} selected assets? This action cannot be undone.`)) {
+      try {
+        const deletePromises = Array.from(selectedAssets).map(id => deleteAsset(id.toString()));
+        await Promise.all(deletePromises);
+
+        setSelectedAssets(new Set());
+        fetchAssets();
+        alert(`${selectedAssets.size} assets have been deleted.`);
+      } catch (error) {
+        console.error('Failed to delete selected assets:', error);
+        alert('An error occurred while deleting the assets. Please try again.');
+      }
+    }
+  };
+
   const handleEdit = (asset: Asset) => {
     setEditingAsset(asset);
     setModalOpen(true);
@@ -254,7 +274,64 @@ const AssetList: React.FC<AssetListProps> = ({ navigateTo }) => {
 
       {(showFilters || hasActiveFilters) && (
         <div className="bg-white p-6 rounded-xl shadow-md border border-gray-200">
-          {/* ... filter UI ... */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+            {/* Category Filter */}
+            <div className="w-full">
+              <label htmlFor="category" className="block text-sm font-medium text-gray-700">Category</label>
+              <select
+                id="category"
+                name="category"
+                value={filters.category}
+                onChange={handleFilterChange}
+                className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-primary focus:border-primary sm:text-sm rounded-md"
+              >
+                <option value="">All Categories</option>
+                {uniqueCategories.map(cat => <option key={cat} value={cat}>{cat}</option>)}
+              </select>
+            </div>
+
+            {/* Location Filter */}
+            <div className="w-full">
+              <label htmlFor="location" className="block text-sm font-medium text-gray-700">Location</label>
+              <select
+                id="location"
+                name="location"
+                value={filters.location}
+                onChange={handleFilterChange}
+                className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-primary focus:border-primary sm:text-sm rounded-md"
+              >
+                <option value="">All Locations</option>
+                {uniqueLocations.map(loc => <option key={loc} value={loc}>{loc}</option>)}
+              </select>
+            </div>
+
+            {/* Status Filter */}
+            <div className="w-full">
+              <label htmlFor="status" className="block text-sm font-medium text-gray-700">Status</label>
+              <select
+                id="status"
+                name="status"
+                value={filters.status}
+                onChange={handleFilterChange}
+                className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-primary focus:border-primary sm:text-sm rounded-md"
+              >
+                <option value="">All Statuses</option>
+                {Object.values(AssetStatus).map(stat => <option key={stat} value={stat}>{stat}</option>)}
+              </select>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="w-full flex justify-end">
+              <button
+                onClick={handleClearFilters}
+                disabled={!hasActiveFilters}
+                className="flex items-center px-4 py-2 rounded-lg border bg-white text-gray-700 border-gray-300 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <XIcon />
+                <span className="ml-2">Clear</span>
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
@@ -264,13 +341,22 @@ const AssetList: React.FC<AssetListProps> = ({ navigateTo }) => {
           <span className="text-gray-700 font-medium">
             {selectedAssets.size} asset(s) selected
           </span>
-          <button
-            onClick={handleDownloadQRCodes}
-            className="flex items-center bg-green-600 text-white px-4 py-2 rounded-lg shadow hover:bg-green-700 transition-colors"
-          >
-            <DownloadIcon />
-            <span className="ml-2">Download QR Codes</span>
-          </button>
+          <div className="flex items-center space-x-3">
+            <button
+              onClick={handleDeleteSelected}
+              className="flex items-center bg-red-600 text-white px-4 py-2 rounded-lg shadow hover:bg-red-700 transition-colors"
+            >
+              <DeleteIcon />
+              <span className="ml-2">Delete Selected</span>
+            </button>
+            <button
+              onClick={handleDownloadQRCodes}
+              className="flex items-center bg-green-600 text-white px-4 py-2 rounded-lg shadow hover:bg-green-700 transition-colors"
+            >
+              <DownloadIcon />
+              <span className="ml-2">Download QR Codes</span>
+            </button>
+          </div>
         </div>
       )}
 

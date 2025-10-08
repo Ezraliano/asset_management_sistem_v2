@@ -1,5 +1,4 @@
 <?php
-// app/Console/Commands/GenerateMonthlyDepreciation.php
 
 namespace App\Console\Commands;
 
@@ -21,13 +20,14 @@ class GenerateMonthlyDepreciation extends Command
         $this->info('🚀 Generating monthly depreciation...');
         
         try {
-            $count = $this->depreciationService->generateCurrentMonthDepreciation();
-            $this->info("✅ Monthly depreciation generated successfully! {$count} assets processed.");
+            // Gunakan method yang sudah diperbaiki
+            $results = $this->depreciationService->generateAutoDepreciation();
+            $this->info("✅ Monthly depreciation generated successfully! {$results['total_processed']} months processed across {$results['assets_processed']} assets.");
         } catch (\Exception $e) {
             $this->error('❌ Error generating depreciation: ' . $e->getMessage());
-            return Command::FAILURE; // ✅ GUNAKAN CONSTANT
+            return Command::FAILURE;
         }
         
-        return Command::SUCCESS; // ✅ GUNAKAN CONSTANT
+        return Command::SUCCESS;
     }
 }

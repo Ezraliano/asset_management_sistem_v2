@@ -102,68 +102,78 @@ class AssetController extends Controller
         }
     }
 
-    public function store(Request $request)
-    {
-        DB::beginTransaction();
+ public function store(Request $request)
+{
+    DB::beginTransaction();
+    
+    try {
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'category' => 'required|string|max:255',
+            'location' => 'required|string|max:255',
+            'value' => 'required|numeric|min:0',
+            'purchase_date' => 'required|date|before_or_equal:today',
+            'useful_life' => 'required|integer|min:1',
+            'status' => 'required|in:In Use,In Repair,Disposed,Lost',
+        ]);
+
+        // ✅ PERBAIKAN: Handle timezone dengan benar
+        $purchaseDate = Carbon::parse($validated['purchase_date']);
+        $today = Carbon::now('Asia/Jakarta');
         
-        try {
-            $validated = $request->validate([
-                'name' => 'required|string|max:255',
-                'category' => 'required|string|max:255',
-                'location' => 'required|string|max:255',
-                'value' => 'required|numeric|min:0',
-                'purchase_date' => 'required|date|before_or_equal:today', // ✅ VALIDASI BARU
-                'useful_life' => 'required|integer|min:1',
-                'status' => 'required|in:In Use,In Repair,Disposed,Lost',
-            ]);
-
-            // ✅ VALIDASI TAMBAHAN: Pastikan purchase date tidak melebihi hari ini
-            $purchaseDate = Carbon::parse($validated['purchase_date']);
-            $today = Carbon::today();
-            
-            if ($purchaseDate->greaterThan($today)) {
-                DB::rollBack();
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Purchase date cannot be in the future'
-                ], Response::HTTP_BAD_REQUEST);
-            }
-
-            $asset = Asset::create($validated);
-
-            DB::commit();
-
-            Log::info("✅ Asset created successfully: {$asset->asset_tag}");
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Asset created successfully',
-                'data' => $asset
-            ], Response::HTTP_CREATED);
-
-        } catch (\Illuminate\Validation\ValidationException $e) {
-            DB::rollBack();
-            
-            Log::error('Validation error creating asset: ' . json_encode($e->errors()));
-            
-            return response()->json([
-                'success' => false,
-                'message' => 'Validation failed',
-                'errors' => $e->errors()
-            ], Response::HTTP_BAD_REQUEST);
-
-        } catch (\Exception $e) {
-            DB::rollBack();
-            
-            Log::error('Error creating asset: ' . $e->getMessage());
-            
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to create asset',
-                'error' => $e->getMessage()
-            ], Response::HTTP_INTERNAL_SERVER_ERROR);
+        // Jika purchase_date hanya berisi tanggal (tanpa waktu), tambahkan waktu default 19:30
+        if (strlen($validated['purchase_date']) <= 10) {
+            $purchaseDate->setTime(19, 30, 0); // Set waktu menjadi 19:30
         }
+        
+        if ($purchaseDate->greaterThan($today)) {
+            DB::rollBack();
+            return response()->json([
+                'success' => false,
+                'message' => 'Purchase date cannot be in the future'
+            ], Response::HTTP_BAD_REQUEST);
+        }
+
+        // ✅ PERBAIKAN: Simpan dengan waktu yang benar
+        $validated['purchase_date'] = $purchaseDate->format('Y-m-d H:i:s');
+        $validated['created_at'] = $validated['purchase_date'];
+        $validated['updated_at'] = $validated['purchase_date'];
+
+        $asset = Asset::create($validated);
+
+        DB::commit();
+
+        Log::info("✅ Asset created successfully: {$asset->asset_tag} - Purchase Date: {$asset->purchase_date}");
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Asset created successfully',
+            'data' => $asset
+        ], Response::HTTP_CREATED);
+
+    } catch (\Illuminate\Validation\ValidationException $e) {
+        DB::rollBack();
+        
+        Log::error('Validation error creating asset: ' . json_encode($e->errors()));
+        
+        return response()->json([
+            'success' => false,
+            'message' => 'Validation failed',
+            'errors' => $e->errors()
+        ], Response::HTTP_BAD_REQUEST);
+
+    } catch (\Exception $e) {
+        DB::rollBack();
+        
+        Log::error('Error creating asset: ' . $e->getMessage());
+        
+        return response()->json([
+            'success' => false,
+            'message' => 'Failed to create asset',
+            'error' => $e->getMessage()
+        ], Response::HTTP_INTERNAL_SERVER_ERROR);
     }
+}
 
     public function show($id)
     {

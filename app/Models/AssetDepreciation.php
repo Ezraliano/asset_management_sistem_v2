@@ -10,20 +10,26 @@ class AssetDepreciation extends Model
 {
     use HasFactory;
 
+    public $timestamps = false;
+
     protected $fillable = [
         'asset_id',
         'depreciation_amount',
         'accumulated_depreciation',
         'current_value',
         'depreciation_date',
-        'month_sequence'
+        'month_sequence',
+        'created_at',
+        'updated_at',
     ];
 
     protected $casts = [
         'depreciation_amount' => 'decimal:2',
         'accumulated_depreciation' => 'decimal:2',
         'current_value' => 'decimal:2',
-        'depreciation_date' => 'date'
+        'depreciation_date' => 'datetime',
+        'created_at' => 'datetime',
+        'updated_at' => 'datetime',
     ];
 
     public function asset()

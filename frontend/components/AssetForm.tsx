@@ -1,11 +1,11 @@
-// AssetForm.tsx - DIHAPUS ASSET TAG INPUT
-import React, { useState, useEffect } from 'react';
+// AssetForm.tsx - DENGAN KALKULASI DEPRESIASI DINAMIS DAN SATU TOMBOL CLOSE
+import React, { useState, useEffect, useMemo } from 'react';
 import { addAsset, updateAsset } from '../services/api';
 import { Asset, AssetStatus } from '../types';
 import { useTranslation } from '../hooks/useTranslation';
 
 interface AssetFormProps {
-  asset?: Asset;
+  asset?: Asset & { accumulated_depreciation?: number };
   onSuccess: () => void;
   onClose?: () => void;
 }
@@ -25,7 +25,7 @@ const AssetForm: React.FC<AssetFormProps> = ({ asset, onSuccess, onClose }) => {
     location: '',
     value: 0,
     purchase_date: '',
-    useful_life: 36, // Default 3 tahun
+    useful_life: 36,
     status: AssetStatus.IN_USE,
   });
   const [loading, setLoading] = useState(false);
@@ -41,7 +41,7 @@ const AssetForm: React.FC<AssetFormProps> = ({ asset, onSuccess, onClose }) => {
         category: asset.category,
         location: asset.location,
         value: asset.value,
-        purchase_date: asset.purchase_date,
+        purchase_date: asset.purchase_date.split(' ')[0], // Hanya ambil bagian tanggal untuk input
         useful_life: asset.useful_life,
         status: asset.status as AssetStatus,
       });
@@ -60,6 +60,32 @@ const AssetForm: React.FC<AssetFormProps> = ({ asset, onSuccess, onClose }) => {
       setValueInput('');
     }
   }, [asset]);
+
+  // ✅ KALKULASI DEPRESIASI DINAMIS
+  const calculatedDepreciation = useMemo(() => {
+    const { value, useful_life, purchase_date } = formData;
+
+    if (!purchase_date || useful_life <= 0 || value <= 0) {
+      return { monthly: 0, accumulated: 0 };
+    }
+
+    const monthly = value / useful_life;
+    const purchaseDate = new Date(purchase_date);
+    const now = new Date();
+
+    if (purchaseDate > now) {
+      return { monthly, accumulated: 0 };
+    }
+
+    let elapsedMonths = (now.getFullYear() - purchaseDate.getFullYear()) * 12;
+    elapsedMonths -= purchaseDate.getMonth();
+    elapsedMonths += now.getMonth();
+    
+    const depreciatedMonths = Math.max(0, Math.min(elapsedMonths, useful_life));
+    const accumulated = monthly * depreciatedMonths;
+
+    return { monthly, accumulated };
+  }, [formData.value, formData.useful_life, formData.purchase_date]);
 
   const formatNumberToRupiahInput = (number: number): string => {
     if (number === 0) return '';
@@ -156,39 +182,67 @@ const AssetForm: React.FC<AssetFormProps> = ({ asset, onSuccess, onClose }) => {
     return Object.keys(errors).length === 0;
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-    setError('');
+const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault();
+  setLoading(true);
+  setError('');
 
-    try {
-      const isValid = validateForm();
-      if (!isValid) {
-        setLoading(false);
-        return;
-      }
-
-      const dataToSubmit = { ...formData };
-
-      if (asset) {
-        await updateAsset(asset.id.toString(), dataToSubmit);
-      } else {
-        await addAsset(dataToSubmit);
-      }
-      
-      onSuccess();
-      if (onClose) onClose();
-    } catch (err: any) {
-      console.error('Error saving asset:', err);
-      if (err.message?.includes('purchase date')) {
-        setValidationErrors(prev => ({ ...prev, purchase_date: err.message }));
-      } else {
-        setError(err.message || 'Failed to save asset');
-      }
-    } finally {
+  try {
+    const isValid = validateForm();
+    if (!isValid) {
       setLoading(false);
+      return;
     }
-  };
+
+    const dataToSubmit = { ...formData };
+
+    // ✅ PERBAIKAN: Handle waktu dengan benar untuk timezone Asia/Jakarta
+    if (!asset) {
+      // Untuk asset baru, gunakan waktu 19:30 WIB
+      const purchaseDate = new Date(dataToSubmit.purchase_date);
+      
+      // Set waktu ke 19:30 WIB (12:30 UTC)
+      const jakartaTime = new Date(purchaseDate.getTime() + (7 * 60 * 60 * 1000)); // Convert to UTC+7
+      jakartaTime.setHours(19, 30, 0, 0);
+      
+      // Convert back to ISO string dengan timezone
+      const utcTime = new Date(jakartaTime.getTime() - (7 * 60 * 60 * 1000));
+      dataToSubmit.purchase_date = utcTime.toISOString().replace('Z', '');
+      
+      console.log('Purchase date with time:', dataToSubmit.purchase_date);
+    } else {
+      // Jika edit dan tanggal tidak berubah, pertahankan waktu asli
+      if (dataToSubmit.purchase_date === asset.purchase_date.split(' ')[0]) {
+        dataToSubmit.purchase_date = asset.purchase_date;
+      } else {
+        // Jika tanggal diubah, gunakan waktu 19:30 untuk tanggal baru
+        const purchaseDate = new Date(dataToSubmit.purchase_date);
+        const jakartaTime = new Date(purchaseDate.getTime() + (7 * 60 * 60 * 1000));
+        jakartaTime.setHours(19, 30, 0, 0);
+        const utcTime = new Date(jakartaTime.getTime() - (7 * 60 * 60 * 1000));
+        dataToSubmit.purchase_date = utcTime.toISOString().replace('Z', '');
+      }
+    }
+
+    if (asset) {
+      await updateAsset(asset.id.toString(), dataToSubmit);
+    } else {
+      await addAsset(dataToSubmit);
+    }
+    
+    onSuccess();
+    if (onClose) onClose();
+  } catch (err: any) {
+    console.error('Error saving asset:', err);
+    if (err.message?.includes('purchase date')) {
+      setValidationErrors(prev => ({ ...prev, purchase_date: err.message }));
+    } else {
+      setError(err.message || 'Failed to save asset');
+    }
+  } finally {
+    setLoading(false);
+  }
+};
 
   const getFieldError = (field: keyof ValidationErrors): string | undefined => validationErrors[field];
   const hasErrors = (): boolean => Object.keys(validationErrors).length > 0 || !!error;
@@ -301,15 +355,19 @@ const AssetForm: React.FC<AssetFormProps> = ({ asset, onSuccess, onClose }) => {
         </button>
         {showAdvanced && (
           <div className="mt-3 p-4 bg-gray-50 rounded-lg">
-            <h4 className="text-sm font-medium text-gray-700 mb-2">Depreciation Information</h4>
+            <h4 className="text-sm font-medium text-gray-700 mb-2">Informasi Depresiasi (Estimasi)</h4>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
               <div>
-                <span className="text-gray-600">Perhitungan Depresiasi Bulanan</span>
-                <span className="ml-2 font-medium">Rp {formData.value > 0 && formData.useful_life > 0 ? Math.round(formData.value / formData.useful_life).toLocaleString('id-ID') : '0'}</span>
+                <span className="text-gray-600">Depresiasi Bulanan</span>
+                <span className="ml-2 font-medium">
+                  Rp {Math.round(calculatedDepreciation.monthly).toLocaleString('id-ID')}
+                </span>
               </div>
               <div>
-                <span className="text-gray-600">Nilai Depresiasi</span>
-                <span className="ml-2 font-medium">Rp {formData.value > 0 && formData.useful_life > 0 ? Math.round((formData.value / formData.useful_life) * 12).toLocaleString('id-ID') : '0'}</span>
+                <span className="text-gray-600">Akumulasi Depresiasi Saat Ini</span>
+                <span className="ml-2 font-medium">
+                  Rp {Math.round(calculatedDepreciation.accumulated).toLocaleString('id-ID')}
+                </span>
               </div>
             </div>
           </div>
@@ -317,7 +375,6 @@ const AssetForm: React.FC<AssetFormProps> = ({ asset, onSuccess, onClose }) => {
       </div>
 
       <div className="flex justify-end space-x-3 pt-6 border-t sticky bottom-0 bg-white pb-2">
-        {onClose && <button type="button" onClick={onClose} disabled={loading} className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-200 rounded-md hover:bg-gray-300 disabled:opacity-50 transition-colors">Cancel</button>}
         <button type="submit" disabled={loading || hasErrors()} className="px-6 py-2 text-sm font-medium text-white bg-primary rounded-md hover:bg-primary-dark disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center min-w-[120px] justify-center">
           {loading ? <><div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>Saving...</> : (asset ? 'Update Asset' : 'Create Asset')}
         </button>
