@@ -18,7 +18,7 @@ export interface User {
   name: string;
   username: string;
   email: string;
-  role: 'Admin' | 'Staff' | 'Audit';
+  role: 'Super Admin' | 'Admin Holding' | 'Unit' | 'User';
 }
 
 export interface Asset {
@@ -87,13 +87,11 @@ export interface DashboardStats {
   assets_by_location: ChartData[];
 }
 
-export type View = 
+export type View =
   | { type: 'DASHBOARD' }
   | { type: 'ASSET_LIST' }
-  | { type: 'ASSET_DETAIL'; assetId: string }
+  | { type: 'ASSET_LENDING' }
+  | { type: 'ASSET_DETAIL', assetId: string }
   | { type: 'QR_SCANNER' }
-  | { type: 'USERS' }
-  | { type: 'REPORTS' }
   | { type: 'BULK_TRANSACTION' }
-  | { type: 'INVENTORY_AUDIT_SETUP' }
-  | { type: 'INVENTORY_AUDIT_SESSION'; location: string; mode: string };
+  | { type: 'REPORTS' };

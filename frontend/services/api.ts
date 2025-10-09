@@ -103,7 +103,10 @@ export const logoutUser = async (): Promise<void> => {
 export const getCurrentUser = async (): Promise<User | null> => {
   try {
     const data = await apiRequest('/user');
-    return data.success ? data.user : null;
+    if (data && data.success && data.user) {
+      return data.user as User;
+    }
+    return null;
   } catch (error) {
     console.error('Get user error:', error);
     return null;

@@ -13,33 +13,46 @@ class UserSeeder extends Seeder
      */
     public function run(): void
     {
+        DB::statement('SET FOREIGN_KEY_CHECKS=0;');
+        DB::table('users')->truncate(); // Clear the table first
+
         $users = [
             [
-                'name' => 'Administrator',
-                'email' => 'admin@example.com',
-                'username' => 'admin',
+                'name' => 'Super Admin',
+                'email' => 'superadmin@example.com',
+                'username' => 'superadmin',
                 'password' => Hash::make('123'),
-                'role' => 'Admin',
+                'role' => 'Super Admin',
                 'email_verified_at' => now(),
                 'created_at' => now(),
                 'updated_at' => now(),
             ],
             [
-                'name' => 'Staff User',
+                'name' => 'Admin Holding',
+                'email' => 'adminholding@example.com',
+                'username' => 'adminholding',
+                'password' => Hash::make('123'),
+                'role' => 'Admin Holding',
+                'email_verified_at' => now(),
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
+            [
+                'name' => 'Unit User',
+                'email' => 'unit@example.com',
+                'username' => 'unit',
+                'password' => Hash::make('123'),
+                'role' => 'Unit',
+                'email_verified_at' => now(),
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
+            [
+                'name' => 'Regular User',
                 'email' => 'user@example.com',
                 'username' => 'user',
                 'password' => Hash::make('123'),
-                'role' => 'Staff',
-                'email_verified_at' => now(),
-                'created_at' => now(),
-                'updated_at' => now(),
-            ],
-            [
-                'name' => 'Auditor',
-                'email' => 'audit@example.com',
-                'username' => 'audit',
-                'password' => Hash::make('123'),
-                'role' => 'Audit',
+                'role' => 'User',
                 'email_verified_at' => now(),
                 'created_at' => now(),
                 'updated_at' => now(),
@@ -47,10 +60,12 @@ class UserSeeder extends Seeder
         ];
 
         DB::table('users')->insert($users);
+        DB::statement('SET FOREIGN_KEY_CHECKS=1;');
 
-        $this->command->info('Users seeded successfully!');
-        $this->command->info('Admin credentials: admin / 123');
-        $this->command->info('Staff credentials: user / 123');
-        $this->command->info('Audit credentials: audit / 123');
+        $this->command->info('Users seeded successfully with new roles!');
+        $this->command->info('Super Admin: superadmin / 123');
+        $this->command->info('Admin Holding: adminholding / 123');
+        $this->command->info('Unit User: unit / 123');
+        $this->command->info('Regular User: user / 123');
     }
 }
