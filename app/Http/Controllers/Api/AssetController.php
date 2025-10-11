@@ -114,7 +114,7 @@ class AssetController extends Controller
             'value' => 'required|numeric|min:0',
             'purchase_date' => 'required|date|before_or_equal:today',
             'useful_life' => 'required|integer|min:1',
-            'status' => 'required|in:In Use,In Repair,Disposed,Lost',
+            'status' => 'required|in:In Use,In Repair,Disposed,Lost,Available,Terpinjam',
         ]);
 
         // ✅ PERBAIKAN: Handle timezone dengan benar
@@ -252,7 +252,7 @@ class AssetController extends Controller
                 'value' => 'sometimes|required|numeric|min:0',
                 'purchase_date' => 'sometimes|required|date|before_or_equal:today', // ✅ VALIDASI BARU
                 'useful_life' => 'sometimes|required|integer|min:1',
-                'status' => 'sometimes|required|in:In Use,In Repair,Disposed,Lost',
+                'status' => 'sometimes|required|in:In Use,In Repair,Disposed,Lost,Available,Terpinjam',
             ]);
 
             // ✅ VALIDASI TAMBAHAN: Pastikan purchase date tidak melebihi hari ini
@@ -750,6 +750,63 @@ class AssetController extends Controller
                 'message' => 'Validation failed',
                 'errors' => $e->errors()
             ], Response::HTTP_BAD_REQUEST);
+        }
+    }
+
+    /**
+     * ✅ METHOD BARU: Get available assets for borrowing (User role)
+     */
+    public function getAvailableAssets(Request $request)
+    {
+        try {
+            // Only return assets with "Available" status for borrowing
+            $query = Asset::where('status', 'Available')
+                ->with(['depreciations' => function($query) {
+                    $query->orderBy('month_sequence', 'desc')->limit(1);
+                }]);
+
+            // Optional search filter
+            if ($request->has('search') && !empty($request->search)) {
+                $searchTerm = $request->search;
+                $query->where(function($q) use ($searchTerm) {
+                    $q->where('asset_tag', 'like', '%' . $searchTerm . '%')
+                      ->orWhere('name', 'like', '%' . $searchTerm . '%')
+                      ->orWhere('category', 'like', '%' . $searchTerm . '%')
+                      ->orWhere('location', 'like', '%' . $searchTerm . '%');
+                });
+            }
+
+            // Sorting
+            $sortBy = $request->query('sort_by', 'name');
+            $sortOrder = $request->query('sort_order', 'asc');
+            $query->orderBy($sortBy, $sortOrder);
+
+            $assets = $query->get();
+
+            // Add depreciation info to each asset
+            $assets->transform(function ($asset) {
+                $latestDepreciation = $asset->depreciations->first();
+
+                $asset->current_book_value = $latestDepreciation
+                    ? $latestDepreciation->current_value
+                    : $asset->value;
+
+                return $asset;
+            });
+
+            return response()->json([
+                'success' => true,
+                'data' => $assets
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Error fetching available assets: ' . $e->getMessage());
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to fetch available assets',
+                'error' => $e->getMessage()
+            ], Response::HTTP_INTERNAL_SERVER_ERROR);
         }
     }
 }

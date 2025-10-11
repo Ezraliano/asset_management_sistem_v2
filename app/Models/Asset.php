@@ -71,6 +71,11 @@ class Asset extends Model
         return $this->hasMany(IncidentReport::class);
     }
 
+    public function loans(): HasMany
+    {
+        return $this->hasMany(AssetLoan::class);
+    }
+
     public function depreciations(): HasMany
     {
         return $this->hasMany(AssetDepreciation::class)->orderBy('month_sequence');

@@ -9,6 +9,7 @@ use App\Http\Controllers\Api\AssetMovementController;
 use App\Http\Controllers\Api\MaintenanceController;
 use App\Http\Controllers\Api\IncidentReportController;
 use App\Http\Controllers\Api\DashboardController;
+use App\Http\Controllers\Api\AssetLoanController;
 
 /*
 |--------------------------------------------------------------------------
@@ -50,10 +51,28 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::get('/assets/{assetId}/incident-reports', [IncidentReportController::class, 'getAssetIncidentReports']);
     });
 
-    // Group for Peminjaman Aset menu (Admin Holding, Unit, User)
-    Route::middleware('role:Admin Holding,Unit,User')->group(function () {
+    // Asset Loan Routes - Base routes for all authenticated users (role-based filtering in controller)
+    Route::middleware(['auth:sanctum'])->group(function () {
         Route::apiResource('asset-movements', AssetMovementController::class);
         Route::get('/assets/{assetId}/movements', [AssetMovementController::class, 'getAssetMovements']);
+
+        // Asset Loan Routes - Role-based filtering handled in controller (NO ROLE MIDDLEWARE)
+        Route::get('/asset-loans', [AssetLoanController::class, 'index']);
+        Route::post('/asset-loans', [AssetLoanController::class, 'store']);
+        Route::get('/asset-loans/{assetLoan}', [AssetLoanController::class, 'show']);
+    });
+
+    // Additional routes for specific roles
+    Route::middleware(['auth:sanctum'])->group(function () {
+        // Users can view available assets for borrowing
+        Route::get('/user-assets', [AssetController::class, 'getAvailableAssets']);
+    });
+
+    // Asset Loan Management Routes (Super Admin/Admin Holding Access)
+    Route::middleware('role:Super Admin,Admin Holding')->group(function () {
+        Route::post('asset-loans/{assetLoan}/approve', [AssetLoanController::class, 'approve'])->name('asset-loans.approve');
+        Route::post('asset-loans/{assetLoan}/reject', [AssetLoanController::class, 'reject'])->name('asset-loans.reject');
+        Route::post('asset-loans/{assetLoan}/return', [AssetLoanController::class, 'returnAsset'])->name('asset-loans.return');
     });
 });
 

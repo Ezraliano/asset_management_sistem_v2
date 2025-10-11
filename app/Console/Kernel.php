@@ -13,7 +13,7 @@ class Kernel extends ConsoleKernel
     protected function schedule(Schedule $schedule): void
     {
         $schedule->command('depreciation:generate-auto')
-                 ->dailyAt('08:25')
+                 ->dailyAt('13:15')
                  ->timezone('Asia/Jakarta');
     }
 

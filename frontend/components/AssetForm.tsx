@@ -26,7 +26,7 @@ const AssetForm: React.FC<AssetFormProps> = ({ asset, onSuccess, onClose }) => {
     value: 0,
     purchase_date: '',
     useful_life: 36,
-    status: AssetStatus.IN_USE,
+    status: 'Available' as any, // FIX: Default status for new asset
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -55,7 +55,7 @@ const AssetForm: React.FC<AssetFormProps> = ({ asset, onSuccess, onClose }) => {
         value: 0,
         purchase_date: today,
         useful_life: 36,
-        status: AssetStatus.IN_USE,
+        status: 'Available' as any, // FIX: Default status for new asset
       });
       setValueInput('');
     }
@@ -249,7 +249,7 @@ const handleSubmit = async (e: React.FormEvent) => {
 
   const availableStatuses = asset 
     ? [AssetStatus.IN_USE, AssetStatus.IN_REPAIR, AssetStatus.DISPOSED, AssetStatus.LOST]
-    : [AssetStatus.IN_USE, AssetStatus.IN_REPAIR];
+    : ['Available' as any, AssetStatus.IN_REPAIR];
 
   const predefinedCategories = ['Electronics', 'Furniture', 'Vehicle', 'Equipment', 'Building', 'Software', 'Other'];
   const predefinedLocations = ['Office A', 'Office B', 'Warehouse', 'Factory', 'Remote', 'Other'];

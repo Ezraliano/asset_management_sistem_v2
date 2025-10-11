@@ -3,6 +3,7 @@ import { View, User } from './types';
 import Header from './components/Header';
 import Dashboard from './components/Dashboard';
 import AssetLending from './components/AssetLending';
+import AssetLoanManagement from './components/AssetLoanManagement';
 import AssetList from './components/AssetList';
 import AssetDetail from './components/AssetDetail';
 import QRCodeScanner from './components/QRCodeScanner';
@@ -80,6 +81,8 @@ const AppContent: React.FC = () => {
         return <AssetList navigateTo={navigateTo} />;
       case 'ASSET_LENDING':
         return <AssetLending />;
+      case 'ASSET_LOAN_MANAGEMENT':
+        return <AssetLoanManagement />;
       case 'ASSET_DETAIL':
         return <AssetDetail assetId={view.assetId} navigateTo={navigateTo} />;
       case 'QR_SCANNER':

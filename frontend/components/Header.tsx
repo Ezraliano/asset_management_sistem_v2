@@ -61,11 +61,12 @@ const Header: React.FC<HeaderProps> = ({ user, onLogout, isSidebarOpen, setSideb
                     <ul>
                         <NavItem icon={<DashboardIcon />} label={t('sidebar.dashboard')} isActive={getIsActive('DASHBOARD')} onClick={() => navigateTo({ type: 'DASHBOARD' })} />
                         
+
                         <Restricted user={user} allowedRoles={['Admin Holding', 'Unit']}>
                             <NavItem icon={<AssetIcon />} label={t('sidebar.assets')} isActive={getIsActive('ASSET_LIST') || getIsActive('ASSET_DETAIL')} onClick={() => navigateTo({ type: 'ASSET_LIST' })} />
                         </Restricted>
 
-                        <Restricted user={user} allowedRoles={['Admin Holding', 'Unit', 'User']}>
+                        <Restricted user={user} allowedRoles={['User', 'Super Admin', 'Admin Holding']}>
                             <NavItem icon={<SwitchHorizontalIcon />} label={t('Peminjaman Asset')} isActive={currentView.type === 'ASSET_LENDING'} onClick={() => navigateTo({ type: 'ASSET_LENDING' })} />
                         </Restricted>
 

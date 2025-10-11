@@ -20,7 +20,7 @@ return new class extends Migration
             $table->decimal('value', 15, 2);
             $table->datetime('purchase_date');
             $table->integer('useful_life')->comment('in months');
-            $table->enum('status', ['In Use', 'In Repair', 'Disposed', 'Lost']);
+            $table->enum('status', ['Available', 'Terpinjam', 'Terjual', 'Lost', 'Dalam Perbaikan'])->default('Available');
             $table->timestamps();
         });
     }

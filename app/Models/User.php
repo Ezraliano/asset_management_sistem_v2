@@ -44,4 +44,20 @@ class User extends Authenticatable
         'email_verified_at' => 'datetime',
         'password' => 'hashed',
     ];
+
+    /**
+     * Get the loans this user has borrowed.
+     */
+    public function borrowedLoans(): HasMany
+    {
+        return $this->hasMany(AssetLoan::class, 'borrower_id');
+    }
+
+    /**
+     * Get the loans this user has approved.
+     */
+    public function approvedLoans(): HasMany
+    {
+        return $this->hasMany(AssetLoan::class, 'approved_by');
+    }
 }

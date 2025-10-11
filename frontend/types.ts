@@ -69,6 +69,34 @@ export interface IncidentReport {
 export type DamageReport = IncidentReport;
 export type LossReport = IncidentReport;
 
+export enum AssetLoanStatus {
+  PENDING = 'PENDING',
+  APPROVED = 'APPROVED',
+  REJECTED = 'REJECTED',
+  RETURNED = 'RETURNED',
+}
+
+export interface AssetLoan {
+  id: number;
+  asset_id: number;
+  borrower_id: number;
+  request_date: string;
+  loan_date: string | null;
+  expected_return_date: string;
+  actual_return_date: string | null;
+  purpose: string;
+  status: AssetLoanStatus;
+  approved_by: number | null;
+  approval_date: string | null;
+  loan_proof_photo_path: string | null;
+  return_notes: string | null;
+  created_at: string;
+  updated_at: string;
+  asset: Asset;
+  borrower: User;
+  approver: User | null;
+}
+
 // TAMBAHKAN INTERFACE UNTUK CHART DATA
 export interface ChartData {
   name: string;
@@ -91,7 +119,11 @@ export type View =
   | { type: 'DASHBOARD' }
   | { type: 'ASSET_LIST' }
   | { type: 'ASSET_LENDING' }
+  | { type: 'ASSET_LOAN_MANAGEMENT' }
   | { type: 'ASSET_DETAIL', assetId: string }
   | { type: 'QR_SCANNER' }
+  | { type: 'USERS' }
   | { type: 'BULK_TRANSACTION' }
-  | { type: 'REPORTS' };
+  | { type: 'REPORTS' }
+  | { type: 'INVENTORY_AUDIT_SETUP' }
+  | { type: 'INVENTORY_AUDIT_SESSION', location: string, mode: 'camera' | 'manual' };

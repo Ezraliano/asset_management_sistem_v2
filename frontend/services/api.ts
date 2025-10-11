@@ -1,5 +1,5 @@
 // api.ts - PERBAIKAN RESPONSE HANDLING
-import { Asset, AssetMovement, Maintenance, User, DamageReport, LossReport, DashboardStats } from '../types';
+import { Asset, AssetMovement, Maintenance, User, DamageReport, LossReport, DashboardStats, AssetLoan, AssetLoanStatus } from '../types';
 
 const API_BASE_URL = 'http://localhost:8000/api';
 
@@ -479,6 +479,36 @@ export const getAssetHistory = async (assetId: string): Promise<AssetMovement[]>
   }
 };
 
+// Get available assets for borrowing (User role)
+export const getAvailableAssets = async (search?: string): Promise<Asset[]> => {
+  const queryParams = new URLSearchParams();
+  if (search) queryParams.append('search', search);
+
+  const queryString = queryParams.toString();
+  const endpoint = queryString ? `/user-assets?${queryString}` : '/user-assets';
+
+  try {
+    const response = await apiRequest(endpoint);
+    const handledResponse = handleApiResponse<any>(response);
+
+    // Check for Laravel pagination structure
+    if (handledResponse && typeof handledResponse === 'object' && Array.isArray(handledResponse.data)) {
+      return handledResponse.data;
+    }
+
+    // Fallback for direct array response
+    if (Array.isArray(handledResponse)) {
+      return handledResponse;
+    }
+
+    console.warn('Available assets response is not in a recognized format:', handledResponse);
+    return [];
+  } catch (error: any) {
+    console.error('Error in getAvailableAssets:', error);
+    return [];
+  }
+};
+
 export const getAllMovements = async (): Promise<AssetMovement[]> => {
   const data = await apiRequest('/asset-movements');
   return handleApiResponse<AssetMovement[]>(data);
@@ -579,6 +609,46 @@ export const addLossReport = async (reportData: Omit<LossReport, 'id'>): Promise
   });
   return handleApiResponse<LossReport>(data);
 };
+
+// ==================== ASSET LOAN API ====================
+
+export const getAssetLoans = async (status?: AssetLoanStatus): Promise<AssetLoan[]> => {
+  const endpoint = status ? `/asset-loans?status=${status}` : '/asset-loans';
+  const data = await apiRequest(endpoint);
+  return handleApiResponse<AssetLoan[]>(data);
+};
+
+export const requestAssetLoan = async (loanData: { asset_id: number; expected_return_date: string; purpose: string }): Promise<AssetLoan> => {
+  const data = await apiRequest('/asset-loans', {
+    method: 'POST',
+    body: JSON.stringify(loanData),
+  });
+  return handleApiResponse<AssetLoan>(data);
+};
+
+export const approveAssetLoan = async (loanId: number, approvalData: { loan_proof_photo_path?: string }): Promise<AssetLoan> => {
+  const data = await apiRequest(`/asset-loans/${loanId}/approve`, {
+    method: 'POST',
+    body: JSON.stringify(approvalData),
+  });
+  return handleApiResponse<AssetLoan>(data);
+};
+
+export const rejectAssetLoan = async (loanId: number): Promise<AssetLoan> => {
+  const data = await apiRequest(`/asset-loans/${loanId}/reject`, {
+    method: 'POST',
+  });
+  return handleApiResponse<AssetLoan>(data);
+};
+
+export const returnAssetLoan = async (loanId: number, returnData: { return_notes?: string }): Promise<AssetLoan> => {
+  const data = await apiRequest(`/asset-loans/${loanId}/return`, {
+    method: 'POST',
+    body: JSON.stringify(returnData),
+  });
+  return handleApiResponse<AssetLoan>(data);
+};
+
 
 // Users API
 export const getUsers = async (): Promise<User[]> => {
