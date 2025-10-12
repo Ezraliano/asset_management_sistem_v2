@@ -125,7 +125,9 @@ const LoanApprovalForm: React.FC<LoanApprovalFormProps> = ({
         </div>
         <div className="mt-3">
           <span className="font-medium">Tujuan Peminjaman:</span>
-          <p className="text-gray-600 mt-1 bg-white p-2 rounded border">{loan.purpose}</p>
+          <div className="text-gray-600 mt-1 bg-white p-2 rounded border max-w-full">
+            <p className="break-words whitespace-pre-wrap text-sm leading-relaxed">{loan.purpose}</p>
+          </div>
         </div>
       </div>
 
