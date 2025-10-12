@@ -153,7 +153,7 @@ const AssetLending: React.FC = () => {
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nama Aset</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tag</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Lokasi</th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Aksi</th>
+                <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider w-24">Aksi</th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
@@ -163,14 +163,16 @@ const AssetLending: React.FC = () => {
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{asset.name}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{asset.asset_tag}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{asset.location}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                      <button
-                        onClick={() => handleBorrowClick(asset)}
-                        className="flex items-center justify-center text-sm font-medium bg-blue-50 text-blue-700 px-3 py-1 rounded-lg hover:bg-blue-100 border border-blue-200 transition-colors"
-                      >
-                        <BorrowIcon />
-                        <span className="ml-2">Pinjam</span>
-                      </button>
+                    <td className="px-6 py-4 whitespace-nowrap text-center text-sm font-medium">
+                      <div className="flex items-center justify-center">
+                        <button
+                          onClick={() => handleBorrowClick(asset)}
+                          className="inline-flex items-center justify-center text-sm font-medium bg-blue-50 text-blue-700 px-3 py-1 rounded-lg hover:bg-blue-100 border border-blue-200 transition-colors w-full max-w-[100px]"
+                        >
+                          <BorrowIcon />
+                          <span className="ml-1">Pinjam</span>
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))
@@ -273,6 +275,7 @@ const AssetLending: React.FC = () => {
               <tr>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nama Aset</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tgl. Pengajuan</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tgl. Verifikasi</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tgl. Kembali</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
               </tr>
@@ -283,6 +286,9 @@ const AssetLending: React.FC = () => {
                   <tr key={loan.id}>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{loan.asset.name}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{new Date(loan.request_date).toLocaleDateString()}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {loan.approval_date ? new Date(loan.approval_date).toLocaleDateString() : '-'}
+                    </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{new Date(loan.expected_return_date).toLocaleDateString()}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm">
                       <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusBadge(loan.status)}`}>
@@ -293,7 +299,7 @@ const AssetLending: React.FC = () => {
                 ))
               ) : (
                 <tr>
-                  <td colSpan={4} className="text-center py-8 text-gray-500">Anda belum pernah mengajukan peminjaman.</td>
+                  <td colSpan={5} className="text-center py-8 text-gray-500">Anda belum pernah mengajukan peminjaman.</td>
                 </tr>
               )}
             </tbody>
