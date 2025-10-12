@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Asset;
 use App\Models\Maintenance;
 use App\Models\IncidentReport;
+use App\Models\AssetLoan;
 use Illuminate\Http\Request;
 
 class DashboardController extends Controller
@@ -18,6 +19,9 @@ class DashboardController extends Controller
         $assetsInRepair = Asset::where('status', 'In Repair')->count();
         $scheduledMaintenances = Maintenance::where('status', 'Scheduled')->count();
         $activeIncidents = IncidentReport::whereNotIn('status', ['Resolved', 'Closed'])->count();
+
+        // Hitung asset yang sedang dipinjam (status APPROVED)
+        $approvedLoans = AssetLoan::where('status', 'APPROVED')->count();
 
         // Data untuk chart berdasarkan kategori
         $assetsByCategory = Asset::selectRaw('category, COUNT(*) as count')
@@ -48,6 +52,7 @@ class DashboardController extends Controller
                 'total_value' => (float) $totalValue,
                 'assets_in_use' => $assetsInUse,
                 'assets_in_repair' => $assetsInRepair,
+                'approved_loans' => $approvedLoans,
                 'scheduled_maintenances' => $scheduledMaintenances,
                 'active_incidents' => $activeIncidents,
                 'assets_by_category' => $assetsByCategory,

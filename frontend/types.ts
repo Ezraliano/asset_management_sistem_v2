@@ -110,6 +110,7 @@ export interface DashboardStats {
   total_value: number;
   assets_in_use: number;
   assets_in_repair: number;
+  approved_loans: number;
   scheduled_maintenances: number;
   active_incidents: number;
   assets_by_category: ChartData[];

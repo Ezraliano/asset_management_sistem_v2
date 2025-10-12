@@ -190,8 +190,8 @@ const Dashboard: React.FC<DashboardProps> = ({ navigateTo }) => {
         
         <div className="bg-white p-6 rounded-lg shadow-md border border-gray-200">
           <h3 className="text-lg font-semibold text-medium-text">{t('Asset Yang Dipinjam')}</h3>
-          <p className="text-3xl font-bold text-yellow-500">{stats.scheduled_maintenances}</p>
-          <p className="text-sm text-gray-500 mt-1">Asset Yang Dipinjam</p>
+          <p className="text-3xl font-bold text-yellow-500">{stats.approved_loans}</p>
+          <p className="text-sm text-gray-500 mt-1">Asset yang sedang dipinjam</p>
         </div>
         
         <div className="bg-white p-6 rounded-lg shadow-md border border-gray-200">
