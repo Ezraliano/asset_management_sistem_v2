@@ -221,9 +221,9 @@ const AssetList: React.FC<AssetListProps> = ({ navigateTo }) => {
   const hasActiveFilters = useMemo(() => Object.values(filters).some(v => v !== ''), [filters]);
 
   const statusColorMap: { [key in AssetStatus]: string } = {
-    [AssetStatus.IN_USE]: 'bg-green-100 text-green-800',
-    [AssetStatus.IN_REPAIR]: 'bg-yellow-100 text-yellow-800',
-    [AssetStatus.DISPOSED]: 'bg-gray-100 text-gray-800',
+    [AssetStatus.AVAILABLE]: 'bg-green-100 text-green-800',
+    [AssetStatus.TERPINJAM]: 'bg-blue-100 text-blue-800',
+    [AssetStatus.TERJUAL]: 'bg-gray-100 text-gray-800',
     [AssetStatus.LOST]: 'bg-red-100 text-red-800',
   };
 

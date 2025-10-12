@@ -28,6 +28,7 @@ class AssetLoan extends Model
         'approval_date',
         'loan_proof_photo_path',
         'return_notes',
+        'rejection_reason',
     ];
 
     /**

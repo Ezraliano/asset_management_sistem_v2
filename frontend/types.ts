@@ -1,8 +1,8 @@
 // types.ts - TAMBAHKAN INTERFACE UNTUK CHART DATA
 export enum AssetStatus {
-  IN_USE = 'In Use',
-  IN_REPAIR = 'In Repair',
-  DISPOSED = 'Disposed',
+  AVAILABLE = 'Available',
+  TERPINJAM = 'Terpinjam',
+  TERJUAL = 'Terjual',
   LOST = 'Lost'
 }
 
@@ -90,6 +90,7 @@ export interface AssetLoan {
   approval_date: string | null;
   loan_proof_photo_path: string | null;
   return_notes: string | null;
+  rejection_reason: string | null;
   created_at: string;
   updated_at: string;
   asset: Asset;

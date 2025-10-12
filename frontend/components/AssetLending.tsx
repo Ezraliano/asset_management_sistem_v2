@@ -5,6 +5,7 @@ import { BorrowIcon } from './icons';
 import Modal from './Modal';
 import AssetLoanForm from './AssetLoanForm';
 import LoanApprovalForm from './LoanApprovalForm';
+import LoanRejectionForm from './LoanRejectionForm';
 
 const AssetLending: React.FC = () => {
   const [availableAssets, setAvailableAssets] = useState<Asset[]>([]);
@@ -17,6 +18,7 @@ const AssetLending: React.FC = () => {
 
   const [isLoanModalOpen, setLoanModalOpen] = useState(false);
   const [isApprovalModalOpen, setApprovalModalOpen] = useState(false);
+  const [isRejectionModalOpen, setRejectionModalOpen] = useState(false);
   const [selectedAsset, setSelectedAsset] = useState<Asset | null>(null);
   const [selectedLoan, setSelectedLoan] = useState<AssetLoan | null>(null);
   const [actionLoading, setActionLoading] = useState(false);
@@ -54,26 +56,21 @@ const AssetLending: React.FC = () => {
     setApprovalModalOpen(true);
   };
 
-  const handleRejectClick = async (loan: AssetLoan) => {
-    if (window.confirm(`Are you sure you want to reject this loan request for ${loan.asset.name}?`)) {
-      setActionLoading(true);
-      try {
-        // Panggil API reject di sini
-        // await rejectAssetLoan(loan.id, { approval_date: new Date().toISOString().split('T')[0] });
-        fetchData(); // Refresh data
-        alert('Loan rejected successfully!');
-      } catch (err: any) {
-        alert(`Failed to reject loan: ${err.message}`);
-      } finally {
-        setActionLoading(false);
-      }
-    }
+  const handleRejectClick = (loan: AssetLoan) => {
+    setSelectedLoan(loan);
+    setRejectionModalOpen(true);
   };
 
   const handleApprovalSuccess = () => {
     setApprovalModalOpen(false);
     setSelectedLoan(null);
-    fetchData(); // Refresh data
+    fetchData();
+  };
+
+  const handleRejectionSuccess = () => {
+    setRejectionModalOpen(false);
+    setSelectedLoan(null);
+    fetchData();
   };
 
   const filteredAssets = useMemo(() => {
@@ -243,7 +240,7 @@ const AssetLending: React.FC = () => {
         </div>
       )}
 
-      {/* Section 3: My Loan History */}
+      {/* Section 3: Loan History */}
       <div className="bg-white p-6 rounded-xl shadow-md">
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-xl font-semibold">
@@ -292,8 +289,8 @@ const AssetLending: React.FC = () => {
                 )}
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tgl. Pengajuan</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tgl. Verifikasi</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tgl. Kembali</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Alasan Penolakan</th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
@@ -308,22 +305,25 @@ const AssetLending: React.FC = () => {
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       {loan.approval_date ? new Date(loan.approval_date).toLocaleDateString() : '-'}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {loan.actual_return_date 
-                        ? new Date(loan.actual_return_date).toLocaleDateString()
-                        : new Date(loan.expected_return_date).toLocaleDateString()
-                      }
-                    </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm">
                       <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusBadge(loan.status)}`}>
                         {loan.status}
                       </span>
                     </td>
+                    <td className="px-6 py-4 text-sm text-gray-500">
+                      {loan.status === AssetLoanStatus.REJECTED && loan.rejection_reason ? (
+                        <div className="max-w-xs" title={loan.rejection_reason}>
+                          {loan.rejection_reason}
+                        </div>
+                      ) : (
+                        '-'
+                      )}
+                    </td>
                   </tr>
                 ))
               ) : (
                 <tr>
-                  <td colSpan={canManageLoans ? 6 : 5} className="text-center py-8 text-gray-500">
+                  <td colSpan={6} className="text-center py-8 text-gray-500">
                     {canManageLoans ? 'Tidak ada data peminjaman.' : 'Anda belum pernah mengajukan peminjaman.'}
                   </td>
                 </tr>
@@ -333,7 +333,7 @@ const AssetLending: React.FC = () => {
         </div>
       </div>
 
-      {/* Loan Request Modal */}
+      {/* Modals */}
       {selectedAsset && (
         <Modal isOpen={isLoanModalOpen} onClose={() => setLoanModalOpen(false)}>
           <AssetLoanForm
@@ -341,25 +341,38 @@ const AssetLending: React.FC = () => {
             onCancel={() => setLoanModalOpen(false)}
             onSuccess={() => {
               setLoanModalOpen(false);
-              fetchData(); // Refresh both asset list and my loans
+              fetchData();
             }}
           />
         </Modal>
       )}
 
-      {/* Loan Approval Modal */}
       {selectedLoan && (
-        <Modal isOpen={isApprovalModalOpen} onClose={() => setApprovalModalOpen(false)}>
-          <LoanApprovalForm
-            loan={selectedLoan}
-            onApprove={handleApprovalSuccess}
-            onCancel={() => {
-              setApprovalModalOpen(false);
-              setSelectedLoan(null);
-            }}
-            loading={actionLoading}
-          />
-        </Modal>
+        <>
+          <Modal isOpen={isApprovalModalOpen} onClose={() => setApprovalModalOpen(false)}>
+            <LoanApprovalForm
+              loan={selectedLoan}
+              onApprove={handleApprovalSuccess}
+              onCancel={() => {
+                setApprovalModalOpen(false);
+                setSelectedLoan(null);
+              }}
+              loading={actionLoading}
+            />
+          </Modal>
+
+          <Modal isOpen={isRejectionModalOpen} onClose={() => setRejectionModalOpen(false)}>
+            <LoanRejectionForm
+              loan={selectedLoan}
+              onReject={handleRejectionSuccess}
+              onCancel={() => {
+                setRejectionModalOpen(false);
+                setSelectedLoan(null);
+              }}
+              loading={actionLoading}
+            />
+          </Modal>
+        </>
       )}
     </div>
   );

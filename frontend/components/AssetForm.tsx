@@ -26,7 +26,7 @@ const AssetForm: React.FC<AssetFormProps> = ({ asset, onSuccess, onClose }) => {
     value: 0,
     purchase_date: '',
     useful_life: 36,
-    status: 'Available' as any, // FIX: Default status for new asset
+    status: AssetStatus.AVAILABLE,
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -55,7 +55,7 @@ const AssetForm: React.FC<AssetFormProps> = ({ asset, onSuccess, onClose }) => {
         value: 0,
         purchase_date: today,
         useful_life: 36,
-        status: 'Available' as any, // FIX: Default status for new asset
+        status: AssetStatus.AVAILABLE,
       });
       setValueInput('');
     }
@@ -247,9 +247,9 @@ const handleSubmit = async (e: React.FormEvent) => {
   const getFieldError = (field: keyof ValidationErrors): string | undefined => validationErrors[field];
   const hasErrors = (): boolean => Object.keys(validationErrors).length > 0 || !!error;
 
-  const availableStatuses = asset 
-    ? [AssetStatus.IN_USE, AssetStatus.IN_REPAIR, AssetStatus.DISPOSED, AssetStatus.LOST]
-    : ['Available' as any, AssetStatus.IN_REPAIR];
+  const availableStatuses = asset
+    ? [AssetStatus.AVAILABLE, AssetStatus.TERPINJAM, AssetStatus.TERJUAL, AssetStatus.LOST]
+    : [AssetStatus.AVAILABLE, AssetStatus.TERPINJAM];
 
   const predefinedCategories = ['Electronics', 'Furniture', 'Vehicle', 'Equipment', 'Building', 'Software', 'Other'];
   const predefinedLocations = ['Office A', 'Office B', 'Warehouse', 'Factory', 'Remote', 'Other'];
@@ -342,9 +342,9 @@ const handleSubmit = async (e: React.FormEvent) => {
         <div className="md:col-span-2">
           <label htmlFor="status" className="block text-sm font-medium text-gray-700 mb-1">Status *</label>
           <select name="status" id="status" value={formData.status} onChange={handleChange} required disabled={loading} className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary sm:text-sm disabled:bg-gray-50">
-            {availableStatuses.map(status => <option key={status} value={status}>{status.replace('_', ' ')}</option>)}
+            {availableStatuses.map(status => <option key={status} value={status}>{status}</option>)}
           </select>
-          {!asset && <p className="mt-1 text-sm text-gray-500">For new assets, only "In Use" and "In Repair" status are available</p>}
+          {!asset && <p className="mt-1 text-sm text-gray-500">For new assets, "Available" and "Terpinjam" status are available</p>}
         </div>
       </div>
 

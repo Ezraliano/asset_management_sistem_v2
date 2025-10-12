@@ -25,6 +25,7 @@ return new class extends Migration
             $table->date('approval_date')->nullable();
             $table->string('loan_proof_photo_path')->nullable();
             $table->text('return_notes')->nullable();
+            $table->text('rejection_reason')->nullable();
             $table->timestamps();
         });
     }

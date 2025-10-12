@@ -441,7 +441,7 @@ export const getAssetById = async (id: string): Promise<Asset | null> => {
   }
 };
 
-export const addAsset = async (assetData: Omit<Asset, 'id'>): Promise<Asset> => {
+export const addAsset = async (assetData: Omit<Asset, 'id' | 'asset_tag'>): Promise<Asset> => {
   const data = await apiRequest('/assets', {
     method: 'POST',
     body: JSON.stringify(assetData),
@@ -620,7 +620,6 @@ export const getAssetLoans = async (status?: AssetLoanStatus): Promise<AssetLoan
   return handleApiResponse<AssetLoan[]>(data);
 };
 
-// ✅ TAMBAHKAN FUNGSI INI - fungsi untuk request peminjaman asset
 export const requestAssetLoan = async (loanData: { 
   asset_id: number; 
   expected_return_date: string; 
@@ -633,7 +632,6 @@ export const requestAssetLoan = async (loanData: {
   return handleApiResponse<AssetLoan>(data);
 };
 
-// Tambahkan fungsi API untuk handle file upload
 export const approveAssetLoan = async (loanId: number, formData: FormData): Promise<AssetLoan> => {
   const token = localStorage.getItem('auth_token');
   
@@ -641,7 +639,6 @@ export const approveAssetLoan = async (loanId: number, formData: FormData): Prom
     method: 'POST',
     headers: {
       'Authorization': `Bearer ${token}`,
-      // Don't set Content-Type for FormData, let browser set it with boundary
     },
     body: formData,
   });
@@ -655,7 +652,10 @@ export const approveAssetLoan = async (loanId: number, formData: FormData): Prom
   return data.data;
 };
 
-export const rejectAssetLoan = async (loanId: number, data: { approval_date: string }): Promise<AssetLoan> => {
+export const rejectAssetLoan = async (loanId: number, data: { 
+  approval_date: string;
+  rejection_reason: string 
+}): Promise<AssetLoan> => {
   const responseData = await apiRequest(`/asset-loans/${loanId}/reject`, {
     method: 'POST',
     body: JSON.stringify(data),
