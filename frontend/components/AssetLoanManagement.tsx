@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { getAssetLoans, approveAssetLoan, rejectAssetLoan, returnAssetLoan, getCurrentUser } from '../services/api';
 import { AssetLoan, AssetLoanStatus, User } from '../types';
 import Modal from './Modal';
+import LoanApprovalForm from './LoanApprovalForm';
 
 const AssetLoanManagement: React.FC = () => {
   const [allLoans, setAllLoans] = useState<AssetLoan[]>([]);
@@ -13,8 +14,7 @@ const AssetLoanManagement: React.FC = () => {
   // Modal States
   const [isModalOpen, setModalOpen] = useState(false);
   const [selectedLoan, setSelectedLoan] = useState<AssetLoan | null>(null);
-  const [modalAction, setModalAction] = useState<'approve' | 'return' | null>(null);
-  const [modalInput, setModalInput] = useState('');
+  const [modalAction, setModalAction] = useState<'approve' | 'reject' | 'return' | null>(null);
   const [actionLoading, setActionLoading] = useState(false);
 
   const fetchData = async () => {
@@ -47,41 +47,35 @@ const AssetLoanManagement: React.FC = () => {
     return ['Super Admin', 'Admin Holding'].includes(currentUser.role);
   }, [currentUser]);
 
-  const handleActionClick = (loan: AssetLoan, action: 'approve' | 'return') => {
+  const handleActionClick = (loan: AssetLoan, action: 'approve' | 'reject' | 'return') => {
     setSelectedLoan(loan);
     setModalAction(action);
-    setModalInput('');
     setModalOpen(true);
   };
 
-  const handleRejectClick = async (loan: AssetLoan) => {
-    if (window.confirm(`Are you sure you want to reject this loan request for ${loan.asset.name}?`)) {
-      setActionLoading(true);
-      try {
-        await rejectAssetLoan(loan.id);
-        fetchData(); // Refresh data
-      } catch (err: any) {
-        alert(`Failed to reject loan: ${err.message}`);
-      } finally {
-        setActionLoading(false);
-      }
-    }
-  };
-
-  const handleModalSubmit = async () => {
+  const handleModalSubmit = async (formData?: any) => {
     if (!selectedLoan || !modalAction) return;
 
     setActionLoading(true);
     try {
       if (modalAction === 'approve') {
-        await approveAssetLoan(selectedLoan.id, { loan_proof_photo_path: modalInput });
+        // Create FormData for file upload
+        const formDataToSend = new FormData();
+        formDataToSend.append('approval_date', formData.approval_date);
+        formDataToSend.append('loan_proof_photo', formData.loan_proof_photo);
+        
+        await approveAssetLoan(selectedLoan.id, formDataToSend);
+      } else if (modalAction === 'reject') {
+        await rejectAssetLoan(selectedLoan.id, { approval_date: formData.approval_date });
       } else if (modalAction === 'return') {
-        await returnAssetLoan(selectedLoan.id, { return_notes: modalInput });
+        await returnAssetLoan(selectedLoan.id, { return_notes: formData.return_notes });
       }
+      
       setModalOpen(false);
       fetchData(); // Refresh data
+      alert(`Loan ${modalAction}d successfully!`);
     } catch (err: any) {
-      alert(`Failed to process action: ${err.message}`);
+      alert(`Failed to ${modalAction} loan: ${err.message}`);
     } finally {
       setActionLoading(false);
     }
@@ -95,8 +89,42 @@ const AssetLoanManagement: React.FC = () => {
     </button>
   );
 
+  const getActionButtons = (loan: AssetLoan) => {
+    switch (loan.status) {
+      case AssetLoanStatus.PENDING:
+        return (
+          <>
+            <button 
+              onClick={() => handleActionClick(loan, 'approve')}
+              className="px-3 py-1 text-xs bg-green-500 text-white rounded-md hover:bg-green-600"
+            >
+              Setujui
+            </button>
+            <button 
+              onClick={() => handleActionClick(loan, 'reject')}
+              className="px-3 py-1 text-xs bg-red-500 text-white rounded-md hover:bg-red-600"
+            >
+              Tolak
+            </button>
+          </>
+        );
+      case AssetLoanStatus.APPROVED:
+        return (
+          <button 
+            onClick={() => handleActionClick(loan, 'return')}
+            className="px-3 py-1 text-xs bg-blue-500 text-white rounded-md hover:bg-blue-600"
+          >
+            Proses Pengembalian
+          </button>
+        );
+      default:
+        return null;
+    }
+  };
+
   if (loading) return <div className="text-center p-8">Loading loan management...</div>;
   if (error) return <div className="text-center p-8 text-red-500">Error: {error}</div>;
+  if (!canManageLoans) return <div className="text-center p-8 text-red-500">Unauthorized access</div>;
 
   return (
     <div className="space-y-6">
@@ -117,6 +145,7 @@ const AssetLoanManagement: React.FC = () => {
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Aset</th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Peminjam</th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Tanggal</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Aksi</th>
               </tr>
             </thead>
@@ -130,22 +159,24 @@ const AssetLoanManagement: React.FC = () => {
                         <div>Req: {new Date(loan.request_date).toLocaleDateString()}</div>
                         <div>Return: {new Date(loan.expected_return_date).toLocaleDateString()}</div>
                     </td>
+                    <td className="px-4 py-4 text-sm">
+                      <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                        loan.status === AssetLoanStatus.PENDING ? 'bg-yellow-100 text-yellow-800' :
+                        loan.status === AssetLoanStatus.APPROVED ? 'bg-blue-100 text-blue-800' :
+                        loan.status === AssetLoanStatus.REJECTED ? 'bg-red-100 text-red-800' :
+                        'bg-green-100 text-green-800'
+                      }`}>
+                        {loan.status}
+                      </span>
+                    </td>
                     <td className="px-4 py-4 text-sm space-x-2">
-                      {loan.status === AssetLoanStatus.PENDING && canManageLoans && (
-                        <>
-                          <button onClick={() => handleActionClick(loan, 'approve')} className="px-3 py-1 text-xs bg-green-500 text-white rounded-md hover:bg-green-600">Accept</button>
-                          <button onClick={() => handleRejectClick(loan)} className="px-3 py-1 text-xs bg-red-500 text-white rounded-md hover:bg-red-600">Reject</button>
-                        </>
-                      )}
-                      {loan.status === AssetLoanStatus.APPROVED && (
-                        <button onClick={() => handleActionClick(loan, 'return')} className="px-3 py-1 text-xs bg-green-500 text-white rounded-md hover:bg-green-600">Proses Pengembalian</button>
-                      )}
+                      {getActionButtons(loan)}
                     </td>
                   </tr>
                 ))
               ) : (
                 <tr>
-                  <td colSpan={4} className="text-center py-8 text-gray-500">Tidak ada data untuk status ini.</td>
+                  <td colSpan={5} className="text-center py-8 text-gray-500">Tidak ada data untuk status ini.</td>
                 </tr>
               )}
             </tbody>
@@ -153,35 +184,62 @@ const AssetLoanManagement: React.FC = () => {
         </div>
       </div>
 
+      {/* Modal for different actions */}
       {selectedLoan && (
         <Modal isOpen={isModalOpen} onClose={() => setModalOpen(false)}>
-          <div className="p-4">
-            <h3 className="text-lg font-bold mb-4">
-              {modalAction === 'approve' ? 'Approve Loan Request' : 'Process Asset Return'}
-            </h3>
-            <p><strong>Aset:</strong> {selectedLoan.asset.name}</p>
-            <p className="mb-4"><strong>Peminjam:</strong> {selectedLoan.borrower.name}</p>
-            
-            <div className="mb-4">
-              <label htmlFor="modalInput" className="block text-sm font-medium text-gray-700">
-                {modalAction === 'approve' ? 'Photo Proof (Path/URL)' : 'Return Notes'}
-              </label>
-              <input
-                type="text"
-                id="modalInput"
-                value={modalInput}
-                onChange={(e) => setModalInput(e.target.value)}
-                className="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm"
-                placeholder={modalAction === 'approve' ? 'e.g., /storage/photos/loan123.jpg' : 'e.g., Asset returned in good condition'}
+          <div className="p-6">
+            {modalAction === 'approve' && (
+              <LoanApprovalForm
+                loan={selectedLoan}
+                onApprove={handleModalSubmit}
+                onCancel={() => setModalOpen(false)}
+                loading={actionLoading}
               />
-            </div>
-
-            <div className="flex justify-end gap-2 mt-6">
-              <button onClick={() => setModalOpen(false)} className="px-4 py-2 bg-gray-300 rounded-md">Cancel</button>
-              <button onClick={handleModalSubmit} disabled={actionLoading} className="px-4 py-2 bg-primary text-white rounded-md disabled:bg-blue-300">
-                {actionLoading ? 'Processing...' : 'Confirm'}
-              </button>
-            </div>
+            )}
+            
+            {modalAction === 'reject' && (
+              <div className="space-y-4">
+                <h3 className="text-lg font-bold">Tolak Peminjaman</h3>
+                <p>Anda yakin ingin menolak peminjaman <strong>{selectedLoan.asset.name}</strong> oleh <strong>{selectedLoan.borrower.name}</strong>?</p>
+                <div className="flex justify-end space-x-3">
+                  <button
+                    onClick={() => setModalOpen(false)}
+                    className="px-4 py-2 bg-gray-300 rounded-md"
+                  >
+                    Batal
+                  </button>
+                  <button
+                    onClick={() => handleModalSubmit({ approval_date: new Date().toISOString().split('T')[0] })}
+                    disabled={actionLoading}
+                    className="px-4 py-2 bg-red-500 text-white rounded-md disabled:bg-gray-300"
+                  >
+                    {actionLoading ? 'Memproses...' : 'Tolak'}
+                  </button>
+                </div>
+              </div>
+            )}
+            
+            {modalAction === 'return' && (
+              <div className="space-y-4">
+                <h3 className="text-lg font-bold">Proses Pengembalian</h3>
+                <p>Konfirmasi pengembalian asset <strong>{selectedLoan.asset.name}</strong> oleh <strong>{selectedLoan.borrower.name}</strong>?</p>
+                <div className="flex justify-end space-x-3">
+                  <button
+                    onClick={() => setModalOpen(false)}
+                    className="px-4 py-2 bg-gray-300 rounded-md"
+                  >
+                    Batal
+                  </button>
+                  <button
+                    onClick={() => handleModalSubmit({ return_notes: 'Asset telah dikembalikan' })}
+                    disabled={actionLoading}
+                    className="px-4 py-2 bg-green-500 text-white rounded-md disabled:bg-gray-300"
+                  >
+                    {actionLoading ? 'Memproses...' : 'Konfirmasi Pengembalian'}
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         </Modal>
       )}

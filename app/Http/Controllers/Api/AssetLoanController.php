@@ -9,6 +9,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Storage;
 
 class AssetLoanController extends Controller
 {
@@ -64,7 +65,7 @@ class AssetLoanController extends Controller
             'status' => 'PENDING', // Initial status
         ]);
 
-        return response()->json($loan, 201);
+        return response()->json($loan->load(['asset', 'borrower']), 201);
     }
 
     /**
@@ -83,65 +84,92 @@ class AssetLoanController extends Controller
     }
 
     /**
-     * Approve a loan request.
+     * Approve a loan request with photo upload and approval date.
      * This is for admin/unit to approve.
      */
     public function approve(Request $request, AssetLoan $assetLoan)
     {
-        // Optional: Add authorization check to ensure only certain roles can approve
-        // if (Auth::user()->role !== 'admin') {
-        //     return response()->json(['message' => 'Unauthorized'], 403);
-        // }
+        $user = Auth::user();
+        
+        // Check if user has permission to approve
+        if (!in_array($user->role, ['Super Admin', 'Admin Holding'])) {
+            return response()->json(['message' => 'Unauthorized to approve loans'], 403);
+        }
 
         if ($assetLoan->status !== 'PENDING') {
             return response()->json(['message' => 'This loan is not pending approval.'], 422);
         }
         
         $request->validate([
-            'loan_proof_photo_path' => 'nullable|string|max:255',
+            'approval_date' => 'required|date|before_or_equal:today',
+            'loan_proof_photo' => 'required|image|mimes:jpeg,png,jpg,gif|max:2048',
         ]);
 
         try {
-            DB::transaction(function () use ($assetLoan, $request) {
+            DB::transaction(function () use ($assetLoan, $request, $user) {
+                // Handle photo upload
+                if ($request->hasFile('loan_proof_photo')) {
+                    $photoPath = $request->file('loan_proof_photo')->store('loan-proofs', 'public');
+                } else {
+                    throw new \Exception('Proof photo is required');
+                }
+
                 // Update the loan status
                 $assetLoan->update([
                     'status' => 'APPROVED',
-                    'approved_by' => Auth::id(),
-                    'approval_date' => Carbon::today(),
-                    'loan_date' => Carbon::today(), // Set loan date on approval
-                    'loan_proof_photo_path' => $request->loan_proof_photo_path,
+                    'approved_by' => $user->id,
+                    'approval_date' => $request->approval_date,
+                    'loan_date' => Carbon::today(),
+                    'loan_proof_photo_path' => $photoPath,
                 ]);
 
                 // Update the asset status
                 $assetLoan->asset->update(['status' => 'Terpinjam']);
             });
         } catch (\Exception $e) {
-            return response()->json(['message' => 'An error occurred during approval.', 'error' => $e->getMessage()], 500);
+            return response()->json([
+                'message' => 'An error occurred during approval.', 
+                'error' => $e->getMessage()
+            ], 500);
         }
 
-
-        return response()->json($assetLoan->fresh()->load(['asset', 'borrower', 'approver']));
+        return response()->json([
+            'message' => 'Loan approved successfully',
+            'data' => $assetLoan->fresh()->load(['asset', 'borrower', 'approver'])
+        ]);
     }
 
     /**
      * Reject a loan request.
      * This is for admin/unit to reject.
      */
-    public function reject(AssetLoan $assetLoan)
+    public function reject(Request $request, AssetLoan $assetLoan)
     {
-        // Optional: Add authorization check
+        $user = Auth::user();
         
+        // Check if user has permission to reject
+        if (!in_array($user->role, ['Super Admin', 'Admin Holding'])) {
+            return response()->json(['message' => 'Unauthorized to reject loans'], 403);
+        }
+
         if ($assetLoan->status !== 'PENDING') {
             return response()->json(['message' => 'This loan is not pending approval.'], 422);
         }
 
-        $assetLoan->update([
-            'status' => 'REJECTED',
-            'approved_by' => Auth::id(), // The user who rejected it
-            'approval_date' => Carbon::today(),
+        $request->validate([
+            'approval_date' => 'required|date|before_or_equal:today',
         ]);
 
-        return response()->json($assetLoan->fresh());
+        $assetLoan->update([
+            'status' => 'REJECTED',
+            'approved_by' => $user->id,
+            'approval_date' => $request->approval_date,
+        ]);
+
+        return response()->json([
+            'message' => 'Loan rejected successfully',
+            'data' => $assetLoan->fresh()
+        ]);
     }
 
     /**
@@ -150,7 +178,12 @@ class AssetLoanController extends Controller
      */
     public function returnAsset(Request $request, AssetLoan $assetLoan)
     {
-        // Optional: Add authorization check
+        $user = Auth::user();
+        
+        // Check if user has permission to process returns
+        if (!in_array($user->role, ['Super Admin', 'Admin Holding'])) {
+            return response()->json(['message' => 'Unauthorized to process returns'], 403);
+        }
 
         if ($assetLoan->status !== 'APPROVED') {
             return response()->json(['message' => 'This loan is not currently active.'], 422);
@@ -173,9 +206,37 @@ class AssetLoanController extends Controller
                 $assetLoan->asset->update(['status' => 'Available']);
             });
         } catch (\Exception $e) {
-            return response()->json(['message' => 'An error occurred during asset return.', 'error' => $e->getMessage()], 500);
+            return response()->json([
+                'message' => 'An error occurred during asset return.', 
+                'error' => $e->getMessage()
+            ], 500);
         }
 
-        return response()->json($assetLoan->fresh()->load(['asset', 'borrower', 'approver']));
+        return response()->json([
+            'message' => 'Asset returned successfully',
+            'data' => $assetLoan->fresh()->load(['asset', 'borrower', 'approver'])
+        ]);
+    }
+
+    /**
+     * Get loan proof photo
+     */
+    public function getProofPhoto(AssetLoan $assetLoan)
+    {
+        if (!$assetLoan->loan_proof_photo_path) {
+            return response()->json(['message' => 'Proof photo not found'], 404);
+        }
+
+        // Check if user can view this photo
+        $user = Auth::user();
+        if ($user && $user->role === 'User' && $assetLoan->borrower_id !== $user->id) {
+            return response()->json(['message' => 'Unauthorized to view this photo'], 403);
+        }
+
+        if (!Storage::disk('public')->exists($assetLoan->loan_proof_photo_path)) {
+            return response()->json(['message' => 'Photo file not found'], 404);
+        }
+
+        return response()->file(storage_path('app/public/' . $assetLoan->loan_proof_photo_path));
     }
 }

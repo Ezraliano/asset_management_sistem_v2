@@ -610,6 +610,8 @@ export const addLossReport = async (reportData: Omit<LossReport, 'id'>): Promise
   return handleApiResponse<LossReport>(data);
 };
 
+
+
 // ==================== ASSET LOAN API ====================
 
 export const getAssetLoans = async (status?: AssetLoanStatus): Promise<AssetLoan[]> => {
@@ -618,7 +620,12 @@ export const getAssetLoans = async (status?: AssetLoanStatus): Promise<AssetLoan
   return handleApiResponse<AssetLoan[]>(data);
 };
 
-export const requestAssetLoan = async (loanData: { asset_id: number; expected_return_date: string; purpose: string }): Promise<AssetLoan> => {
+// ✅ TAMBAHKAN FUNGSI INI - fungsi untuk request peminjaman asset
+export const requestAssetLoan = async (loanData: { 
+  asset_id: number; 
+  expected_return_date: string; 
+  purpose: string 
+}): Promise<AssetLoan> => {
   const data = await apiRequest('/asset-loans', {
     method: 'POST',
     body: JSON.stringify(loanData),
@@ -626,27 +633,42 @@ export const requestAssetLoan = async (loanData: { asset_id: number; expected_re
   return handleApiResponse<AssetLoan>(data);
 };
 
-export const approveAssetLoan = async (loanId: number, approvalData: { loan_proof_photo_path?: string }): Promise<AssetLoan> => {
-  const data = await apiRequest(`/asset-loans/${loanId}/approve`, {
+// Tambahkan fungsi API untuk handle file upload
+export const approveAssetLoan = async (loanId: number, formData: FormData): Promise<AssetLoan> => {
+  const token = localStorage.getItem('auth_token');
+  
+  const response = await fetch(`${API_BASE_URL}/asset-loans/${loanId}/approve`, {
     method: 'POST',
-    body: JSON.stringify(approvalData),
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      // Don't set Content-Type for FormData, let browser set it with boundary
+    },
+    body: formData,
   });
-  return handleApiResponse<AssetLoan>(data);
+
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(errorData.message || 'Failed to approve loan');
+  }
+
+  const data = await response.json();
+  return data.data;
 };
 
-export const rejectAssetLoan = async (loanId: number): Promise<AssetLoan> => {
-  const data = await apiRequest(`/asset-loans/${loanId}/reject`, {
+export const rejectAssetLoan = async (loanId: number, data: { approval_date: string }): Promise<AssetLoan> => {
+  const responseData = await apiRequest(`/asset-loans/${loanId}/reject`, {
     method: 'POST',
+    body: JSON.stringify(data),
   });
-  return handleApiResponse<AssetLoan>(data);
+  return handleApiResponse<AssetLoan>(responseData.data);
 };
 
-export const returnAssetLoan = async (loanId: number, returnData: { return_notes?: string }): Promise<AssetLoan> => {
-  const data = await apiRequest(`/asset-loans/${loanId}/return`, {
+export const returnAssetLoan = async (loanId: number, data: { return_notes?: string }): Promise<AssetLoan> => {
+  const responseData = await apiRequest(`/asset-loans/${loanId}/return`, {
     method: 'POST',
-    body: JSON.stringify(returnData),
+    body: JSON.stringify(data),
   });
-  return handleApiResponse<AssetLoan>(data);
+  return handleApiResponse<AssetLoan>(responseData.data);
 };
 
 

@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { getAvailableAssets, getAssetLoans, approveAssetLoan, rejectAssetLoan, getCurrentUser } from '../services/api';
+import { getAvailableAssets, getAssetLoans, getCurrentUser } from '../services/api';
 import { Asset, AssetLoan, AssetLoanStatus, User } from '../types';
 import { BorrowIcon } from './icons';
 import Modal from './Modal';
 import AssetLoanForm from './AssetLoanForm';
+import LoanApprovalForm from './LoanApprovalForm';
 
 const AssetLending: React.FC = () => {
   const [availableAssets, setAvailableAssets] = useState<Asset[]>([]);
@@ -15,14 +16,15 @@ const AssetLending: React.FC = () => {
   const [statusFilter, setStatusFilter] = useState<AssetLoanStatus | 'ALL'>('ALL');
 
   const [isLoanModalOpen, setLoanModalOpen] = useState(false);
+  const [isApprovalModalOpen, setApprovalModalOpen] = useState(false);
   const [selectedAsset, setSelectedAsset] = useState<Asset | null>(null);
+  const [selectedLoan, setSelectedLoan] = useState<AssetLoan | null>(null);
   const [actionLoading, setActionLoading] = useState(false);
 
   const fetchData = async () => {
     setLoading(true);
     setError(null);
     try {
-      // Fetch available assets, all loans, and current user concurrently
       const [assetsResponse, loansResponse, userResponse] = await Promise.all([
         getAvailableAssets(),
         getAssetLoans(),
@@ -45,6 +47,33 @@ const AssetLending: React.FC = () => {
   const handleBorrowClick = (asset: Asset) => {
     setSelectedAsset(asset);
     setLoanModalOpen(true);
+  };
+
+  const handleApproveClick = (loan: AssetLoan) => {
+    setSelectedLoan(loan);
+    setApprovalModalOpen(true);
+  };
+
+  const handleRejectClick = async (loan: AssetLoan) => {
+    if (window.confirm(`Are you sure you want to reject this loan request for ${loan.asset.name}?`)) {
+      setActionLoading(true);
+      try {
+        // Panggil API reject di sini
+        // await rejectAssetLoan(loan.id, { approval_date: new Date().toISOString().split('T')[0] });
+        fetchData(); // Refresh data
+        alert('Loan rejected successfully!');
+      } catch (err: any) {
+        alert(`Failed to reject loan: ${err.message}`);
+      } finally {
+        setActionLoading(false);
+      }
+    }
+  };
+
+  const handleApprovalSuccess = () => {
+    setApprovalModalOpen(false);
+    setSelectedLoan(null);
+    fetchData(); // Refresh data
   };
 
   const filteredAssets = useMemo(() => {
@@ -77,37 +106,13 @@ const AssetLending: React.FC = () => {
   // Check if user can manage loans (accept/reject)
   const canManageLoans = useMemo(() => {
     if (!currentUser) return false;
-    return ['Super Admin', 'Admin Holding', 'Unit'].includes(currentUser.role);
+    return ['Super Admin', 'Admin Holding'].includes(currentUser.role);
   }, [currentUser]);
 
-  // Handle accept/reject actions
-  const handleAcceptClick = async (loan: AssetLoan) => {
-    if (window.confirm(`Are you sure you want to accept this loan request for ${loan.asset.name}?`)) {
-      setActionLoading(true);
-      try {
-        await approveAssetLoan(loan.id, {});
-        fetchData(); // Refresh data
-      } catch (err: any) {
-        alert(`Failed to accept loan: ${err.message}`);
-      } finally {
-        setActionLoading(false);
-      }
-    }
-  };
-
-  const handleRejectClick = async (loan: AssetLoan) => {
-    if (window.confirm(`Are you sure you want to reject this loan request for ${loan.asset.name}?`)) {
-      setActionLoading(true);
-      try {
-        await rejectAssetLoan(loan.id);
-        fetchData(); // Refresh data
-      } catch (err: any) {
-        alert(`Failed to reject loan: ${err.message}`);
-      } finally {
-        setActionLoading(false);
-      }
-    }
-  };
+  // Get pending loans for admin view
+  const pendingLoans = useMemo(() => {
+    return allLoans.filter(loan => loan.status === AssetLoanStatus.PENDING);
+  }, [allLoans]);
 
   const getStatusBadge = (status: AssetLoanStatus) => {
     switch (status) {
@@ -187,7 +192,7 @@ const AssetLending: React.FC = () => {
       </div>
 
       {/* Section 2: Pending Loan Requests (Admin Only) */}
-      {canManageLoans && (
+      {canManageLoans && pendingLoans.length > 0 && (
         <div className="bg-white p-6 rounded-xl shadow-md">
           <h2 className="text-xl font-semibold mb-4">Permintaan Peminjaman Pending</h2>
           <div className="max-h-96 overflow-y-auto">
@@ -197,41 +202,41 @@ const AssetLending: React.FC = () => {
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nama Aset</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Peminjam</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tanggal Pengajuan</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tujuan</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Aksi</th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {allLoans.filter(loan => loan.status === AssetLoanStatus.PENDING).length > 0 ? (
-                  allLoans.filter(loan => loan.status === AssetLoanStatus.PENDING).map(loan => (
-                    <tr key={loan.id}>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{loan.asset.name}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{loan.borrower.name}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{new Date(loan.request_date).toLocaleDateString()}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                        <div className="flex space-x-2">
-                          <button
-                            onClick={() => handleAcceptClick(loan)}
-                            disabled={actionLoading}
-                            className="px-3 py-1 text-xs bg-green-500 text-white rounded-md hover:bg-green-600 disabled:bg-gray-400"
-                          >
-                            Accept
-                          </button>
-                          <button
-                            onClick={() => handleRejectClick(loan)}
-                            disabled={actionLoading}
-                            className="px-3 py-1 text-xs bg-red-500 text-white rounded-md hover:bg-red-600 disabled:bg-gray-400"
-                          >
-                            Reject
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))
-                ) : (
-                  <tr>
-                    <td colSpan={4} className="text-center py-8 text-gray-500">Tidak ada permintaan peminjaman pending.</td>
+                {pendingLoans.map(loan => (
+                  <tr key={loan.id}>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{loan.asset.name}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{loan.borrower.name}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{new Date(loan.request_date).toLocaleDateString()}</td>
+                    <td className="px-6 py-4 text-sm text-gray-500">
+                      <div className="max-w-xs truncate" title={loan.purpose}>
+                        {loan.purpose}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                      <div className="flex space-x-2">
+                        <button
+                          onClick={() => handleApproveClick(loan)}
+                          disabled={actionLoading}
+                          className="px-3 py-1 text-xs bg-green-500 text-white rounded-md hover:bg-green-600 disabled:bg-gray-400"
+                        >
+                          Setujui
+                        </button>
+                        <button
+                          onClick={() => handleRejectClick(loan)}
+                          disabled={actionLoading}
+                          className="px-3 py-1 text-xs bg-red-500 text-white rounded-md hover:bg-red-600 disabled:bg-gray-400"
+                        >
+                          Tolak
+                        </button>
+                      </div>
+                    </td>
                   </tr>
-                )}
+                ))}
               </tbody>
             </table>
           </div>
@@ -241,7 +246,9 @@ const AssetLending: React.FC = () => {
       {/* Section 3: My Loan History */}
       <div className="bg-white p-6 rounded-xl shadow-md">
         <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xl font-semibold">Riwayat Peminjaman</h2>
+          <h2 className="text-xl font-semibold">
+            {canManageLoans ? 'Semua Riwayat Peminjaman' : 'Riwayat Peminjaman Saya'}
+          </h2>
           <div className="flex space-x-2">
             <button
               onClick={() => setStatusFilter('ALL')}
@@ -267,6 +274,12 @@ const AssetLending: React.FC = () => {
             >
               Rejected
             </button>
+            <button
+              onClick={() => setStatusFilter(AssetLoanStatus.RETURNED)}
+              className={`px-3 py-2 text-sm rounded-md ${statusFilter === AssetLoanStatus.RETURNED ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}
+            >
+              Returned
+            </button>
           </div>
         </div>
         <div className="max-h-96 overflow-y-auto">
@@ -274,6 +287,9 @@ const AssetLending: React.FC = () => {
             <thead className="bg-gray-50">
               <tr>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nama Aset</th>
+                {canManageLoans && (
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Peminjam</th>
+                )}
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tgl. Pengajuan</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tgl. Verifikasi</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tgl. Kembali</th>
@@ -285,11 +301,19 @@ const AssetLending: React.FC = () => {
                 filteredLoans.map(loan => (
                   <tr key={loan.id}>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{loan.asset.name}</td>
+                    {canManageLoans && (
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{loan.borrower.name}</td>
+                    )}
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{new Date(loan.request_date).toLocaleDateString()}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       {loan.approval_date ? new Date(loan.approval_date).toLocaleDateString() : '-'}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{new Date(loan.expected_return_date).toLocaleDateString()}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {loan.actual_return_date 
+                        ? new Date(loan.actual_return_date).toLocaleDateString()
+                        : new Date(loan.expected_return_date).toLocaleDateString()
+                      }
+                    </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm">
                       <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusBadge(loan.status)}`}>
                         {loan.status}
@@ -299,7 +323,9 @@ const AssetLending: React.FC = () => {
                 ))
               ) : (
                 <tr>
-                  <td colSpan={5} className="text-center py-8 text-gray-500">Anda belum pernah mengajukan peminjaman.</td>
+                  <td colSpan={canManageLoans ? 6 : 5} className="text-center py-8 text-gray-500">
+                    {canManageLoans ? 'Tidak ada data peminjaman.' : 'Anda belum pernah mengajukan peminjaman.'}
+                  </td>
                 </tr>
               )}
             </tbody>
@@ -317,6 +343,21 @@ const AssetLending: React.FC = () => {
               setLoanModalOpen(false);
               fetchData(); // Refresh both asset list and my loans
             }}
+          />
+        </Modal>
+      )}
+
+      {/* Loan Approval Modal */}
+      {selectedLoan && (
+        <Modal isOpen={isApprovalModalOpen} onClose={() => setApprovalModalOpen(false)}>
+          <LoanApprovalForm
+            loan={selectedLoan}
+            onApprove={handleApprovalSuccess}
+            onCancel={() => {
+              setApprovalModalOpen(false);
+              setSelectedLoan(null);
+            }}
+            loading={actionLoading}
           />
         </Modal>
       )}
