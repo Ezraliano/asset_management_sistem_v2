@@ -33,8 +33,8 @@ Route::middleware(['auth:sanctum'])->group(function () {
         // Future report routes can be placed here
     });
 
-    // Group for Aset menu (Admin Holding, Unit)
-    Route::middleware('role:Admin Holding,Unit')->group(function () {
+    // Group for Aset menu (Admin Holding, Admin Unit)
+    Route::middleware('role:Admin Holding,Admin Unit')->group(function () {
         Route::apiResource('assets', AssetController::class);
         Route::get('/assets/{id}/depreciation', [AssetDepreciationController::class, 'show']);
         Route::get('/assets/{id}/depreciation-preview', [AssetDepreciationController::class, 'preview']);

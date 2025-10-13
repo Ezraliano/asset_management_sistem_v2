@@ -20,6 +20,9 @@ class UserSeeder extends Seeder
         // Get unit Kajoetangan
         $unitKajoetangan = Unit::where('code', 'KAJOETANGAN')->first();
 
+        // Get unit Batu
+        $unitBatu = Unit::where('code', 'BATU')->first();
+
         $users = [
             [
                 'name' => 'Super Admin',
@@ -46,7 +49,7 @@ class UserSeeder extends Seeder
             [
                 'name' => 'Admin Unit Kajoetangan',
                 'email' => 'unit@example.com',
-                'username' => 'unit',
+                'username' => 'unitkajoetangan',
                 'password' => Hash::make('123'),
                 'role' => 'Admin Unit', // Changed from 'Unit' to 'Admin Unit'
                 'unit_id' => $unitKajoetangan?->id, // Assign to Unit Kajoetangan
@@ -55,12 +58,23 @@ class UserSeeder extends Seeder
                 'updated_at' => now(),
             ],
             [
-                'name' => 'Regular User',
+                'name' => 'Admin Unit Batu',
+                'email' => 'adminbatu@example.com',
+                'username' => 'unitbatu',
+                'password' => Hash::make('123'),
+                'role' => 'Admin Unit',
+                'unit_id' => $unitBatu?->id,
+                'email_verified_at' => now(),
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
+            [
+                'name' => 'Regular User - Kajoetangan',
                 'email' => 'user@example.com',
                 'username' => 'user',
                 'password' => Hash::make('123'),
                 'role' => 'User',
-                'unit_id' => null, // Regular user tidak terikat dengan unit
+                'unit_id' => $unitKajoetangan?->id, // Regular user terikat dengan unit Kajoetangan
                 'email_verified_at' => now(),
                 'created_at' => now(),
                 'updated_at' => now(),
@@ -73,7 +87,8 @@ class UserSeeder extends Seeder
         $this->command->info('Users seeded successfully with new roles!');
         $this->command->info('Super Admin: superadmin / 123');
         $this->command->info('Admin Holding: adminholding / 123');
-        $this->command->info('Admin Unit Kajoetangan: unit / 123');
+        $this->command->info('Admin Unit Kajoetangan: unitkajoetangan / 123');
+        $this->command->info('Admin Unit Batu: unitbatu / 123');
         $this->command->info('Regular User: user / 123');
     }
 }

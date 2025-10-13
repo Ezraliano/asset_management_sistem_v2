@@ -594,6 +594,9 @@ const AssetLending: React.FC = () => {
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Status
                   </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Alasan
+                  </th>
                   {canManageLoans && (
                     <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider w-40">
                       Aksi
@@ -639,10 +642,14 @@ const AssetLending: React.FC = () => {
                         {loan.status === AssetLoanStatus.REJECTED && 'Ditolak'}
                         {loan.status === AssetLoanStatus.RETURNED && 'Dikembalikan'}
                       </span>
-                      {loan.status === AssetLoanStatus.REJECTED && loan.rejection_reason && (
-                        <div className="mt-1 text-xs text-gray-600" title={loan.rejection_reason}>
-                          Alasan: {loan.rejection_reason}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      {loan.status === AssetLoanStatus.REJECTED && loan.rejection_reason ? (
+                        <div className="text-xs text-gray-600" title={loan.rejection_reason}>
+                          {loan.rejection_reason}
                         </div>
+                      ) : (
+                        <span className="text-gray-400">-</span>
                       )}
                     </td>
                     {canManageLoans && (
