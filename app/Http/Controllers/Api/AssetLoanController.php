@@ -386,19 +386,37 @@ class AssetLoanController extends Controller
 
     /**
      * Mark a loan as returned.
-     * This is for admin/unit to process a return.
+     * This is for admin/unit to process a return OR for users to return their own loans.
      */
     public function returnAsset(Request $request, AssetLoan $assetLoan)
     {
         DB::beginTransaction();
-        
+
         try {
             $user = Auth::user();
 
             // Load asset with unit relationship
             $assetLoan->load('asset.unit');
 
-            // ✅ Middleware sudah handle authorization, langsung proses return
+            // ✅ PERBAIKAN: Authorization - Allow both admins AND users (for their own loans)
+            $isAdmin = in_array($user->role, ['Super Admin', 'Admin Holding', 'Admin Unit']);
+            $isOwnLoan = $assetLoan->borrower_id === $user->id;
+
+            if (!$isAdmin && !$isOwnLoan) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Unauthorized to return this asset.'
+                ], Response::HTTP_FORBIDDEN);
+            }
+
+            // For Admin Unit, check if asset is in their unit
+            if ($user->role === 'Admin Unit' && $user->unit_id && $assetLoan->asset->unit_id !== $user->unit_id) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Unauthorized to manage returns for assets from other units.'
+                ], Response::HTTP_FORBIDDEN);
+            }
+
             if ($assetLoan->status !== 'APPROVED') {
                 return response()->json([
                     'success' => false,
@@ -407,23 +425,43 @@ class AssetLoanController extends Controller
             }
 
             $request->validate([
-                'return_notes' => 'nullable|string|max:1000',
-                'actual_return_date' => 'required|date|before_or_equal:today',
+                'return_date' => 'required|date|before_or_equal:today',
+                'condition' => 'required|in:good,damaged,lost',
+                'notes' => 'nullable|string|max:1000',
+                'return_proof_photo' => 'required|image|mimes:jpeg,png,jpg,gif|max:2048',
             ]);
+
+            // Handle photo upload
+            $photoPath = null;
+            if ($request->hasFile('return_proof_photo')) {
+                $photoPath = $request->file('return_proof_photo')->store('return-proofs', 'public');
+            } else {
+                throw new \Exception('Return proof photo is required');
+            }
+
+            // Determine asset status based on condition
+            $assetStatus = 'Available';
+            if ($request->condition === 'damaged') {
+                $assetStatus = 'Need Repair';
+            } elseif ($request->condition === 'lost') {
+                $assetStatus = 'Disposed'; // atau status lain yang sesuai untuk hilang
+            }
 
             // Update the loan status
             $assetLoan->update([
                 'status' => 'RETURNED',
-                'actual_return_date' => $request->actual_return_date,
-                'return_notes' => $request->return_notes,
+                'actual_return_date' => $request->return_date,
+                'return_notes' => $request->notes,
+                'return_condition' => $request->condition,
+                'return_proof_photo_path' => $photoPath,
             ]);
 
-            // Update the asset status back to Available
-            $assetLoan->asset->update(['status' => 'Available']);
+            // Update the asset status based on condition
+            $assetLoan->asset->update(['status' => $assetStatus]);
 
             DB::commit();
 
-            Log::info("✅ Asset returned successfully: Loan ID {$assetLoan->id} by User {$user->name}");
+            Log::info("✅ Asset returned successfully: Loan ID {$assetLoan->id} by User {$user->name} with condition {$request->condition}");
 
             return response()->json([
                 'success' => true,
@@ -433,9 +471,9 @@ class AssetLoanController extends Controller
 
         } catch (\Illuminate\Validation\ValidationException $e) {
             DB::rollBack();
-            
+
             Log::error('Validation error returning asset: ' . json_encode($e->errors()));
-            
+
             return response()->json([
                 'success' => false,
                 'message' => 'Validation failed',
@@ -444,12 +482,12 @@ class AssetLoanController extends Controller
 
         } catch (\Exception $e) {
             DB::rollBack();
-            
+
             Log::error("Error returning asset for loan {$assetLoan->id}: " . $e->getMessage());
-            
+
             return response()->json([
                 'success' => false,
-                'message' => 'An error occurred during asset return.', 
+                'message' => 'An error occurred during asset return.',
                 'error' => $e->getMessage()
             ], Response::HTTP_INTERNAL_SERVER_ERROR);
         }
@@ -500,6 +538,56 @@ class AssetLoanController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to fetch proof photo',
+                'error' => $e->getMessage()
+            ], Response::HTTP_INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    /**
+     * Get return proof photo
+     */
+    public function getReturnProofPhoto(AssetLoan $assetLoan)
+    {
+        try {
+            if (!$assetLoan->return_proof_photo_path) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Return proof photo not found'
+                ], Response::HTTP_NOT_FOUND);
+            }
+
+            // Check if user can view this photo
+            $user = Auth::user();
+            if ($user->role === 'User' && $assetLoan->borrower_id !== $user->id) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Unauthorized to view this photo'
+                ], Response::HTTP_FORBIDDEN);
+            }
+
+            // Check for Admin Unit - hanya bisa lihat photo di unit mereka
+            if ($user->role === 'Admin Unit' && $user->unit_id && $assetLoan->asset->unit_id !== $user->unit_id) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Unauthorized to view photos from other units'
+                ], Response::HTTP_FORBIDDEN);
+            }
+
+            if (!Storage::disk('public')->exists($assetLoan->return_proof_photo_path)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Photo file not found'
+                ], Response::HTTP_NOT_FOUND);
+            }
+
+            return response()->file(storage_path('app/public/' . $assetLoan->return_proof_photo_path));
+
+        } catch (\Exception $e) {
+            Log::error("Error fetching return proof photo for loan {$assetLoan->id}: " . $e->getMessage());
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to fetch return proof photo',
                 'error' => $e->getMessage()
             ], Response::HTTP_INTERNAL_SERVER_ERROR);
         }

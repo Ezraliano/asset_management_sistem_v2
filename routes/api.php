@@ -79,8 +79,11 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::middleware('role:Super Admin,Admin Holding,Admin Unit')->group(function () {
         Route::post('asset-loans/{assetLoan}/approve', [AssetLoanController::class, 'approve'])->name('asset-loans.approve');
         Route::post('asset-loans/{assetLoan}/reject', [AssetLoanController::class, 'reject'])->name('asset-loans.reject');
-        Route::post('asset-loans/{assetLoan}/return', [AssetLoanController::class, 'returnAsset'])->name('asset-loans.return');
     });
+
+    // ✅ PERBAIKAN: Asset return - accessible by both admins AND users (for their own loans)
+    // Authorization logic handled in controller
+    Route::post('asset-loans/{assetLoan}/return', [AssetLoanController::class, 'returnAsset'])->name('asset-loans.return');
 });
 
 // Fallback for undefined API routes

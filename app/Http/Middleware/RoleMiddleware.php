@@ -72,11 +72,18 @@ class RoleMiddleware
             return $next($request);
         }
 
-        // Untuk Admin Unit dan User, pastikan mereka memiliki unit_id
+        // ✅ PERBAIKAN: Allow read-only operations (GET) even without unit_id
+        // User tanpa unit_id akan melihat empty list, bukan error 403
+        if (!$user->unit_id && $request->isMethod('get')) {
+            // For GET requests, let it pass - controller will handle empty results
+            return $next($request);
+        }
+
+        // Untuk operasi write (POST, PUT, DELETE), pastikan mereka memiliki unit_id
         if (!$user->unit_id) {
             return response()->json([
                 'success' => false,
-                'message' => 'User is not assigned to any unit.'
+                'message' => 'User is not assigned to any unit. Please contact administrator to assign you to a unit.'
             ], 403);
         }
 

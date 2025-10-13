@@ -682,12 +682,31 @@ export const rejectAssetLoan = async (loanId: number, data: {
   return handleApiResponse<AssetLoan>(responseData.data);
 };
 
-export const returnAssetLoan = async (loanId: number, data: { return_notes?: string }): Promise<AssetLoan> => {
-  const responseData = await apiRequest(`/asset-loans/${loanId}/return`, {
+export const returnAssetLoan = async (loanId: number, formData: FormData): Promise<AssetLoan> => {
+  const token = localStorage.getItem('auth_token');
+
+  const response = await fetch(`${API_BASE_URL}/asset-loans/${loanId}/return`, {
     method: 'POST',
-    body: JSON.stringify(data),
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      // Don't set Content-Type, let browser set it with boundary for multipart/form-data
+    },
+    body: formData,
   });
-  return handleApiResponse<AssetLoan>(responseData.data);
+
+  if (!response.ok) {
+    let errorDetail = `API error: ${response.status}`;
+    try {
+      const errorData = await response.json();
+      errorDetail = errorData.message || errorData.error || errorDetail;
+    } catch {
+      errorDetail = response.statusText || errorDetail;
+    }
+    throw new Error(errorDetail);
+  }
+
+  const data = await response.json();
+  return handleApiResponse<AssetLoan>(data);
 };
 
 

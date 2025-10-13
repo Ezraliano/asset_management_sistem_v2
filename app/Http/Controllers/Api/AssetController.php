@@ -31,7 +31,12 @@ class AssetController extends Controller
             $user = Auth::user();
             if ($user && in_array($user->role, ['Admin Unit', 'User'])) {
                 // Admin Unit & User hanya bisa lihat asset di unit mereka
-                $query->where('unit_id', $user->unit_id);
+                if ($user->unit_id) {
+                    $query->where('unit_id', $user->unit_id);
+                } else {
+                    // User tanpa unit_id akan melihat empty list
+                    $query->whereRaw('1 = 0'); // Force empty result
+                }
             } elseif ($user && $user->role === 'Admin Holding' && $unit_id) {
                 // Admin Holding bisa filter by unit tertentu
                 $query->where('unit_id', $unit_id);
@@ -883,7 +888,12 @@ class AssetController extends Controller
             // ✅ PERBAIKAN: Filter berdasarkan unit user
             if ($user && in_array($user->role, ['Admin Unit', 'User'])) {
                 // User hanya bisa pinjam asset di unit mereka sendiri
-                $query->where('unit_id', $user->unit_id);
+                if ($user->unit_id) {
+                    $query->where('unit_id', $user->unit_id);
+                } else {
+                    // User tanpa unit_id akan melihat empty list
+                    $query->whereRaw('1 = 0'); // Force empty result
+                }
             }
 
             // Optional search filter

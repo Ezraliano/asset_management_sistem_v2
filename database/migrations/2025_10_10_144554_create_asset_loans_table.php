@@ -24,6 +24,8 @@ return new class extends Migration
             $table->foreignId('approved_by')->nullable()->constrained('users')->nullOnDelete();
             $table->date('approval_date')->nullable();
             $table->string('loan_proof_photo_path')->nullable();
+            $table->string('return_proof_photo_path')->nullable();
+            $table->enum('return_condition', ['good', 'damaged', 'lost'])->nullable();
             $table->text('return_notes')->nullable();
             $table->text('rejection_reason')->nullable();
             $table->timestamps();

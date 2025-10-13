@@ -268,10 +268,13 @@ const AssetLending: React.FC = () => {
 
   // Get action buttons based on loan status and user permissions
   const getActionButtons = (loan: AssetLoan) => {
-    if (!canManageLoans) return null;
+    // ✅ PERBAIKAN: User bisa mengembalikan aset mereka sendiri
+    const isUserOwnLoan = currentUser && loan.borrower_id === currentUser.id;
 
     switch (loan.status) {
       case AssetLoanStatus.PENDING:
+        // Only admins can approve/reject
+        if (!canManageLoans) return null;
         return (
           <div className="flex space-x-2">
             <button
@@ -291,13 +294,15 @@ const AssetLending: React.FC = () => {
           </div>
         );
       case AssetLoanStatus.APPROVED:
+        // ✅ Both admins AND users (for their own loans) can return
+        if (!canManageLoans && !isUserOwnLoan) return null;
         return (
           <button
             onClick={() => handleReturnClick(loan)}
             disabled={actionLoading}
             className="px-3 py-1 text-xs bg-blue-500 text-white rounded-md hover:bg-blue-600 disabled:bg-gray-400 transition-colors"
           >
-            Proses Pengembalian
+            {isUserOwnLoan && !canManageLoans ? 'Kembalikan Aset' : 'Proses Pengembalian'}
           </button>
         );
       default:
@@ -568,7 +573,7 @@ const AssetLending: React.FC = () => {
         </div>
 
         {filteredLoans.length > 0 ? (
-          <div className="overflow-hidden border border-gray-200 rounded-lg">
+          <div className="overflow-x-auto border border-gray-200 rounded-lg">
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
@@ -597,68 +602,69 @@ const AssetLending: React.FC = () => {
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Alasan
                   </th>
-                  {canManageLoans && (
-                    <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider w-40">
-                      Aksi
-                    </th>
-                  )}
+                  {/* ✅ PERBAIKAN: Show action column for both admins and users */}
+                  <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider w-40">
+                    Aksi
+                  </th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {filteredLoans.map(loan => (
-                  <tr key={loan.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-medium text-gray-900">{loan.asset.name}</div>
-                      <div className="text-sm text-gray-500 font-mono">{loan.asset.asset_tag}</div>
-                    </td>
-                    {currentUser?.role !== 'User' && (
+                {filteredLoans.map(loan => {
+                  const actionButtons = getActionButtons(loan);
+                  return (
+                    <tr key={loan.id} className="hover:bg-gray-50">
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900">{loan.borrower.name}</div>
-                        <div className="text-sm text-gray-500">{loan.borrower.email}</div>
+                        <div className="text-sm font-medium text-gray-900">{loan.asset.name}</div>
+                        <div className="text-sm text-gray-500 font-mono">{loan.asset.asset_tag}</div>
                       </td>
-                    )}
-                    {['Super Admin', 'Admin Holding'].includes(currentUser?.role || '') && (
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-500">{loan.asset.unit?.name || 'N/A'}</div>
-                      </td>
-                    )}
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">
-                        {new Date(loan.request_date).toLocaleDateString('id-ID')}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-500">
-                        {loan.approval_date 
-                          ? new Date(loan.approval_date).toLocaleDateString('id-ID')
-                          : '-'
-                        }
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusBadge(loan.status)}`}>
-                        {loan.status === AssetLoanStatus.PENDING && 'Menunggu'}
-                        {loan.status === AssetLoanStatus.APPROVED && 'Disetujui'}
-                        {loan.status === AssetLoanStatus.REJECTED && 'Ditolak'}
-                        {loan.status === AssetLoanStatus.RETURNED && 'Dikembalikan'}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      {loan.status === AssetLoanStatus.REJECTED && loan.rejection_reason ? (
-                        <div className="text-xs text-gray-600" title={loan.rejection_reason}>
-                          {loan.rejection_reason}
-                        </div>
-                      ) : (
-                        <span className="text-gray-400">-</span>
+                      {currentUser?.role !== 'User' && (
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="text-sm text-gray-900">{loan.borrower.name}</div>
+                          <div className="text-sm text-gray-500">{loan.borrower.email}</div>
+                        </td>
                       )}
-                    </td>
-                    {canManageLoans && (
-                      <td className="px-6 py-4 whitespace-nowrap text-center">
-                        {getActionButtons(loan)}
+                      {['Super Admin', 'Admin Holding'].includes(currentUser?.role || '') && (
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="text-sm text-gray-500">{loan.asset.unit?.name || 'N/A'}</div>
+                        </td>
+                      )}
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-900">
+                          {new Date(loan.request_date).toLocaleDateString('id-ID')}
+                        </div>
                       </td>
-                    )}
-                  </tr>
-                ))}
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-500">
+                          {loan.approval_date
+                            ? new Date(loan.approval_date).toLocaleDateString('id-ID')
+                            : '-'
+                          }
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusBadge(loan.status)}`}>
+                          {loan.status === AssetLoanStatus.PENDING && 'Menunggu'}
+                          {loan.status === AssetLoanStatus.APPROVED && 'Disetujui'}
+                          {loan.status === AssetLoanStatus.REJECTED && 'Ditolak'}
+                          {loan.status === AssetLoanStatus.RETURNED && 'Dikembalikan'}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        {loan.status === AssetLoanStatus.REJECTED && loan.rejection_reason ? (
+                          <div className="text-xs text-gray-600" title={loan.rejection_reason}>
+                            {loan.rejection_reason}
+                          </div>
+                        ) : (
+                          <span className="text-gray-400">-</span>
+                        )}
+                      </td>
+                      {/* ✅ PERBAIKAN: Show action buttons for both admins and users */}
+                      <td className="px-6 py-4 whitespace-nowrap text-center">
+                        {actionButtons || <span className="text-gray-400 text-xs">-</span>}
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
