@@ -80,3 +80,15 @@ export const FilterIcon: React.FC = () => (
 export const SwitchHorizontalIcon: React.FC = () => (
     <svg {...iconProps} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M7.5 21L3 16.5m0 0L7.5 12M3 16.5h18m-4.5-1.5L21 12m0 0L16.5 7.5M21 12H3" /></svg>
 );
+
+export const CalendarIcon: React.FC<{ className?: string }> = ({ className }) => (
+    <svg className={className || iconProps.className} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={iconProps.strokeWidth}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+    </svg>
+);
+
+export const SearchIcon: React.FC<{ className?: string }> = ({ className }) => (
+    <svg className={className || iconProps.className} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={iconProps.strokeWidth}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+    </svg>
+);

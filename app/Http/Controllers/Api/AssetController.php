@@ -9,6 +9,7 @@ use Illuminate\Http\Response;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Auth;
 
 class AssetController extends Controller
 {
@@ -26,12 +27,24 @@ class AssetController extends Controller
                 $query->orderBy('month_sequence', 'desc')->limit(1);
             }, 'unit']);
 
+            // ✅ PERBAIKAN: Filter berdasarkan unit user
+            $user = Auth::user();
+            if ($user && in_array($user->role, ['Admin Unit', 'User'])) {
+                // Admin Unit & User hanya bisa lihat asset di unit mereka
+                $query->where('unit_id', $user->unit_id);
+            } elseif ($user && $user->role === 'Admin Holding' && $unit_id) {
+                // Admin Holding bisa filter by unit tertentu
+                $query->where('unit_id', $unit_id);
+            }
+            // Super Admin bisa lihat semua (no filter)
+
             // Terapkan filter jika ada
             if (!empty($category)) {
                 $query->where('category', 'like', '%' . $category . '%');
             }
 
-            if (!empty($unit_id)) {
+            // Filter unit_id hanya untuk Super Admin dan Admin Holding
+            if (!empty($unit_id) && $user && in_array($user->role, ['Super Admin', 'Admin Holding'])) {
                 $query->where('unit_id', $unit_id);
             }
 
@@ -101,78 +114,83 @@ class AssetController extends Controller
         }
     }
 
- public function store(Request $request)
-{
-    DB::beginTransaction();
-    
-    try {
-        $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'category' => 'required|string|max:255',
-            'unit_id' => 'nullable|exists:units,id',
-            'value' => 'required|numeric|min:0',
-            'purchase_date' => 'required|date|before_or_equal:today',
-            'useful_life' => 'required|integer|min:1',
-            'status' => 'required|in:In Use,In Repair,Disposed,Lost,Available,Terpinjam',
-        ]);
+    public function store(Request $request)
+    {
+        DB::beginTransaction();
+        
+        try {
+            $user = Auth::user();
+            $validated = $request->validate([
+                'name' => 'required|string|max:255',
+                'category' => 'required|string|max:255',
+                'unit_id' => 'nullable|exists:units,id',
+                'value' => 'required|numeric|min:0',
+                'purchase_date' => 'required|date|before_or_equal:today',
+                'useful_life' => 'required|integer|min:1',
+                'status' => 'required|in:In Use,In Repair,Disposed,Lost,Available,Terpinjam',
+            ]);
 
-        // ✅ PERBAIKAN: Handle timezone dengan benar
-        $purchaseDate = Carbon::parse($validated['purchase_date']);
-        $today = Carbon::now('Asia/Jakarta');
-        
-        // Jika purchase_date hanya berisi tanggal (tanpa waktu), tambahkan waktu default 19:30
-        if (strlen($validated['purchase_date']) <= 10) {
-            $purchaseDate->setTime(19, 30, 0); // Set waktu menjadi 19:30
-        }
-        
-        if ($purchaseDate->greaterThan($today)) {
+            // ✅ Middleware sudah validasi role, kita hanya perlu handle business logic
+            // Admin Unit otomatis di-set unit_id nya
+            if ($user && $user->role === 'Admin Unit' && $user->unit_id) {
+                $validated['unit_id'] = $user->unit_id;
+            }
+
+            // Handle purchase date dengan timezone
+            $purchaseDate = Carbon::parse($validated['purchase_date']);
+            $today = Carbon::now('Asia/Jakarta');
+            
+            if (strlen($validated['purchase_date']) <= 10) {
+                $purchaseDate->setTime(19, 30, 0);
+            }
+            
+            if ($purchaseDate->greaterThan($today)) {
+                DB::rollBack();
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Purchase date cannot be in the future'
+                ], Response::HTTP_BAD_REQUEST);
+            }
+
+            $validated['purchase_date'] = $purchaseDate->format('Y-m-d H:i:s');
+            $validated['created_at'] = $validated['purchase_date'];
+            $validated['updated_at'] = $validated['purchase_date'];
+
+            $asset = Asset::create($validated);
+
+            DB::commit();
+
+            Log::info("✅ Asset created successfully: {$asset->asset_tag} - Purchase Date: {$asset->purchase_date}");
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Asset created successfully',
+                'data' => $asset
+            ], Response::HTTP_CREATED);
+
+        } catch (\Illuminate\Validation\ValidationException $e) {
             DB::rollBack();
+            
+            Log::error('Validation error creating asset: ' . json_encode($e->errors()));
+            
             return response()->json([
                 'success' => false,
-                'message' => 'Purchase date cannot be in the future'
+                'message' => 'Validation failed',
+                'errors' => $e->errors()
             ], Response::HTTP_BAD_REQUEST);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            
+            Log::error('Error creating asset: ' . $e->getMessage());
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to create asset',
+                'error' => $e->getMessage()
+            ], Response::HTTP_INTERNAL_SERVER_ERROR);
         }
-
-        // ✅ PERBAIKAN: Simpan dengan waktu yang benar
-        $validated['purchase_date'] = $purchaseDate->format('Y-m-d H:i:s');
-        $validated['created_at'] = $validated['purchase_date'];
-        $validated['updated_at'] = $validated['purchase_date'];
-
-        $asset = Asset::create($validated);
-
-        DB::commit();
-
-        Log::info("✅ Asset created successfully: {$asset->asset_tag} - Purchase Date: {$asset->purchase_date}");
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Asset created successfully',
-            'data' => $asset
-        ], Response::HTTP_CREATED);
-
-    } catch (\Illuminate\Validation\ValidationException $e) {
-        DB::rollBack();
-        
-        Log::error('Validation error creating asset: ' . json_encode($e->errors()));
-        
-        return response()->json([
-            'success' => false,
-            'message' => 'Validation failed',
-            'errors' => $e->errors()
-        ], Response::HTTP_BAD_REQUEST);
-
-    } catch (\Exception $e) {
-        DB::rollBack();
-        
-        Log::error('Error creating asset: ' . $e->getMessage());
-        
-        return response()->json([
-            'success' => false,
-            'message' => 'Failed to create asset',
-            'error' => $e->getMessage()
-        ], Response::HTTP_INTERNAL_SERVER_ERROR);
     }
-}
 
     public function show($id)
     {
@@ -190,7 +208,7 @@ class AssetController extends Controller
                 ], Response::HTTP_NOT_FOUND);
             }
 
-            // ✅ TAMBAHAN: Hitung informasi depresiasi terkini
+            // ✅ Middleware sudah handle unit authorization, langsung proses data
             $latestDepreciation = $asset->depreciations->last();
             
             $asset->current_book_value = $latestDepreciation 
@@ -249,12 +267,26 @@ class AssetController extends Controller
                 'category' => 'sometimes|required|string|max:255',
                 'unit_id' => 'nullable|exists:units,id',
                 'value' => 'sometimes|required|numeric|min:0',
-                'purchase_date' => 'sometimes|required|date|before_or_equal:today', // ✅ VALIDASI BARU
+                'purchase_date' => 'sometimes|required|date|before_or_equal:today',
                 'useful_life' => 'sometimes|required|integer|min:1',
                 'status' => 'sometimes|required|in:In Use,In Repair,Disposed,Lost,Available,Terpinjam',
             ]);
 
-            // ✅ VALIDASI TAMBAHAN: Pastikan purchase date tidak melebihi hari ini
+            // ✅ Middleware sudah validasi unit permission, langsung proses update
+            $user = Auth::user();
+            if ($user && $user->role === 'Admin Unit' && $user->unit_id) {
+                // Admin Unit tidak bisa ubah unit_id asset
+                if (isset($validated['unit_id']) && $validated['unit_id'] != $user->unit_id) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Anda tidak dapat mengubah unit asset'
+                    ], Response::HTTP_FORBIDDEN);
+                }
+                // Force unit_id sesuai unit Admin Unit
+                $validated['unit_id'] = $user->unit_id;
+            }
+
+            // Validasi purchase date jika ada
             if (isset($validated['purchase_date'])) {
                 $purchaseDate = Carbon::parse($validated['purchase_date']);
                 $today = Carbon::today();
@@ -375,33 +407,54 @@ class AssetController extends Controller
     }
 
     /**
-     * ✅ METHOD BARU: Get asset statistics
+     * ✅ METHOD BARU: Get asset statistics dengan filter unit
      */
     public function statistics()
     {
         try {
-            $totalAssets = Asset::count();
-            $totalValue = Asset::sum('value');
-            $activeAssets = Asset::whereNotIn('status', ['Disposed', 'Lost'])->count();
+            $user = Auth::user();
             
-            $assetsByStatus = Asset::selectRaw('status, count(*) as count')
+            // Query dasar untuk statistics
+            $baseQuery = Asset::query();
+            
+            // ✅ Filter berdasarkan unit untuk Admin Unit dan User
+            if ($user && in_array($user->role, ['Admin Unit', 'User'])) {
+                $baseQuery->where('unit_id', $user->unit_id);
+            }
+
+            $totalAssets = $baseQuery->count();
+            $totalValue = $baseQuery->sum('value');
+            $activeAssets = $baseQuery->whereNotIn('status', ['Disposed', 'Lost'])->count();
+            
+            $assetsByStatus = $baseQuery->clone()
+                ->selectRaw('status, count(*) as count')
                 ->groupBy('status')
                 ->get()
                 ->pluck('count', 'status');
             
-            $assetsByCategory = Asset::selectRaw('category, count(*) as count, sum(value) as total_value')
+            $assetsByCategory = $baseQuery->clone()
+                ->selectRaw('category, count(*) as count, sum(value) as total_value')
                 ->groupBy('category')
                 ->get();
 
-            $recentlyAdded = Asset::orderBy('created_at', 'desc')
+            $recentlyAdded = $baseQuery->clone()
+                ->orderBy('created_at', 'desc')
                 ->limit(5)
                 ->get();
 
-            // Hitung informasi depresiasi
-            $totalDepreciationRecords = \App\Models\AssetDepreciation::count();
-            $totalDepreciatedAmount = \App\Models\AssetDepreciation::sum('depreciation_amount');
+            // Hitung informasi depresiasi dengan filter unit
+            $depreciationQuery = \App\Models\AssetDepreciation::query();
+            if ($user && in_array($user->role, ['Admin Unit', 'User'])) {
+                $depreciationQuery->whereHas('asset', function($q) use ($user) {
+                    $q->where('unit_id', $user->unit_id);
+                });
+            }
+
+            $totalDepreciationRecords = $depreciationQuery->count();
+            $totalDepreciatedAmount = $depreciationQuery->sum('depreciation_amount');
             
-            $assetsWithPendingDepreciation = Asset::whereNotIn('status', ['Disposed', 'Lost'])
+            $assetsWithPendingDepreciation = $baseQuery->clone()
+                ->whereNotIn('status', ['Disposed', 'Lost'])
                 ->get()
                 ->filter(function ($asset) {
                     return $asset->getPendingDepreciationMonths() > 0;
@@ -437,13 +490,14 @@ class AssetController extends Controller
     }
 
     /**
-     * ✅ METHOD BARU: Bulk update assets
+     * ✅ METHOD BARU: Bulk update assets dengan validasi unit
      */
     public function bulkUpdate(Request $request)
     {
         DB::beginTransaction();
         
         try {
+            $user = Auth::user();
             $validated = $request->validate([
                 'asset_ids' => 'required|array',
                 'asset_ids.*' => 'exists:assets,id',
@@ -455,6 +509,32 @@ class AssetController extends Controller
 
             $assetIds = $validated['asset_ids'];
             $updates = $validated['updates'];
+
+            // ✅ Validasi: Admin Unit hanya bisa update asset di unit mereka
+            if ($user && $user->role === 'Admin Unit' && $user->unit_id) {
+                $userAssetIds = Asset::where('unit_id', $user->unit_id)
+                    ->whereIn('id', $assetIds)
+                    ->pluck('id')
+                    ->toArray();
+                
+                if (count($userAssetIds) !== count($assetIds)) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Anda hanya dapat mengupdate asset di unit Anda sendiri'
+                    ], Response::HTTP_FORBIDDEN);
+                }
+
+                // Admin Unit tidak bisa ubah unit_id
+                if (isset($updates['unit_id']) && $updates['unit_id'] != $user->unit_id) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Anda tidak dapat mengubah unit asset'
+                    ], Response::HTTP_FORBIDDEN);
+                }
+                
+                // Force unit_id sesuai unit Admin Unit
+                $updates['unit_id'] = $user->unit_id;
+            }
 
             // Validasi purchase date jika ada
             if (isset($updates['purchase_date'])) {
@@ -507,14 +587,20 @@ class AssetController extends Controller
     }
 
     /**
-     * ✅ METHOD BARU: Search assets dengan filter advanced
+     * ✅ METHOD BARU: Search assets dengan filter advanced dan unit-based
      */
     public function search(Request $request)
     {
         try {
+            $user = Auth::user();
             $query = Asset::with(['depreciations' => function($query) {
                 $query->orderBy('month_sequence', 'desc')->limit(1);
             }]);
+
+            // ✅ Filter berdasarkan unit user
+            if ($user && in_array($user->role, ['Admin Unit', 'User'])) {
+                $query->where('unit_id', $user->unit_id);
+            }
 
             // Filter by text search
             if ($request->has('q') && !empty($request->q)) {
@@ -630,14 +716,22 @@ class AssetController extends Controller
     }
 
     /**
-     * ✅ METHOD BARU: Export assets data
+     * ✅ METHOD BARU: Export assets data dengan filter unit
      */
     public function export(Request $request)
     {
         try {
-            $assets = Asset::with(['depreciations' => function($query) {
+            $user = Auth::user();
+            $query = Asset::with(['depreciations' => function($query) {
                 $query->orderBy('month_sequence', 'desc')->limit(1);
-            }])->get();
+            }]);
+
+            // ✅ Filter berdasarkan unit user
+            if ($user && in_array($user->role, ['Admin Unit', 'User'])) {
+                $query->where('unit_id', $user->unit_id);
+            }
+
+            $assets = $query->get();
 
             $exportData = $assets->map(function ($asset) {
                 $latestDepreciation = $asset->depreciations->first();
@@ -685,11 +779,13 @@ class AssetController extends Controller
     public function validateAsset(Request $request)
     {
         try {
+            $user = Auth::user();
             $validated = $request->validate([
                 'asset_tag' => 'sometimes|required|string|unique:assets,asset_tag',
                 'purchase_date' => 'sometimes|required|date|before_or_equal:today',
                 'value' => 'sometimes|required|numeric|min:0',
                 'useful_life' => 'sometimes|required|integer|min:1',
+                'unit_id' => 'nullable|exists:units,id',
             ]);
 
             $validationResults = [];
@@ -735,6 +831,24 @@ class AssetController extends Controller
                 }
             }
 
+            // Validasi unit untuk Admin Unit
+            if (isset($validated['unit_id']) && $user && $user->role === 'Admin Unit') {
+                if ($validated['unit_id'] != $user->unit_id) {
+                    $validationResults[] = [
+                        'field' => 'unit_id',
+                        'valid' => false,
+                        'message' => 'Anda hanya dapat menambahkan asset di unit Anda sendiri'
+                    ];
+                    $isValid = false;
+                } else {
+                    $validationResults[] = [
+                        'field' => 'unit_id',
+                        'valid' => true,
+                        'message' => 'Unit valid untuk akses Anda'
+                    ];
+                }
+            }
+
             return response()->json([
                 'success' => true,
                 'valid' => $isValid,
@@ -753,16 +867,24 @@ class AssetController extends Controller
     }
 
     /**
-     * ✅ METHOD BARU: Get available assets for borrowing (User role)
+     * ✅ METHOD BARU: Get available assets for borrowing (User role) dengan filter unit
      */
     public function getAvailableAssets(Request $request)
     {
         try {
+            $user = Auth::user();
+            
             // Only return assets with "Available" status for borrowing
             $query = Asset::where('status', 'Available')
                 ->with(['depreciations' => function($query) {
                     $query->orderBy('month_sequence', 'desc')->limit(1);
                 }, 'unit']);
+
+            // ✅ PERBAIKAN: Filter berdasarkan unit user
+            if ($user && in_array($user->role, ['Admin Unit', 'User'])) {
+                // User hanya bisa pinjam asset di unit mereka sendiri
+                $query->where('unit_id', $user->unit_id);
+            }
 
             // Optional search filter
             if ($request->has('search') && !empty($request->search)) {
@@ -804,6 +926,42 @@ class AssetController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to fetch available assets',
+                'error' => $e->getMessage()
+            ], Response::HTTP_INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    /**
+     * ✅ METHOD BARU: Get assets by unit (untuk dropdown/filter)
+     */
+    public function getAssetsByUnit($unitId)
+    {
+        try {
+            $user = Auth::user();
+            
+            // Validasi akses unit
+            if ($user && in_array($user->role, ['Admin Unit', 'User']) && $user->unit_id != $unitId) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Unauthorized to access assets from this unit'
+                ], Response::HTTP_FORBIDDEN);
+            }
+
+            $assets = Asset::where('unit_id', $unitId)
+                ->with('unit')
+                ->get();
+
+            return response()->json([
+                'success' => true,
+                'data' => $assets
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error("Error fetching assets for unit {$unitId}: " . $e->getMessage());
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to fetch assets for unit',
                 'error' => $e->getMessage()
             ], Response::HTTP_INTERNAL_SERVER_ERROR);
         }

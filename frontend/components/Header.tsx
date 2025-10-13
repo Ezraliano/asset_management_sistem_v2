@@ -62,11 +62,11 @@ const Header: React.FC<HeaderProps> = ({ user, onLogout, isSidebarOpen, setSideb
                         <NavItem icon={<DashboardIcon />} label={t('sidebar.dashboard')} isActive={getIsActive('DASHBOARD')} onClick={() => navigateTo({ type: 'DASHBOARD' })} />
                         
 
-                        <Restricted user={user} allowedRoles={['Admin Holding', 'Unit']}>
+                        <Restricted user={user} allowedRoles={['Admin Holding', 'Admin Unit']}>
                             <NavItem icon={<AssetIcon />} label={t('sidebar.assets')} isActive={getIsActive('ASSET_LIST') || getIsActive('ASSET_DETAIL')} onClick={() => navigateTo({ type: 'ASSET_LIST' })} />
                         </Restricted>
 
-                        <Restricted user={user} allowedRoles={['User', 'Super Admin', 'Admin Holding']}>
+                        <Restricted user={user} allowedRoles={['User', 'Super Admin', 'Admin Holding', 'Admin Unit']}>
                             <NavItem icon={<SwitchHorizontalIcon />} label={t('Peminjaman Asset')} isActive={currentView.type === 'ASSET_LENDING'} onClick={() => navigateTo({ type: 'ASSET_LENDING' })} />
                         </Restricted>
 
@@ -74,11 +74,11 @@ const Header: React.FC<HeaderProps> = ({ user, onLogout, isSidebarOpen, setSideb
                             <NavItem icon={<AuditIcon />} label={t('sidebar.inventory_audit')} isActive={getIsActive('INVENTORY_AUDIT_SETUP') || getIsActive('INVENTORY_AUDIT_SESSION')} onClick={() => navigateTo({ type: 'INVENTORY_AUDIT_SETUP' })} />
                         </Restricted>
 
-                        <Restricted user={user} allowedRoles={['Admin Holding', 'Unit']}>
+                        <Restricted user={user} allowedRoles={['Admin Holding', 'Admin Unit']}>
                             <NavItem icon={<BulkIcon />} label={t('sidebar.bulk_transaction')} isActive={getIsActive('BULK_TRANSACTION')} onClick={() => navigateTo({ type: 'BULK_TRANSACTION' })} />
                         </Restricted>
 
-                        <Restricted user={user} allowedRoles={['Admin Holding', 'Unit']}>
+                        <Restricted user={user} allowedRoles={['Admin Holding', 'Admin Unit']}>
                             <NavItem icon={<QRIcon />} label={t('sidebar.scan_qr')} isActive={getIsActive('QR_SCANNER')} onClick={() => navigateTo({ type: 'QR_SCANNER' })} />
                         </Restricted>
 

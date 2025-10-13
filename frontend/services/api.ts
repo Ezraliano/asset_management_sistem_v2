@@ -616,8 +616,27 @@ export const addLossReport = async (reportData: Omit<LossReport, 'id'>): Promise
 
 export const getAssetLoans = async (status?: AssetLoanStatus): Promise<AssetLoan[]> => {
   const endpoint = status ? `/asset-loans?status=${status}` : '/asset-loans';
-  const data = await apiRequest(endpoint);
-  return handleApiResponse<AssetLoan[]>(data);
+
+  try {
+    const response = await apiRequest(endpoint);
+    const handledResponse = handleApiResponse<any>(response);
+
+    // Check for Laravel pagination structure
+    if (handledResponse && typeof handledResponse === 'object' && Array.isArray(handledResponse.data)) {
+      return handledResponse.data;
+    }
+
+    // Fallback for direct array response
+    if (Array.isArray(handledResponse)) {
+      return handledResponse;
+    }
+
+    console.warn('Asset loans response is not in a recognized format:', handledResponse);
+    return [];
+  } catch (error: any) {
+    console.error('Error in getAssetLoans:', error);
+    return [];
+  }
 };
 
 export const requestAssetLoan = async (loanData: { 

@@ -6,10 +6,12 @@ use App\Http\Controllers\Controller;
 use App\Models\Asset;
 use App\Models\AssetLoan;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Log;
 
 class AssetLoanController extends Controller
 {
@@ -18,28 +20,78 @@ class AssetLoanController extends Controller
      */
     public function index(Request $request)
     {
-        // Eager load relationships for efficiency
-        $loans = AssetLoan::with(['asset.unit', 'borrower', 'approver']);
+        try {
+            // Eager load relationships for efficiency
+            $loans = AssetLoan::with(['asset.unit', 'borrower', 'approver']);
 
-        // Check user role and filter accordingly
-        $user = Auth::user();
-        if ($user && in_array($user->role, ['User'])) {
-            // Regular users can only see their own loans
-            $loans->where('borrower_id', $user->id);
-        } elseif ($user && $user->role === 'Admin Unit' && $user->unit_id) {
-            // Admin Unit can only see loans for assets in their unit
-            $loans->whereHas('asset', function($query) use ($user) {
-                $query->where('unit_id', $user->unit_id);
-            });
+            // Check user role and filter accordingly
+            $user = Auth::user();
+            if ($user && $user->role === 'User') {
+                // Regular users can only see their own loans
+                $loans->where('borrower_id', $user->id);
+            } elseif ($user && $user->role === 'Admin Unit' && $user->unit_id) {
+                // Admin Unit can only see loans for assets in their unit
+                $loans->whereHas('asset', function($query) use ($user) {
+                    $query->where('unit_id', $user->unit_id);
+                });
+            }
+            // Super Admin and Admin Holding can see all loans (no additional filter needed)
+
+            // Allow filtering by status
+            if ($request->has('status')) {
+                $loans->where('status', $request->status);
+            }
+
+            // Filter by date range
+            if ($request->has('start_date')) {
+                $loans->where('request_date', '>=', $request->start_date);
+            }
+            if ($request->has('end_date')) {
+                $loans->where('request_date', '<=', $request->end_date);
+            }
+
+            // Search by asset name or borrower name
+            if ($request->has('search')) {
+                $searchTerm = $request->search;
+                $loans->where(function($query) use ($searchTerm) {
+                    $query->whereHas('asset', function($q) use ($searchTerm) {
+                        $q->where('name', 'like', '%' . $searchTerm . '%')
+                          ->orWhere('asset_tag', 'like', '%' . $searchTerm . '%');
+                    })->orWhereHas('borrower', function($q) use ($searchTerm) {
+                        $q->where('name', 'like', '%' . $searchTerm . '%');
+                    });
+                });
+            }
+
+            // Sorting
+            $sortBy = $request->query('sort_by', 'created_at');
+            $sortOrder = $request->query('sort_order', 'desc');
+            $loans->orderBy($sortBy, $sortOrder);
+
+            // Pagination
+            $perPage = $request->query('per_page', 15);
+            $loans = $loans->paginate($perPage);
+
+            return response()->json([
+                'success' => true,
+                'data' => $loans,
+                'filters' => [
+                    'status' => $request->status,
+                    'search' => $request->search,
+                    'start_date' => $request->start_date,
+                    'end_date' => $request->end_date
+                ]
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Error fetching asset loans: ' . $e->getMessage());
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to fetch asset loans',
+                'error' => $e->getMessage()
+            ], Response::HTTP_INTERNAL_SERVER_ERROR);
         }
-        // Super Admin and Admin Holding can see all loans (no additional filter needed)
-
-        // Allow filtering by status
-        if ($request->has('status')) {
-            $loans->where('status', $request->status);
-        }
-
-        return response()->json($loans->latest()->get());
     }
 
     /**
@@ -48,36 +100,88 @@ class AssetLoanController extends Controller
      */
     public function store(Request $request)
     {
-        $request->validate([
-            'asset_id' => 'required|exists:assets,id',
-            'expected_return_date' => 'required|date|after_or_equal:today',
-            'purpose' => 'required|string|max:500',
-        ]);
+        DB::beginTransaction();
+        
+        try {
+            $request->validate([
+                'asset_id' => 'required|exists:assets,id',
+                'expected_return_date' => 'required|date|after_or_equal:today',
+                'purpose' => 'required|string|max:500',
+            ]);
 
-        $asset = Asset::findOrFail($request->asset_id);
+            $user = Auth::user();
+            $asset = Asset::with('unit')->findOrFail($request->asset_id);
 
-        // Check if the asset is available for loan
-        if ($asset->status !== 'Available') {
+            // ✅ VALIDASI: User hanya bisa pinjam asset di unit mereka sendiri
+            if ($user->role === 'User' && $asset->unit_id !== $user->unit_id) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Anda hanya dapat meminjam asset di unit Anda sendiri'
+                ], Response::HTTP_FORBIDDEN);
+            }
+
+            // Check if the asset is available for loan
+            if ($asset->status !== 'Available') {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Asset is not available for loan. Current status: ' . $asset->status
+                ], Response::HTTP_UNPROCESSABLE_ENTITY);
+            }
+
+            // Check if user has pending loan for the same asset
+            $existingPendingLoan = AssetLoan::where('asset_id', $asset->id)
+                ->where('borrower_id', $user->id)
+                ->where('status', 'PENDING')
+                ->exists();
+
+            if ($existingPendingLoan) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Anda sudah memiliki permintaan peminjaman yang pending untuk asset ini'
+                ], Response::HTTP_UNPROCESSABLE_ENTITY);
+            }
+
+            $loan = AssetLoan::create([
+                'asset_id' => $asset->id,
+                'borrower_id' => $user->id,
+                'request_date' => Carbon::today(),
+                'expected_return_date' => $request->expected_return_date,
+                'purpose' => $request->purpose,
+                'status' => 'PENDING', // Initial status
+            ]);
+
+            DB::commit();
+
+            Log::info("✅ Loan request created successfully: Asset {$asset->name} by User {$user->name}");
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Loan request submitted successfully',
+                'data' => $loan->load(['asset.unit', 'borrower'])
+            ], Response::HTTP_CREATED);
+
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            DB::rollBack();
+            
+            Log::error('Validation error creating loan: ' . json_encode($e->errors()));
+            
             return response()->json([
                 'success' => false,
-                'message' => 'Asset is not available for loan. Current status: ' . $asset->status
-            ], 422);
+                'message' => 'Validation failed',
+                'errors' => $e->errors()
+            ], Response::HTTP_BAD_REQUEST);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            
+            Log::error('Error creating loan: ' . $e->getMessage());
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to create loan request',
+                'error' => $e->getMessage()
+            ], Response::HTTP_INTERNAL_SERVER_ERROR);
         }
-
-        $loan = AssetLoan::create([
-            'asset_id' => $asset->id,
-            'borrower_id' => Auth::id(),
-            'request_date' => Carbon::today(),
-            'expected_return_date' => $request->expected_return_date,
-            'purpose' => $request->purpose,
-            'status' => 'PENDING', // Initial status
-        ]);
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Loan request submitted successfully',
-            'data' => $loan->load(['asset', 'borrower'])
-        ], 201);
     }
 
     /**
@@ -85,20 +189,42 @@ class AssetLoanController extends Controller
      */
     public function show(AssetLoan $assetLoan)
     {
-        // Check if user can view this loan
-        $user = Auth::user();
-        if ($user && $user->role === 'User' && $assetLoan->borrower_id !== $user->id) {
+        try {
+            $user = Auth::user();
+
+            // Check if user can view this loan
+            if ($user->role === 'User' && $assetLoan->borrower_id !== $user->id) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Unauthorized to view this loan'
+                ], Response::HTTP_FORBIDDEN);
+            }
+
+            // Check for Admin Unit - hanya bisa lihat loan di unit mereka
+            if ($user->role === 'Admin Unit' && $user->unit_id && $assetLoan->asset->unit_id !== $user->unit_id) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Unauthorized to view loans from other units'
+                ], Response::HTTP_FORBIDDEN);
+            }
+
+            // Eager load relationships
+            $assetLoan->load(['asset.unit', 'borrower', 'approver']);
+
+            return response()->json([
+                'success' => true,
+                'data' => $assetLoan
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error("Error fetching loan {$assetLoan->id}: " . $e->getMessage());
+            
             return response()->json([
                 'success' => false,
-                'message' => 'Unauthorized to view this loan'
-            ], 403);
+                'message' => 'Failed to fetch loan details',
+                'error' => $e->getMessage()
+            ], Response::HTTP_INTERNAL_SERVER_ERROR);
         }
-
-        // Eager load relationships
-        return response()->json([
-            'success' => true,
-            'data' => $assetLoan->load(['asset', 'borrower', 'approver'])
-        ]);
     }
 
     /**
@@ -107,77 +233,80 @@ class AssetLoanController extends Controller
      */
     public function approve(Request $request, AssetLoan $assetLoan)
     {
-        $user = Auth::user();
+        DB::beginTransaction();
+        
+        try {
+            $user = Auth::user();
 
-        // Load asset with unit relationship
-        $assetLoan->load('asset.unit');
+            // Load asset with unit relationship
+            $assetLoan->load('asset.unit');
 
-        // Check if user has permission to approve
-        if (!in_array($user->role, ['Super Admin', 'Admin Holding'])) {
-            // If Admin Unit, check if asset belongs to their unit
-            if ($user->role === 'Admin Unit') {
-                if (!$user->unit_id || $assetLoan->asset->unit_id !== $user->unit_id) {
-                    return response()->json([
-                        'success' => false,
-                        'message' => 'Unauthorized to approve loans for assets outside your unit'
-                    ], 403);
-                }
-            } else {
+            // ✅ Middleware sudah handle authorization, langsung proses approval
+            if ($assetLoan->status !== 'PENDING') {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Unauthorized to approve loans'
-                ], 403);
+                    'message' => 'This loan is not pending approval.'
+                ], Response::HTTP_UNPROCESSABLE_ENTITY);
             }
-        }
+            
+            $request->validate([
+                'approval_date' => 'required|date|before_or_equal:today',
+                'loan_proof_photo' => 'required|image|mimes:jpeg,png,jpg,gif|max:2048',
+            ]);
 
-        if ($assetLoan->status !== 'PENDING') {
+            // Handle photo upload
+            if ($request->hasFile('loan_proof_photo')) {
+                $photoPath = $request->file('loan_proof_photo')->store('loan-proofs', 'public');
+            } else {
+                throw new \Exception('Proof photo is required');
+            }
+
+            // Update the loan status
+            $assetLoan->update([
+                'status' => 'APPROVED',
+                'approved_by' => $user->id,
+                'approval_date' => $request->approval_date,
+                'loan_date' => Carbon::today(),
+                'loan_proof_photo_path' => $photoPath,
+                // Clear rejection reason if it was previously set
+                'rejection_reason' => null,
+            ]);
+
+            // Update the asset status
+            $assetLoan->asset->update(['status' => 'Terpinjam']);
+
+            DB::commit();
+
+            Log::info("✅ Loan approved successfully: Loan ID {$assetLoan->id} by User {$user->name}");
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Loan approved successfully',
+                'data' => $assetLoan->fresh()->load(['asset.unit', 'borrower', 'approver'])
+            ]);
+
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            DB::rollBack();
+            
+            Log::error('Validation error approving loan: ' . json_encode($e->errors()));
+            
             return response()->json([
                 'success' => false,
-                'message' => 'This loan is not pending approval.'
-            ], 422);
-        }
-        
-        $request->validate([
-            'approval_date' => 'required|date|before_or_equal:today',
-            'loan_proof_photo' => 'required|image|mimes:jpeg,png,jpg,gif|max:2048',
-        ]);
+                'message' => 'Validation failed',
+                'errors' => $e->errors()
+            ], Response::HTTP_BAD_REQUEST);
 
-        try {
-            DB::transaction(function () use ($assetLoan, $request, $user) {
-                // Handle photo upload
-                if ($request->hasFile('loan_proof_photo')) {
-                    $photoPath = $request->file('loan_proof_photo')->store('loan-proofs', 'public');
-                } else {
-                    throw new \Exception('Proof photo is required');
-                }
-
-                // Update the loan status
-                $assetLoan->update([
-                    'status' => 'APPROVED',
-                    'approved_by' => $user->id,
-                    'approval_date' => $request->approval_date,
-                    'loan_date' => Carbon::today(),
-                    'loan_proof_photo_path' => $photoPath,
-                    // Clear rejection reason if it was previously set
-                    'rejection_reason' => null,
-                ]);
-
-                // Update the asset status
-                $assetLoan->asset->update(['status' => 'Terpinjam']);
-            });
         } catch (\Exception $e) {
+            DB::rollBack();
+            
+            Log::error("Error approving loan {$assetLoan->id}: " . $e->getMessage());
+            
             return response()->json([
                 'success' => false,
                 'message' => 'An error occurred during approval.', 
                 'error' => $e->getMessage()
-            ], 500);
+            ], Response::HTTP_INTERNAL_SERVER_ERROR);
         }
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Loan approved successfully',
-            'data' => $assetLoan->fresh()->load(['asset', 'borrower', 'approver'])
-        ]);
     }
 
     /**
@@ -186,70 +315,73 @@ class AssetLoanController extends Controller
      */
     public function reject(Request $request, AssetLoan $assetLoan)
     {
-        $user = Auth::user();
+        DB::beginTransaction();
+        
+        try {
+            $user = Auth::user();
 
-        // Load asset with unit relationship
-        $assetLoan->load('asset.unit');
+            // Load asset with unit relationship
+            $assetLoan->load('asset.unit');
 
-        // Check if user has permission to reject
-        if (!in_array($user->role, ['Super Admin', 'Admin Holding'])) {
-            // If Admin Unit, check if asset belongs to their unit
-            if ($user->role === 'Admin Unit') {
-                if (!$user->unit_id || $assetLoan->asset->unit_id !== $user->unit_id) {
-                    return response()->json([
-                        'success' => false,
-                        'message' => 'Unauthorized to reject loans for assets outside your unit'
-                    ], 403);
-                }
-            } else {
+            // ✅ Middleware sudah handle authorization, langsung proses rejection
+            if ($assetLoan->status !== 'PENDING') {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Unauthorized to reject loans'
-                ], 403);
+                    'message' => 'This loan is not pending approval.'
+                ], Response::HTTP_UNPROCESSABLE_ENTITY);
             }
-        }
 
-        if ($assetLoan->status !== 'PENDING') {
+            $request->validate([
+                'approval_date' => 'required|date|before_or_equal:today',
+                'rejection_reason' => 'required|string|min:10|max:500',
+            ]);
+
+            // Update the loan status with rejection reason
+            $assetLoan->update([
+                'status' => 'REJECTED',
+                'approved_by' => $user->id,
+                'approval_date' => $request->approval_date,
+                'rejection_reason' => $request->rejection_reason,
+                // Clear loan proof photo if it was previously set
+                'loan_proof_photo_path' => null,
+                'loan_date' => null,
+            ]);
+
+            // Asset status remains 'Available' since it wasn't loaned out
+            // No need to update asset status for rejected loans
+
+            DB::commit();
+
+            Log::info("✅ Loan rejected successfully: Loan ID {$assetLoan->id} by User {$user->name}");
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Loan rejected successfully',
+                'data' => $assetLoan->fresh()->load(['asset.unit', 'borrower', 'approver'])
+            ]);
+
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            DB::rollBack();
+            
+            Log::error('Validation error rejecting loan: ' . json_encode($e->errors()));
+            
             return response()->json([
                 'success' => false,
-                'message' => 'This loan is not pending approval.'
-            ], 422);
-        }
+                'message' => 'Validation failed',
+                'errors' => $e->errors()
+            ], Response::HTTP_BAD_REQUEST);
 
-        $request->validate([
-            'approval_date' => 'required|date|before_or_equal:today',
-            'rejection_reason' => 'required|string|min:10|max:500',
-        ]);
-
-        try {
-            DB::transaction(function () use ($assetLoan, $request, $user) {
-                // Update the loan status with rejection reason
-                $assetLoan->update([
-                    'status' => 'REJECTED',
-                    'approved_by' => $user->id,
-                    'approval_date' => $request->approval_date,
-                    'rejection_reason' => $request->rejection_reason,
-                    // Clear loan proof photo if it was previously set
-                    'loan_proof_photo_path' => null,
-                    'loan_date' => null,
-                ]);
-
-                // Asset status remains 'Available' since it wasn't loaned out
-                // No need to update asset status for rejected loans
-            });
         } catch (\Exception $e) {
+            DB::rollBack();
+            
+            Log::error("Error rejecting loan {$assetLoan->id}: " . $e->getMessage());
+            
             return response()->json([
                 'success' => false,
                 'message' => 'An error occurred during rejection.', 
                 'error' => $e->getMessage()
-            ], 500);
+            ], Response::HTTP_INTERNAL_SERVER_ERROR);
         }
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Loan rejected successfully',
-            'data' => $assetLoan->fresh()->load(['asset', 'borrower', 'approver'])
-        ]);
     }
 
     /**
@@ -258,65 +390,69 @@ class AssetLoanController extends Controller
      */
     public function returnAsset(Request $request, AssetLoan $assetLoan)
     {
-        $user = Auth::user();
+        DB::beginTransaction();
+        
+        try {
+            $user = Auth::user();
 
-        // Load asset with unit relationship
-        $assetLoan->load('asset.unit');
+            // Load asset with unit relationship
+            $assetLoan->load('asset.unit');
 
-        // Check if user has permission to process returns
-        if (!in_array($user->role, ['Super Admin', 'Admin Holding'])) {
-            // If Admin Unit, check if asset belongs to their unit
-            if ($user->role === 'Admin Unit') {
-                if (!$user->unit_id || $assetLoan->asset->unit_id !== $user->unit_id) {
-                    return response()->json([
-                        'success' => false,
-                        'message' => 'Unauthorized to process returns for assets outside your unit'
-                    ], 403);
-                }
-            } else {
+            // ✅ Middleware sudah handle authorization, langsung proses return
+            if ($assetLoan->status !== 'APPROVED') {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Unauthorized to process returns'
-                ], 403);
+                    'message' => 'This loan is not currently active.'
+                ], Response::HTTP_UNPROCESSABLE_ENTITY);
             }
-        }
 
-        if ($assetLoan->status !== 'APPROVED') {
+            $request->validate([
+                'return_notes' => 'nullable|string|max:1000',
+                'actual_return_date' => 'required|date|before_or_equal:today',
+            ]);
+
+            // Update the loan status
+            $assetLoan->update([
+                'status' => 'RETURNED',
+                'actual_return_date' => $request->actual_return_date,
+                'return_notes' => $request->return_notes,
+            ]);
+
+            // Update the asset status back to Available
+            $assetLoan->asset->update(['status' => 'Available']);
+
+            DB::commit();
+
+            Log::info("✅ Asset returned successfully: Loan ID {$assetLoan->id} by User {$user->name}");
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Asset returned successfully',
+                'data' => $assetLoan->fresh()->load(['asset.unit', 'borrower', 'approver'])
+            ]);
+
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            DB::rollBack();
+            
+            Log::error('Validation error returning asset: ' . json_encode($e->errors()));
+            
             return response()->json([
                 'success' => false,
-                'message' => 'This loan is not currently active.'
-            ], 422);
-        }
+                'message' => 'Validation failed',
+                'errors' => $e->errors()
+            ], Response::HTTP_BAD_REQUEST);
 
-        $request->validate([
-            'return_notes' => 'nullable|string|max:1000',
-        ]);
-
-        try {
-            DB::transaction(function () use ($assetLoan, $request) {
-                // Update the loan status
-                $assetLoan->update([
-                    'status' => 'RETURNED',
-                    'actual_return_date' => Carbon::today(),
-                    'return_notes' => $request->return_notes,
-                ]);
-
-                // Update the asset status back to Available
-                $assetLoan->asset->update(['status' => 'Available']);
-            });
         } catch (\Exception $e) {
+            DB::rollBack();
+            
+            Log::error("Error returning asset for loan {$assetLoan->id}: " . $e->getMessage());
+            
             return response()->json([
                 'success' => false,
                 'message' => 'An error occurred during asset return.', 
                 'error' => $e->getMessage()
-            ], 500);
+            ], Response::HTTP_INTERNAL_SERVER_ERROR);
         }
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Asset returned successfully',
-            'data' => $assetLoan->fresh()->load(['asset', 'borrower', 'approver'])
-        ]);
     }
 
     /**
@@ -324,30 +460,49 @@ class AssetLoanController extends Controller
      */
     public function getProofPhoto(AssetLoan $assetLoan)
     {
-        if (!$assetLoan->loan_proof_photo_path) {
+        try {
+            if (!$assetLoan->loan_proof_photo_path) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Proof photo not found'
+                ], Response::HTTP_NOT_FOUND);
+            }
+
+            // Check if user can view this photo
+            $user = Auth::user();
+            if ($user->role === 'User' && $assetLoan->borrower_id !== $user->id) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Unauthorized to view this photo'
+                ], Response::HTTP_FORBIDDEN);
+            }
+
+            // Check for Admin Unit - hanya bisa lihat photo di unit mereka
+            if ($user->role === 'Admin Unit' && $user->unit_id && $assetLoan->asset->unit_id !== $user->unit_id) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Unauthorized to view photos from other units'
+                ], Response::HTTP_FORBIDDEN);
+            }
+
+            if (!Storage::disk('public')->exists($assetLoan->loan_proof_photo_path)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Photo file not found'
+                ], Response::HTTP_NOT_FOUND);
+            }
+
+            return response()->file(storage_path('app/public/' . $assetLoan->loan_proof_photo_path));
+
+        } catch (\Exception $e) {
+            Log::error("Error fetching proof photo for loan {$assetLoan->id}: " . $e->getMessage());
+            
             return response()->json([
                 'success' => false,
-                'message' => 'Proof photo not found'
-            ], 404);
+                'message' => 'Failed to fetch proof photo',
+                'error' => $e->getMessage()
+            ], Response::HTTP_INTERNAL_SERVER_ERROR);
         }
-
-        // Check if user can view this photo
-        $user = Auth::user();
-        if ($user && $user->role === 'User' && $assetLoan->borrower_id !== $user->id) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Unauthorized to view this photo'
-            ], 403);
-        }
-
-        if (!Storage::disk('public')->exists($assetLoan->loan_proof_photo_path)) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Photo file not found'
-            ], 404);
-        }
-
-        return response()->file(storage_path('app/public/' . $assetLoan->loan_proof_photo_path));
     }
 
     /**
@@ -355,56 +510,80 @@ class AssetLoanController extends Controller
      */
     public function statistics()
     {
-        $user = Auth::user();
+        try {
+            $user = Auth::user();
 
-        $query = AssetLoan::query();
+            $query = AssetLoan::query();
 
-        // Regular users can only see their own statistics
-        if ($user && in_array($user->role, ['User'])) {
-            $query->where('borrower_id', $user->id);
-        } elseif ($user && $user->role === 'Admin Unit' && $user->unit_id) {
-            // Admin Unit can only see statistics for their unit's assets
-            $query->whereHas('asset', function($q) use ($user) {
-                $q->where('unit_id', $user->unit_id);
-            });
-        }
-
-        $totalLoans = $query->count();
-        $pendingLoans = (clone $query)->where('status', 'PENDING')->count();
-        $approvedLoans = (clone $query)->where('status', 'APPROVED')->count();
-        $rejectedLoans = (clone $query)->where('status', 'REJECTED')->count();
-        $returnedLoans = (clone $query)->where('status', 'RETURNED')->count();
-
-        // Recent pending loans for admin
-        $recentPendingLoans = [];
-        if (in_array($user->role, ['Super Admin', 'Admin Holding'])) {
-            $recentPendingLoans = AssetLoan::with(['asset.unit', 'borrower'])
-                ->where('status', 'PENDING')
-                ->orderBy('created_at', 'desc')
-                ->limit(5)
-                ->get();
-        } elseif ($user->role === 'Admin Unit' && $user->unit_id) {
-            $recentPendingLoans = AssetLoan::with(['asset.unit', 'borrower'])
-                ->whereHas('asset', function($q) use ($user) {
+            // Regular users can only see their own statistics
+            if ($user->role === 'User') {
+                $query->where('borrower_id', $user->id);
+            } elseif ($user->role === 'Admin Unit' && $user->unit_id) {
+                // Admin Unit can only see statistics for their unit's assets
+                $query->whereHas('asset', function($q) use ($user) {
                     $q->where('unit_id', $user->unit_id);
-                })
-                ->where('status', 'PENDING')
-                ->orderBy('created_at', 'desc')
+                });
+            }
+
+            $totalLoans = $query->count();
+            $pendingLoans = (clone $query)->where('status', 'PENDING')->count();
+            $approvedLoans = (clone $query)->where('status', 'APPROVED')->count();
+            $rejectedLoans = (clone $query)->where('status', 'REJECTED')->count();
+            $returnedLoans = (clone $query)->where('status', 'RETURNED')->count();
+
+            // Recent pending loans for admin
+            $recentPendingLoans = [];
+            if (in_array($user->role, ['Super Admin', 'Admin Holding'])) {
+                $recentPendingLoans = AssetLoan::with(['asset.unit', 'borrower'])
+                    ->where('status', 'PENDING')
+                    ->orderBy('created_at', 'desc')
+                    ->limit(5)
+                    ->get();
+            } elseif ($user->role === 'Admin Unit' && $user->unit_id) {
+                $recentPendingLoans = AssetLoan::with(['asset.unit', 'borrower'])
+                    ->whereHas('asset', function($q) use ($user) {
+                        $q->where('unit_id', $user->unit_id);
+                    })
+                    ->where('status', 'PENDING')
+                    ->orderBy('created_at', 'desc')
+                    ->limit(5)
+                    ->get();
+            }
+
+            // Overdue loans (approved loans with expected return date passed)
+            $overdueLoansQuery = (clone $query)
+                ->where('status', 'APPROVED')
+                ->where('expected_return_date', '<', Carbon::today());
+
+            $overdueLoans = $overdueLoansQuery->count();
+            $overdueLoansList = $overdueLoansQuery->with(['asset.unit', 'borrower'])
+                ->orderBy('expected_return_date', 'asc')
                 ->limit(5)
                 ->get();
-        }
 
-        return response()->json([
-            'success' => true,
-            'data' => [
-                'total_loans' => $totalLoans,
-                'pending_loans' => $pendingLoans,
-                'approved_loans' => $approvedLoans,
-                'rejected_loans' => $rejectedLoans,
-                'returned_loans' => $returnedLoans,
-                'recent_pending_loans' => $recentPendingLoans,
-            ]
-        ]);
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'total_loans' => $totalLoans,
+                    'pending_loans' => $pendingLoans,
+                    'approved_loans' => $approvedLoans,
+                    'rejected_loans' => $rejectedLoans,
+                    'returned_loans' => $returnedLoans,
+                    'overdue_loans' => $overdueLoans,
+                    'recent_pending_loans' => $recentPendingLoans,
+                    'overdue_loans_list' => $overdueLoansList,
+                ]
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Error fetching loan statistics: ' . $e->getMessage());
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to fetch loan statistics',
+                'error' => $e->getMessage()
+            ], Response::HTTP_INTERNAL_SERVER_ERROR);
+        }
     }
 
     /**
@@ -412,35 +591,74 @@ class AssetLoanController extends Controller
      */
     public function update(Request $request, AssetLoan $assetLoan)
     {
-        // Check if user can update this loan
-        $user = Auth::user();
-        if ($user && $user->role === 'User' && $assetLoan->borrower_id !== $user->id) {
+        DB::beginTransaction();
+        
+        try {
+            $user = Auth::user();
+            
+            // Check if user can update this loan
+            if ($user->role === 'User' && $assetLoan->borrower_id !== $user->id) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Unauthorized to update this loan'
+                ], Response::HTTP_FORBIDDEN);
+            }
+
+            // Check for Admin Unit - hanya bisa update loan di unit mereka
+            if ($user->role === 'Admin Unit' && $user->unit_id && $assetLoan->asset->unit_id !== $user->unit_id) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Unauthorized to update loans from other units'
+                ], Response::HTTP_FORBIDDEN);
+            }
+
+            $request->validate([
+                'expected_return_date' => 'sometimes|required|date|after_or_equal:today',
+                'purpose' => 'sometimes|required|string|max:500',
+            ]);
+
+            // Only allow updates for PENDING loans
+            if ($assetLoan->status !== 'PENDING') {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Only pending loans can be updated'
+                ], Response::HTTP_UNPROCESSABLE_ENTITY);
+            }
+
+            $assetLoan->update($request->only(['expected_return_date', 'purpose']));
+
+            DB::commit();
+
+            Log::info("✅ Loan updated successfully: Loan ID {$assetLoan->id}");
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Loan updated successfully',
+                'data' => $assetLoan->fresh()->load(['asset.unit', 'borrower'])
+            ]);
+
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            DB::rollBack();
+            
+            Log::error('Validation error updating loan: ' . json_encode($e->errors()));
+            
             return response()->json([
                 'success' => false,
-                'message' => 'Unauthorized to update this loan'
-            ], 403);
-        }
+                'message' => 'Validation failed',
+                'errors' => $e->errors()
+            ], Response::HTTP_BAD_REQUEST);
 
-        $request->validate([
-            'expected_return_date' => 'sometimes|required|date|after_or_equal:today',
-            'purpose' => 'sometimes|required|string|max:500',
-        ]);
-
-        // Only allow updates for PENDING loans
-        if ($assetLoan->status !== 'PENDING') {
+        } catch (\Exception $e) {
+            DB::rollBack();
+            
+            Log::error("Error updating loan {$assetLoan->id}: " . $e->getMessage());
+            
             return response()->json([
                 'success' => false,
-                'message' => 'Only pending loans can be updated'
-            ], 422);
+                'message' => 'Failed to update loan',
+                'error' => $e->getMessage()
+            ], Response::HTTP_INTERNAL_SERVER_ERROR);
         }
-
-        $assetLoan->update($request->only(['expected_return_date', 'purpose']));
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Loan updated successfully',
-            'data' => $assetLoan->fresh()->load(['asset', 'borrower'])
-        ]);
     }
 
     /**
@@ -448,34 +666,53 @@ class AssetLoanController extends Controller
      */
     public function cancel(AssetLoan $assetLoan)
     {
-        $user = Auth::user();
+        DB::beginTransaction();
         
-        // Check if user can cancel this loan
-        if ($assetLoan->borrower_id !== $user->id) {
+        try {
+            $user = Auth::user();
+            
+            // Check if user can cancel this loan
+            if ($assetLoan->borrower_id !== $user->id) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Unauthorized to cancel this loan'
+                ], Response::HTTP_FORBIDDEN);
+            }
+
+            // Only allow cancellation for PENDING loans
+            if ($assetLoan->status !== 'PENDING') {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Only pending loans can be cancelled'
+                ], Response::HTTP_UNPROCESSABLE_ENTITY);
+            }
+
+            $assetLoan->update([
+                'status' => 'REJECTED',
+                'rejection_reason' => 'Dibatalkan oleh peminjam',
+            ]);
+
+            DB::commit();
+
+            Log::info("✅ Loan cancelled by user: Loan ID {$assetLoan->id}");
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Loan cancelled successfully',
+                'data' => $assetLoan->fresh()
+            ]);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            
+            Log::error("Error cancelling loan {$assetLoan->id}: " . $e->getMessage());
+            
             return response()->json([
                 'success' => false,
-                'message' => 'Unauthorized to cancel this loan'
-            ], 403);
+                'message' => 'Failed to cancel loan',
+                'error' => $e->getMessage()
+            ], Response::HTTP_INTERNAL_SERVER_ERROR);
         }
-
-        // Only allow cancellation for PENDING loans
-        if ($assetLoan->status !== 'PENDING') {
-            return response()->json([
-                'success' => false,
-                'message' => 'Only pending loans can be cancelled'
-            ], 422);
-        }
-
-        $assetLoan->update([
-            'status' => 'REJECTED',
-            'rejection_reason' => 'Dibatalkan oleh peminjam',
-        ]);
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Loan cancelled successfully',
-            'data' => $assetLoan->fresh()
-        ]);
     }
 
     /**
@@ -483,21 +720,275 @@ class AssetLoanController extends Controller
      */
     public function myLoans(Request $request)
     {
-        $user = Auth::user();
-        
-        $loans = AssetLoan::with(['asset', 'approver'])
-            ->where('borrower_id', $user->id);
+        try {
+            $user = Auth::user();
+            
+            $loans = AssetLoan::with(['asset.unit', 'approver'])
+                ->where('borrower_id', $user->id);
 
-        // Allow filtering by status
-        if ($request->has('status')) {
-            $loans->where('status', $request->status);
+            // Allow filtering by status
+            if ($request->has('status')) {
+                $loans->where('status', $request->status);
+            }
+
+            // Filter by date range
+            if ($request->has('start_date')) {
+                $loans->where('request_date', '>=', $request->start_date);
+            }
+            if ($request->has('end_date')) {
+                $loans->where('request_date', '<=', $request->end_date);
+            }
+
+            // Search by asset name
+            if ($request->has('search')) {
+                $searchTerm = $request->search;
+                $loans->whereHas('asset', function($q) use ($searchTerm) {
+                    $q->where('name', 'like', '%' . $searchTerm . '%')
+                      ->orWhere('asset_tag', 'like', '%' . $searchTerm . '%');
+                });
+            }
+
+            // Sorting
+            $sortBy = $request->query('sort_by', 'created_at');
+            $sortOrder = $request->query('sort_order', 'desc');
+            $loans = $loans->orderBy($sortBy, $sortOrder)->get();
+
+            return response()->json([
+                'success' => true,
+                'data' => $loans
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error("Error fetching my loans for user {$user->id}: " . $e->getMessage());
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to fetch your loans',
+                'error' => $e->getMessage()
+            ], Response::HTTP_INTERNAL_SERVER_ERROR);
         }
+    }
 
-        $loans = $loans->orderBy('created_at', 'desc')->get();
+    /**
+     * Get overdue loans
+     */
+    public function getOverdueLoans(Request $request)
+    {
+        try {
+            $user = Auth::user();
 
-        return response()->json([
-            'success' => true,
-            'data' => $loans
-        ]);
+            $query = AssetLoan::with(['asset.unit', 'borrower'])
+                ->where('status', 'APPROVED')
+                ->where('expected_return_date', '<', Carbon::today());
+
+            // Filter by unit for Admin Unit
+            if ($user->role === 'Admin Unit' && $user->unit_id) {
+                $query->whereHas('asset', function($q) use ($user) {
+                    $q->where('unit_id', $user->unit_id);
+                });
+            }
+
+            // Filter for User (only their loans)
+            if ($user->role === 'User') {
+                $query->where('borrower_id', $user->id);
+            }
+
+            $overdueLoans = $query->orderBy('expected_return_date', 'asc')->get();
+
+            return response()->json([
+                'success' => true,
+                'data' => $overdueLoans,
+                'total_overdue' => $overdueLoans->count()
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Error fetching overdue loans: ' . $e->getMessage());
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to fetch overdue loans',
+                'error' => $e->getMessage()
+            ], Response::HTTP_INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    /**
+     * Extend loan period
+     */
+    public function extendLoan(Request $request, AssetLoan $assetLoan)
+    {
+        DB::beginTransaction();
+        
+        try {
+            $user = Auth::user();
+
+            // Check permissions
+            if ($user->role === 'User' && $assetLoan->borrower_id !== $user->id) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Unauthorized to extend this loan'
+                ], Response::HTTP_FORBIDDEN);
+            }
+
+            // Check for Admin Unit - hanya bisa extend loan di unit mereka
+            if ($user->role === 'Admin Unit' && $user->unit_id && $assetLoan->asset->unit_id !== $user->unit_id) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Unauthorized to extend loans from other units'
+                ], Response::HTTP_FORBIDDEN);
+            }
+
+            $request->validate([
+                'new_expected_return_date' => 'required|date|after:' . $assetLoan->expected_return_date,
+                'extension_reason' => 'required|string|max:500',
+            ]);
+
+            // Only allow extension for APPROVED loans
+            if ($assetLoan->status !== 'APPROVED') {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Only approved loans can be extended'
+                ], Response::HTTP_UNPROCESSABLE_ENTITY);
+            }
+
+            $oldDate = $assetLoan->expected_return_date;
+            $assetLoan->update([
+                'expected_return_date' => $request->new_expected_return_date,
+                'return_notes' => $assetLoan->return_notes . 
+                    "\n[EXTENDED] From {$oldDate} to {$request->new_expected_return_date}. Reason: {$request->extension_reason}",
+            ]);
+
+            DB::commit();
+
+            Log::info("✅ Loan extended: Loan ID {$assetLoan->id} from {$oldDate} to {$request->new_expected_return_date}");
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Loan extended successfully',
+                'data' => $assetLoan->fresh()->load(['asset.unit', 'borrower'])
+            ]);
+
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            DB::rollBack();
+            
+            Log::error('Validation error extending loan: ' . json_encode($e->errors()));
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation failed',
+                'errors' => $e->errors()
+            ], Response::HTTP_BAD_REQUEST);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            
+            Log::error("Error extending loan {$assetLoan->id}: " . $e->getMessage());
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to extend loan',
+                'error' => $e->getMessage()
+            ], Response::HTTP_INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    /**
+     * Bulk action for loans (approve/reject multiple)
+     */
+    public function bulkAction(Request $request)
+    {
+        DB::beginTransaction();
+        
+        try {
+            $user = Auth::user();
+            $validated = $request->validate([
+                'loan_ids' => 'required|array',
+                'loan_ids.*' => 'exists:asset_loans,id',
+                'action' => 'required|in:approve,reject',
+                'approval_date' => 'required_if:action,approve,reject|date|before_or_equal:today',
+                'rejection_reason' => 'required_if:action,reject|string|min:10|max:500',
+            ]);
+
+            $loanIds = $validated['loan_ids'];
+            $action = $validated['action'];
+
+            // Get loans with their assets
+            $loans = AssetLoan::with('asset.unit')
+                ->whereIn('id', $loanIds)
+                ->where('status', 'PENDING')
+                ->get();
+
+            // Filter loans based on user permissions
+            if ($user->role === 'Admin Unit' && $user->unit_id) {
+                $loans = $loans->filter(function ($loan) use ($user) {
+                    return $loan->asset->unit_id === $user->unit_id;
+                });
+            }
+
+            if ($loans->isEmpty()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'No valid loans found for bulk action'
+                ], Response::HTTP_UNPROCESSABLE_ENTITY);
+            }
+
+            $processedCount = 0;
+
+            foreach ($loans as $loan) {
+                if ($action === 'approve') {
+                    $loan->update([
+                        'status' => 'APPROVED',
+                        'approved_by' => $user->id,
+                        'approval_date' => $validated['approval_date'],
+                        'loan_date' => Carbon::today(),
+                        'rejection_reason' => null,
+                    ]);
+                    $loan->asset->update(['status' => 'Terpinjam']);
+                } else {
+                    $loan->update([
+                        'status' => 'REJECTED',
+                        'approved_by' => $user->id,
+                        'approval_date' => $validated['approval_date'],
+                        'rejection_reason' => $validated['rejection_reason'],
+                        'loan_proof_photo_path' => null,
+                        'loan_date' => null,
+                    ]);
+                }
+                $processedCount++;
+            }
+
+            DB::commit();
+
+            Log::info("✅ Bulk {$action} completed: {$processedCount} loans processed by User {$user->name}");
+
+            return response()->json([
+                'success' => true,
+                'message' => "Successfully {$action}d {$processedCount} loans",
+                'processed_count' => $processedCount,
+                'total_requested' => count($loanIds)
+            ]);
+
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            DB::rollBack();
+            
+            Log::error('Validation error in bulk action: ' . json_encode($e->errors()));
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation failed',
+                'errors' => $e->errors()
+            ], Response::HTTP_BAD_REQUEST);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            
+            Log::error('Error in bulk action: ' . $e->getMessage());
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to perform bulk action',
+                'error' => $e->getMessage()
+            ], Response::HTTP_INTERNAL_SERVER_ERROR);
+        }
     }
 }

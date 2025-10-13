@@ -7,12 +7,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
-use Laravel\Sanctum\HasApiTokens; 
+use Laravel\Sanctum\HasApiTokens;
 
 class User extends Authenticatable
 {
-    use HasApiTokens, HasFactory, Notifiable; 
-
+    use HasApiTokens, HasFactory, Notifiable;
 
     /**
      * The attributes that are mass assignable.
@@ -106,5 +105,277 @@ class User extends Authenticatable
         }
 
         return false;
+    }
+
+    /**
+     * Check if user can view assets from a specific unit.
+     */
+    public function canViewUnitAssets(?Unit $unit): bool
+    {
+        // Super Admin and Admin Holding can view all units
+        if (in_array($this->role, ['Super Admin', 'Admin Holding'])) {
+            return true;
+        }
+
+        // Admin Unit and User can only view their own unit
+        if (in_array($this->role, ['Admin Unit', 'User']) && $unit && $this->unit_id === $unit->id) {
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * Check if user can borrow from a specific asset.
+     */
+    public function canBorrowAsset(Asset $asset): bool
+    {
+        // User can only borrow assets from their own unit
+        if ($this->role === 'User' && $this->unit_id && $asset->unit_id === $this->unit_id) {
+            return true;
+        }
+
+        // Admin roles cannot borrow assets (based on your requirement)
+        return false;
+    }
+
+    /**
+     * Check if user can create assets in a specific unit.
+     */
+    public function canCreateAssetInUnit(?Unit $unit): bool
+    {
+        // Super Admin and Admin Holding can create assets in any unit
+        if (in_array($this->role, ['Super Admin', 'Admin Holding'])) {
+            return true;
+        }
+
+        // Admin Unit can only create assets in their own unit
+        if ($this->role === 'Admin Unit' && $unit && $this->unit_id === $unit->id) {
+            return true;
+        }
+
+        // User cannot create assets
+        return false;
+    }
+
+    /**
+     * Check if user can update a specific asset.
+     */
+    public function canUpdateAsset(Asset $asset): bool
+    {
+        // Super Admin and Admin Holding can update all assets
+        if (in_array($this->role, ['Super Admin', 'Admin Holding'])) {
+            return true;
+        }
+
+        // Admin Unit can only update assets in their unit
+        if ($this->role === 'Admin Unit' && $this->unit_id && $asset->unit_id === $this->unit_id) {
+            return true;
+        }
+
+        // User cannot update assets
+        return false;
+    }
+
+    /**
+     * Check if user can delete a specific asset.
+     */
+    public function canDeleteAsset(Asset $asset): bool
+    {
+        // Super Admin and Admin Holding can delete all assets
+        if (in_array($this->role, ['Super Admin', 'Admin Holding'])) {
+            return true;
+        }
+
+        // Admin Unit can only delete assets in their unit
+        if ($this->role === 'Admin Unit' && $this->unit_id && $asset->unit_id === $this->unit_id) {
+            return true;
+        }
+
+        // User cannot delete assets
+        return false;
+    }
+
+    /**
+     * Check if user can view loan details.
+     */
+    public function canViewLoan(AssetLoan $loan): bool
+    {
+        // Super Admin and Admin Holding can view all loans
+        if (in_array($this->role, ['Super Admin', 'Admin Holding'])) {
+            return true;
+        }
+
+        // Admin Unit can only view loans for assets in their unit
+        if ($this->role === 'Admin Unit' && $this->unit_id && $loan->asset->unit_id === $this->unit_id) {
+            return true;
+        }
+
+        // User can only view their own loans
+        if ($this->role === 'User' && $loan->borrower_id === $this->id) {
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * Check if user can process loan returns.
+     */
+    public function canProcessLoanReturn(AssetLoan $loan): bool
+    {
+        // Super Admin and Admin Holding can process all returns
+        if (in_array($this->role, ['Super Admin', 'Admin Holding'])) {
+            return true;
+        }
+
+        // Admin Unit can only process returns for assets in their unit
+        if ($this->role === 'Admin Unit' && $this->unit_id && $loan->asset->unit_id === $this->unit_id) {
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * Get user's unit name or default message.
+     */
+    public function getUnitName(): string
+    {
+        if ($this->unit) {
+            return $this->unit->name;
+        }
+
+        return $this->role === 'Super Admin' || $this->role === 'Admin Holding' 
+            ? 'Semua Unit' 
+            : 'Unit tidak ditentukan';
+    }
+
+    /**
+     * Check if user is super admin.
+     */
+    public function isSuperAdmin(): bool
+    {
+        return $this->role === 'Super Admin';
+    }
+
+    /**
+     * Check if user is admin holding.
+     */
+    public function isAdminHolding(): bool
+    {
+        return $this->role === 'Admin Holding';
+    }
+
+    /**
+     * Check if user is admin unit.
+     */
+    public function isAdminUnit(): bool
+    {
+        return $this->role === 'Admin Unit';
+    }
+
+    /**
+     * Check if user is regular user.
+     */
+    public function isRegularUser(): bool
+    {
+        return $this->role === 'User';
+    }
+
+    /**
+     * Check if user has admin privileges.
+     */
+    public function isAdmin(): bool
+    {
+        return in_array($this->role, ['Super Admin', 'Admin Holding', 'Admin Unit']);
+    }
+
+    /**
+     * Scope a query to only include users from a specific unit.
+     */
+    public function scopeFromUnit($query, $unitId)
+    {
+        return $query->where('unit_id', $unitId);
+    }
+
+    /**
+     * Scope a query to only include users with specific roles.
+     */
+    public function scopeWithRoles($query, array $roles)
+    {
+        return $query->whereIn('role', $roles);
+    }
+
+    /**
+     * Get users who can approve loans (admins).
+     */
+    public function scopeApprovers($query)
+    {
+        return $query->whereIn('role', ['Super Admin', 'Admin Holding', 'Admin Unit']);
+    }
+
+    /**
+     * Get active loans for this user.
+     */
+    public function getActiveLoans()
+    {
+        return $this->borrowedLoans()
+            ->where('status', 'APPROVED')
+            ->with('asset.unit')
+            ->get();
+    }
+
+    /**
+     * Get pending loans for this user.
+     */
+    public function getPendingLoans()
+    {
+        return $this->borrowedLoans()
+            ->where('status', 'PENDING')
+            ->with('asset.unit')
+            ->get();
+    }
+
+    /**
+     * Check if user has any active loans.
+     */
+    public function hasActiveLoans(): bool
+    {
+        return $this->borrowedLoans()
+            ->where('status', 'APPROVED')
+            ->exists();
+    }
+
+    /**
+     * Check if user has reached loan limit (optional business logic).
+     */
+    public function hasReachedLoanLimit(): bool
+    {
+        $activeLoanCount = $this->borrowedLoans()
+            ->where('status', 'APPROVED')
+            ->count();
+
+        // Define your loan limit logic here
+        $loanLimit = config('app.max_concurrent_loans', 3); // Default 3 loans
+
+        return $activeLoanCount >= $loanLimit;
+    }
+
+    /**
+     * Get user's permissions summary.
+     */
+    public function getPermissionsSummary(): array
+    {
+        return [
+            'can_view_all_assets' => in_array($this->role, ['Super Admin', 'Admin Holding']),
+            'can_manage_assets' => in_array($this->role, ['Super Admin', 'Admin Holding', 'Admin Unit']),
+            'can_borrow_assets' => $this->role === 'User',
+            'can_approve_loans' => in_array($this->role, ['Super Admin', 'Admin Holding', 'Admin Unit']),
+            'can_view_reports' => in_array($this->role, ['Super Admin', 'Admin Holding']),
+            'unit_restricted' => in_array($this->role, ['Admin Unit', 'User']),
+            'unit_id' => $this->unit_id,
+            'unit_name' => $this->getUnitName(),
+        ];
     }
 }

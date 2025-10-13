@@ -1,10 +1,9 @@
 import React, { useState } from 'react';
 import { AssetLoan } from '../types';
-import { rejectAssetLoan } from '../services/api';
 
 interface LoanRejectionFormProps {
   loan: AssetLoan;
-  onReject: (rejectedLoan: AssetLoan) => void;
+  onReject: (rejectionData: any) => void;
   onCancel: () => void;
   loading?: boolean;
 }
@@ -49,13 +48,13 @@ const LoanRejectionForm: React.FC<LoanRejectionFormProps> = ({
 
     setIsSubmitting(true);
     try {
-      const rejectedLoan = await rejectAssetLoan(loan.id, {
+      const rejectionData = {
         approval_date: rejectionDate,
         rejection_reason: rejectionReason.trim()
-      });
-      
-      onReject(rejectedLoan);
-      
+      };
+
+      onReject(rejectionData);
+
     } catch (error: any) {
       console.error('Rejection failed:', error);
       alert(`Penolakan gagal: ${error.message || 'Unknown error'}`);

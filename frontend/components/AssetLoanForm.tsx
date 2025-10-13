@@ -1,16 +1,16 @@
 import React, { useState } from 'react';
-import { requestAssetLoan } from '../services/api';
+import { Asset } from '../types';
 
 interface AssetLoanFormProps {
-  assetId: number;
-  onSuccess: () => void; // Callback to be called on successful request
+  asset: Asset;
+  onSubmit: (loanData: any) => void;
   onCancel: () => void;
+  loading?: boolean;
 }
 
-const AssetLoanForm: React.FC<AssetLoanFormProps> = ({ assetId, onSuccess, onCancel }) => {
+const AssetLoanForm: React.FC<AssetLoanFormProps> = ({ asset, onSubmit, onCancel, loading = false }) => {
   const [expectedReturnDate, setExpectedReturnDate] = useState('');
   const [purpose, setPurpose] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const getTodayString = () => {
@@ -26,53 +26,76 @@ const AssetLoanForm: React.FC<AssetLoanFormProps> = ({ assetId, onSuccess, onCan
     setError(null);
 
     if (!expectedReturnDate || !purpose) {
-      setError('Please fill in all fields.');
+      setError('Mohon isi semua field.');
       return;
     }
 
-    setIsLoading(true);
-    try {
-      await requestAssetLoan({
-        asset_id: assetId,
-        expected_return_date: expectedReturnDate,
-        purpose: purpose,
-      });
-      alert('Loan request submitted successfully!');
-      onSuccess(); // Trigger the success callback
-    } catch (err: any) {
-      setError(err.message || 'Failed to submit loan request.');
-    } finally {
-      setIsLoading(false);
-    }
+    // Call parent's onSubmit with loan data
+    onSubmit({
+      asset_id: asset.id,
+      expected_return_date: expectedReturnDate,
+      purpose: purpose,
+    });
   };
 
   return (
-    <div className="p-4 bg-gray-100 rounded-lg">
-      <h3 className="text-lg font-bold mb-4">Request to Borrow Asset</h3>
-      <form onSubmit={handleSubmit}>
-        <div className="mb-4">
-          <label htmlFor="expectedReturnDate" className="block text-sm font-medium text-gray-700">Expected Return Date</label>
+    <div className="bg-white p-6 rounded-lg">
+      <h3 className="text-xl font-bold mb-6 text-gray-800">Form Peminjaman Asset</h3>
+
+      {/* Asset Information */}
+      <div className="mb-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
+        <h4 className="font-semibold text-gray-700 mb-3">Detail Asset yang Dipinjam</h4>
+        <div className="grid grid-cols-2 gap-3 text-sm">
+          <div>
+            <span className="font-medium text-gray-600">Nama Asset:</span>
+            <p className="text-gray-900 mt-1">{asset.name}</p>
+          </div>
+          <div>
+            <span className="font-medium text-gray-600">Kode Asset:</span>
+            <p className="text-gray-900 mt-1 font-mono">{asset.asset_tag}</p>
+          </div>
+          <div>
+            <span className="font-medium text-gray-600">Kategori:</span>
+            <p className="text-gray-900 mt-1">{asset.category}</p>
+          </div>
+          <div>
+            <span className="font-medium text-gray-600">Unit:</span>
+            <p className="text-gray-900 mt-1">{asset.unit?.name || 'N/A'}</p>
+          </div>
+        </div>
+      </div>
+
+      <form onSubmit={handleSubmit} className="space-y-5">
+        <div>
+          <label htmlFor="expectedReturnDate" className="block text-sm font-medium text-gray-700 mb-2">
+            Tanggal Pengembalian yang Diharapkan *
+          </label>
           <input
             type="date"
             id="expectedReturnDate"
             min={getTodayString()}
             value={expectedReturnDate}
             onChange={(e) => setExpectedReturnDate(e.target.value)}
-            className="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+            className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             required
           />
+          <p className="text-xs text-gray-500 mt-1">Pilih tanggal ketika Anda berencana mengembalikan asset</p>
         </div>
-        <div className="mb-4">
-          <label htmlFor="purpose" className="block text-sm font-medium text-gray-700">Purpose / Description</label>
+
+        <div>
+          <label htmlFor="purpose" className="block text-sm font-medium text-gray-700 mb-2">
+            Tujuan Peminjaman *
+          </label>
           <textarea
             id="purpose"
-            rows={3}
+            rows={4}
             value={purpose}
             onChange={(e) => setPurpose(e.target.value)}
-            className="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-            placeholder="e.g., For event at location X"
+            className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            placeholder="Jelaskan tujuan peminjaman asset ini..."
             required
           />
+          <p className="text-xs text-gray-500 mt-1">Berikan alasan yang jelas untuk peminjaman ini</p>
         </div>
         {error && <p className="text-sm text-red-600 mb-4">{error}</p>}
         <div className="flex justify-end gap-2">
@@ -80,16 +103,16 @@ const AssetLoanForm: React.FC<AssetLoanFormProps> = ({ assetId, onSuccess, onCan
             type="button"
             onClick={onCancel}
             className="px-4 py-2 bg-gray-300 text-gray-800 rounded-md hover:bg-gray-400 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
-            disabled={isLoading}
+            disabled={loading}
           >
-            Cancel
+            Batal
           </button>
           <button
             type="submit"
             className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:bg-blue-300"
-            disabled={isLoading}
+            disabled={loading}
           >
-            {isLoading ? 'Submitting...' : 'Submit Request'}
+            {loading ? 'Mengirim...' : 'Ajukan Peminjaman'}
           </button>
         </div>
       </form>
