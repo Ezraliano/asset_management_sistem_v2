@@ -17,22 +17,22 @@ class AssetController extends Controller
         try {
             // Ambil parameter filter dari request
             $category = $request->query('category');
-            $location = $request->query('location');
+            $unit_id = $request->query('unit_id');
             $status = $request->query('status');
             $search = $request->query('search');
 
-            // Mulai query dengan eager loading untuk depreciations
+            // Mulai query dengan eager loading untuk depreciations dan unit
             $query = Asset::with(['depreciations' => function($query) {
                 $query->orderBy('month_sequence', 'desc')->limit(1);
-            }]);
+            }, 'unit']);
 
             // Terapkan filter jika ada
             if (!empty($category)) {
                 $query->where('category', 'like', '%' . $category . '%');
             }
 
-            if (!empty($location)) {
-                $query->where('location', 'like', '%' . $location . '%');
+            if (!empty($unit_id)) {
+                $query->where('unit_id', $unit_id);
             }
 
             if (!empty($status)) {
@@ -44,8 +44,7 @@ class AssetController extends Controller
                 $query->where(function($q) use ($search) {
                     $q->where('asset_tag', 'like', '%' . $search . '%')
                       ->orWhere('name', 'like', '%' . $search . '%')
-                      ->orWhere('category', 'like', '%' . $search . '%')
-                      ->orWhere('location', 'like', '%' . $search . '%');
+                      ->orWhere('category', 'like', '%' . $search . '%');
                 });
             }
 
@@ -85,7 +84,7 @@ class AssetController extends Controller
                 'data' => $assets,
                 'filters' => [
                     'category' => $category,
-                    'location' => $location,
+                    'unit_id' => $unit_id,
                     'status' => $status,
                     'search' => $search
                 ]
@@ -110,7 +109,7 @@ class AssetController extends Controller
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'category' => 'required|string|max:255',
-            'location' => 'required|string|max:255',
+            'unit_id' => 'nullable|exists:units,id',
             'value' => 'required|numeric|min:0',
             'purchase_date' => 'required|date|before_or_equal:today',
             'useful_life' => 'required|integer|min:1',
@@ -181,7 +180,7 @@ class AssetController extends Controller
             // ✅ UPDATE: Include depresiasi data dengan informasi lengkap
             $asset = Asset::with(['depreciations' => function($query) {
                 $query->orderBy('month_sequence', 'asc');
-            }])->find($id);
+            }, 'unit'])->find($id);
 
             if (!$asset) {
                 Log::warning("Asset not found: {$id}");
@@ -248,7 +247,7 @@ class AssetController extends Controller
                 'asset_tag' => 'sometimes|required|string|unique:assets,asset_tag,' . $id,
                 'name' => 'sometimes|required|string|max:255',
                 'category' => 'sometimes|required|string|max:255',
-                'location' => 'sometimes|required|string|max:255',
+                'unit_id' => 'nullable|exists:units,id',
                 'value' => 'sometimes|required|numeric|min:0',
                 'purchase_date' => 'sometimes|required|date|before_or_equal:today', // ✅ VALIDASI BARU
                 'useful_life' => 'sometimes|required|integer|min:1',
@@ -449,7 +448,7 @@ class AssetController extends Controller
                 'asset_ids' => 'required|array',
                 'asset_ids.*' => 'exists:assets,id',
                 'updates' => 'required|array',
-                'updates.location' => 'sometimes|string|max:255',
+                'updates.unit_id' => 'nullable|exists:units,id',
                 'updates.status' => 'sometimes|in:In Use,In Repair,Disposed,Lost',
                 'updates.category' => 'sometimes|string|max:255',
             ]);
@@ -524,7 +523,7 @@ class AssetController extends Controller
                     $q->where('asset_tag', 'like', '%' . $searchTerm . '%')
                       ->orWhere('name', 'like', '%' . $searchTerm . '%')
                       ->orWhere('category', 'like', '%' . $searchTerm . '%')
-                      ->orWhere('location', 'like', '%' . $searchTerm . '%');
+                      ->orWhere('Unit', 'like', '%' . $searchTerm . '%');
                 });
             }
 
@@ -763,7 +762,7 @@ class AssetController extends Controller
             $query = Asset::where('status', 'Available')
                 ->with(['depreciations' => function($query) {
                     $query->orderBy('month_sequence', 'desc')->limit(1);
-                }]);
+                }, 'unit']);
 
             // Optional search filter
             if ($request->has('search') && !empty($request->search)) {

@@ -415,8 +415,8 @@ const AssetDetail: React.FC<AssetDetailProps> = ({ assetId, navigateTo }) => {
                         <span className="text-gray-900">{asset.category}</span>
                     </div>
                     <div className="flex flex-col">
-                        <span className="text-sm font-medium text-gray-500">{t('asset_detail.labels.location')}</span>
-                        <span className="text-gray-900">{asset.location}</span>
+                        <span className="text-sm font-medium text-gray-500">{t('unit')}</span>
+                        <span className="text-gray-900">{asset.unit?.name || 'N/A'}</span>
                     </div>
                     <div className="flex flex-col">
                         <span className="text-sm font-medium text-gray-500">{t('asset_detail.labels.status')}</span>
@@ -650,7 +650,7 @@ const AssetDetail: React.FC<AssetDetailProps> = ({ assetId, navigateTo }) => {
                                     <div className="flex justify-between items-start">
                                         <div className="flex-1">
                                             <div className="flex items-center mb-2">
-                                                <span className="font-medium text-gray-900">Location:</span>
+                                                <span className="font-medium text-gray-900">Unit:</span>
                                                 <span className="ml-2 text-gray-700">{movement.location}</span>
                                             </div>
                                             {movement.moved_by && (

@@ -5,6 +5,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Carbon\Carbon;
 
@@ -18,11 +19,11 @@ class Asset extends Model
         'asset_tag',
         'name',
         'category',
-        'location',
         'value',
         'purchase_date',
         'useful_life',
         'status',
+        'unit_id',
         'created_at',
         'updated_at',
     ];
@@ -79,6 +80,11 @@ class Asset extends Model
     public function depreciations(): HasMany
     {
         return $this->hasMany(AssetDepreciation::class)->orderBy('month_sequence');
+    }
+
+    public function unit(): BelongsTo
+    {
+        return $this->belongsTo(Unit::class);
     }
 
     public function calculateMonthlyDepreciation(): float

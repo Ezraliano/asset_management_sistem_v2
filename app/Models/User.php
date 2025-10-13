@@ -3,6 +3,8 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens; 
@@ -23,6 +25,7 @@ class User extends Authenticatable
         'email',
         'password',
         'role',
+        'unit_id',
     ];
 
     /**
@@ -59,5 +62,49 @@ class User extends Authenticatable
     public function approvedLoans(): HasMany
     {
         return $this->hasMany(AssetLoan::class, 'approved_by');
+    }
+
+    /**
+     * Get the unit this user belongs to.
+     */
+    public function unit(): BelongsTo
+    {
+        return $this->belongsTo(Unit::class);
+    }
+
+    /**
+     * Check if user can manage a specific unit.
+     */
+    public function canManageUnit(?Unit $unit): bool
+    {
+        // Super Admin and Admin Holding can manage all units
+        if (in_array($this->role, ['Super Admin', 'Admin Holding'])) {
+            return true;
+        }
+
+        // Admin Unit can only manage their own unit
+        if ($this->role === 'Admin Unit' && $unit && $this->unit_id === $unit->id) {
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * Check if user can approve loans for a specific asset.
+     */
+    public function canApproveLoansForAsset(Asset $asset): bool
+    {
+        // Super Admin and Admin Holding can approve all loans
+        if (in_array($this->role, ['Super Admin', 'Admin Holding'])) {
+            return true;
+        }
+
+        // Admin Unit can only approve loans for assets in their unit
+        if ($this->role === 'Admin Unit' && $this->unit_id && $asset->unit_id === $this->unit_id) {
+            return true;
+        }
+
+        return false;
     }
 }

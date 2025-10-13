@@ -1,5 +1,5 @@
 // api.ts - PERBAIKAN RESPONSE HANDLING
-import { Asset, AssetMovement, Maintenance, User, DamageReport, LossReport, DashboardStats, AssetLoan, AssetLoanStatus } from '../types';
+import { Asset, AssetMovement, Maintenance, User, DamageReport, LossReport, DashboardStats, AssetLoan, AssetLoanStatus, Unit } from '../types';
 
 const API_BASE_URL = 'http://localhost:8000/api';
 
@@ -671,6 +671,48 @@ export const returnAssetLoan = async (loanId: number, data: { return_notes?: str
   return handleApiResponse<AssetLoan>(responseData.data);
 };
 
+
+// ==================== UNIT API ====================
+
+export const getUnits = async (): Promise<Unit[]> => {
+  try {
+    const data = await apiRequest('/units');
+    return handleApiResponse<Unit[]>(data);
+  } catch (error) {
+    console.error('Get units error:', error);
+    return [];
+  }
+};
+
+export const getUnitById = async (unitId: number): Promise<Unit | null> => {
+  try {
+    const data = await apiRequest(`/units/${unitId}`);
+    return handleApiResponse<Unit>(data);
+  } catch (error) {
+    console.error('Get unit by ID error:', error);
+    return null;
+  }
+};
+
+export const getUnitAssets = async (unitId: number): Promise<Asset[]> => {
+  try {
+    const data = await apiRequest(`/units/${unitId}/assets`);
+    return handleApiResponse<Asset[]>(data);
+  } catch (error) {
+    console.error('Get unit assets error:', error);
+    return [];
+  }
+};
+
+export const getUnitUsers = async (unitId: number): Promise<User[]> => {
+  try {
+    const data = await apiRequest(`/units/${unitId}/users`);
+    return handleApiResponse<User[]>(data);
+  } catch (error) {
+    console.error('Get unit users error:', error);
+    return [];
+  }
+};
 
 // Users API
 export const getUsers = async (): Promise<User[]> => {

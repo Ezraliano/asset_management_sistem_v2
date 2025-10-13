@@ -19,15 +19,20 @@ class AssetLoanController extends Controller
     public function index(Request $request)
     {
         // Eager load relationships for efficiency
-        $loans = AssetLoan::with(['asset', 'borrower', 'approver']);
+        $loans = AssetLoan::with(['asset.unit', 'borrower', 'approver']);
 
         // Check user role and filter accordingly
         $user = Auth::user();
         if ($user && in_array($user->role, ['User'])) {
             // Regular users can only see their own loans
             $loans->where('borrower_id', $user->id);
+        } elseif ($user && $user->role === 'Admin Unit' && $user->unit_id) {
+            // Admin Unit can only see loans for assets in their unit
+            $loans->whereHas('asset', function($query) use ($user) {
+                $query->where('unit_id', $user->unit_id);
+            });
         }
-        // Admin Holding, Unit, and Super Admin can see all loans (no additional filter needed)
+        // Super Admin and Admin Holding can see all loans (no additional filter needed)
 
         // Allow filtering by status
         if ($request->has('status')) {
@@ -103,13 +108,26 @@ class AssetLoanController extends Controller
     public function approve(Request $request, AssetLoan $assetLoan)
     {
         $user = Auth::user();
-        
+
+        // Load asset with unit relationship
+        $assetLoan->load('asset.unit');
+
         // Check if user has permission to approve
         if (!in_array($user->role, ['Super Admin', 'Admin Holding'])) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Unauthorized to approve loans'
-            ], 403);
+            // If Admin Unit, check if asset belongs to their unit
+            if ($user->role === 'Admin Unit') {
+                if (!$user->unit_id || $assetLoan->asset->unit_id !== $user->unit_id) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Unauthorized to approve loans for assets outside your unit'
+                    ], 403);
+                }
+            } else {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Unauthorized to approve loans'
+                ], 403);
+            }
         }
 
         if ($assetLoan->status !== 'PENDING') {
@@ -169,13 +187,26 @@ class AssetLoanController extends Controller
     public function reject(Request $request, AssetLoan $assetLoan)
     {
         $user = Auth::user();
-        
+
+        // Load asset with unit relationship
+        $assetLoan->load('asset.unit');
+
         // Check if user has permission to reject
         if (!in_array($user->role, ['Super Admin', 'Admin Holding'])) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Unauthorized to reject loans'
-            ], 403);
+            // If Admin Unit, check if asset belongs to their unit
+            if ($user->role === 'Admin Unit') {
+                if (!$user->unit_id || $assetLoan->asset->unit_id !== $user->unit_id) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Unauthorized to reject loans for assets outside your unit'
+                    ], 403);
+                }
+            } else {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Unauthorized to reject loans'
+                ], 403);
+            }
         }
 
         if ($assetLoan->status !== 'PENDING') {
@@ -228,13 +259,26 @@ class AssetLoanController extends Controller
     public function returnAsset(Request $request, AssetLoan $assetLoan)
     {
         $user = Auth::user();
-        
+
+        // Load asset with unit relationship
+        $assetLoan->load('asset.unit');
+
         // Check if user has permission to process returns
         if (!in_array($user->role, ['Super Admin', 'Admin Holding'])) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Unauthorized to process returns'
-            ], 403);
+            // If Admin Unit, check if asset belongs to their unit
+            if ($user->role === 'Admin Unit') {
+                if (!$user->unit_id || $assetLoan->asset->unit_id !== $user->unit_id) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Unauthorized to process returns for assets outside your unit'
+                    ], 403);
+                }
+            } else {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Unauthorized to process returns'
+                ], 403);
+            }
         }
 
         if ($assetLoan->status !== 'APPROVED') {
@@ -312,24 +356,38 @@ class AssetLoanController extends Controller
     public function statistics()
     {
         $user = Auth::user();
-        
+
         $query = AssetLoan::query();
-        
+
         // Regular users can only see their own statistics
         if ($user && in_array($user->role, ['User'])) {
             $query->where('borrower_id', $user->id);
+        } elseif ($user && $user->role === 'Admin Unit' && $user->unit_id) {
+            // Admin Unit can only see statistics for their unit's assets
+            $query->whereHas('asset', function($q) use ($user) {
+                $q->where('unit_id', $user->unit_id);
+            });
         }
 
         $totalLoans = $query->count();
-        $pendingLoans = $query->where('status', 'PENDING')->count();
-        $approvedLoans = $query->where('status', 'APPROVED')->count();
-        $rejectedLoans = $query->where('status', 'REJECTED')->count();
-        $returnedLoans = $query->where('status', 'RETURNED')->count();
+        $pendingLoans = (clone $query)->where('status', 'PENDING')->count();
+        $approvedLoans = (clone $query)->where('status', 'APPROVED')->count();
+        $rejectedLoans = (clone $query)->where('status', 'REJECTED')->count();
+        $returnedLoans = (clone $query)->where('status', 'RETURNED')->count();
 
         // Recent pending loans for admin
         $recentPendingLoans = [];
         if (in_array($user->role, ['Super Admin', 'Admin Holding'])) {
-            $recentPendingLoans = AssetLoan::with(['asset', 'borrower'])
+            $recentPendingLoans = AssetLoan::with(['asset.unit', 'borrower'])
+                ->where('status', 'PENDING')
+                ->orderBy('created_at', 'desc')
+                ->limit(5)
+                ->get();
+        } elseif ($user->role === 'Admin Unit' && $user->unit_id) {
+            $recentPendingLoans = AssetLoan::with(['asset.unit', 'borrower'])
+                ->whereHas('asset', function($q) use ($user) {
+                    $q->where('unit_id', $user->unit_id);
+                })
                 ->where('status', 'PENDING')
                 ->orderBy('created_at', 'desc')
                 ->limit(5)

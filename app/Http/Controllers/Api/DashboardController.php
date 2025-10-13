@@ -34,13 +34,14 @@ class DashboardController extends Controller
                 ];
             });
 
-        // Data untuk chart berdasarkan lokasi
-        $assetsByLocation = Asset::selectRaw('location, COUNT(*) as count')
-            ->groupBy('location')
+        // Data untuk chart berdasarkan unit/lokasi
+        $assetsByLocation = Asset::selectRaw('unit_id, COUNT(*) as count')
+            ->with('unit:id,name')
+            ->groupBy('unit_id')
             ->get()
             ->map(function ($item) {
                 return [
-                    'name' => $item->location,
+                    'name' => $item->unit ? $item->unit->name : 'No Unit',
                     'count' => $item->count
                 ];
             });

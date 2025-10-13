@@ -154,7 +154,7 @@ const AssetLending: React.FC = () => {
               <tr>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nama Aset</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tag</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Lokasi</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Unit</th>
                 <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider w-24">Aksi</th>
               </tr>
             </thead>
@@ -164,7 +164,7 @@ const AssetLending: React.FC = () => {
                   <tr key={asset.id}>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{asset.name}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{asset.asset_tag}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{asset.location}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{asset.unit?.name || 'N/A'}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-center text-sm font-medium">
                       <div className="flex items-center justify-center">
                         <button

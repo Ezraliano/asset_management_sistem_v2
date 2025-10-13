@@ -16,11 +16,11 @@ return new class extends Migration
             $table->string('asset_tag')->unique(); // Menggantikan 'id' string di frontend
             $table->string('name');
             $table->string('category');
-            $table->string('location');
             $table->decimal('value', 15, 2);
             $table->datetime('purchase_date');
             $table->integer('useful_life')->comment('in months');
             $table->enum('status', ['Available', 'Terpinjam', 'Terjual', 'Lost', 'Dalam Perbaikan'])->default('Available');
+            $table->foreignId('unit_id')->nullable()->constrained('units')->onDelete('cascade');
             $table->timestamps();
         });
     }

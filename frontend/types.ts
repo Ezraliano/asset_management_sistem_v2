@@ -13,12 +13,27 @@ export enum MaintenanceStatus {
   CANCELLED = 'Cancelled'
 }
 
+export interface Unit {
+  id: number;
+  code: string;
+  name: string;
+  description?: string;
+  address?: string;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+  users_count?: number;
+  assets_count?: number;
+}
+
 export interface User {
   id: number;
   name: string;
   username: string;
   email: string;
-  role: 'Super Admin' | 'Admin Holding' | 'Unit' | 'User';
+  role: 'Super Admin' | 'Admin Holding' | 'Admin Unit' | 'User';
+  unit_id?: number | null;
+  unit?: Unit;
 }
 
 export interface Asset {
@@ -26,11 +41,12 @@ export interface Asset {
   asset_tag: string;
   name: string;
   category: string;
-  location: string;
   value: number;
   purchase_date: string;
   useful_life: number;
   status: AssetStatus;
+  unit_id?: number | null;
+  unit?: Unit;
   created_at?: string;
   updated_at?: string;
 }

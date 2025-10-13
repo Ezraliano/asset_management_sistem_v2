@@ -45,7 +45,7 @@ const AssetLoanManagement: React.FC = () => {
 
   const canManageLoans = useMemo(() => {
     if (!currentUser) return false;
-    return ['Super Admin', 'Admin Holding'].includes(currentUser.role);
+    return ['Super Admin', 'Admin Holding', 'Admin Unit'].includes(currentUser.role);
   }, [currentUser]);
 
   const handleActionClick = (loan: AssetLoan, action: 'approve' | 'reject' | 'return') => {
@@ -68,8 +68,9 @@ const AssetLoanManagement: React.FC = () => {
         await approveAssetLoan(selectedLoan.id, formDataToSend);
         alert('Peminjaman berhasil disetujui!');
       } else if (modalAction === 'reject') {
-        await rejectAssetLoan(selectedLoan.id, { 
-          rejection_reason: formData.rejection_reason 
+        await rejectAssetLoan(selectedLoan.id, {
+          rejection_reason: formData.rejection_reason,
+          approval_date: ''
         });
         alert('Peminjaman berhasil ditolak!');
       } else if (modalAction === 'return') {
@@ -157,6 +158,7 @@ const AssetLoanManagement: React.FC = () => {
             <thead className="bg-gray-50">
               <tr>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Aset</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Unit</th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Peminjam</th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Tanggal</th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
@@ -170,6 +172,16 @@ const AssetLoanManagement: React.FC = () => {
                     <td className="px-4 py-4 text-sm text-gray-900">
                       <div>{loan.asset.name}</div>
                       <div className="text-xs text-gray-400">{loan.asset.asset_tag}</div>
+                    </td>
+                    <td className="px-4 py-4 text-sm text-gray-500">
+                      {loan.asset.unit ? (
+                        <div>
+                          <div className="font-medium">{loan.asset.unit.name}</div>
+                          <div className="text-xs text-gray-400">{loan.asset.unit.code}</div>
+                        </div>
+                      ) : (
+                        <span className="text-gray-400">-</span>
+                      )}
                     </td>
                     <td className="px-4 py-4 text-sm text-gray-500">{loan.borrower.name}</td>
                     <td className="px-4 py-4 text-sm text-gray-500">
@@ -201,7 +213,7 @@ const AssetLoanManagement: React.FC = () => {
                 ))
               ) : (
                 <tr>
-                  <td colSpan={5} className="text-center py-8 text-gray-500">Tidak ada data untuk status ini.</td>
+                  <td colSpan={6} className="text-center py-8 text-gray-500">Tidak ada data untuk status ini.</td>
                 </tr>
               )}
             </tbody>

@@ -1,7 +1,7 @@
 // AssetForm.tsx - DENGAN KALKULASI DEPRESIASI DINAMIS DAN SATU TOMBOL CLOSE
 import React, { useState, useEffect, useMemo } from 'react';
-import { addAsset, updateAsset } from '../services/api';
-import { Asset, AssetStatus } from '../types';
+import { addAsset, updateAsset, getUnits } from '../services/api';
+import { Asset, AssetStatus, Unit } from '../types';
 import { useTranslation } from '../hooks/useTranslation';
 
 interface AssetFormProps {
@@ -22,7 +22,7 @@ const AssetForm: React.FC<AssetFormProps> = ({ asset, onSuccess, onClose }) => {
   const [formData, setFormData] = useState({
     name: '',
     category: '',
-    location: '',
+    unit_id: null as number | null,
     value: 0,
     purchase_date: '',
     useful_life: 36,
@@ -33,13 +33,27 @@ const AssetForm: React.FC<AssetFormProps> = ({ asset, onSuccess, onClose }) => {
   const [validationErrors, setValidationErrors] = useState<ValidationErrors>({});
   const [valueInput, setValueInput] = useState('');
   const [showAdvanced, setShowAdvanced] = useState(false);
+  const [units, setUnits] = useState<Unit[]>([]);
+
+  useEffect(() => {
+    // Fetch units
+    const fetchUnits = async () => {
+      try {
+        const fetchedUnits = await getUnits();
+        setUnits(fetchedUnits);
+      } catch (err) {
+        console.error('Failed to fetch units:', err);
+      }
+    };
+    fetchUnits();
+  }, []);
 
   useEffect(() => {
     if (asset) {
       setFormData({
         name: asset.name,
         category: asset.category,
-        location: asset.location,
+        unit_id: asset.unit_id || null,
         value: asset.value,
         purchase_date: asset.purchase_date.split(' ')[0], // Hanya ambil bagian tanggal untuk input
         useful_life: asset.useful_life,
@@ -51,7 +65,7 @@ const AssetForm: React.FC<AssetFormProps> = ({ asset, onSuccess, onClose }) => {
       setFormData({
         name: '',
         category: '',
-        location: '',
+        unit_id: null,
         value: 0,
         purchase_date: today,
         useful_life: 36,
@@ -158,7 +172,7 @@ const AssetForm: React.FC<AssetFormProps> = ({ asset, onSuccess, onClose }) => {
 
     if (!formData.name.trim()) errors.general = 'Asset Name is required';
     if (!formData.category.trim()) errors.general = 'Category is required';
-    if (!formData.location.trim()) errors.general = 'Location is required';
+    if (!formData.unit_id) errors.general = 'Unit is required';
 
     if (formData.value <= 0) {
       errors.value = 'Value must be greater than 0';
@@ -252,7 +266,6 @@ const handleSubmit = async (e: React.FormEvent) => {
     : [AssetStatus.AVAILABLE, AssetStatus.TERPINJAM];
 
   const predefinedCategories = ['Electronics', 'Furniture', 'Vehicle', 'Equipment', 'Building', 'Software', 'Other'];
-  const predefinedLocations = ['Office A', 'Office B', 'Warehouse', 'Factory', 'Remote', 'Other'];
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4 max-h-[80vh] overflow-y-auto">
@@ -307,13 +320,24 @@ const handleSubmit = async (e: React.FormEvent) => {
         </div>
 
         <div>
-          <label htmlFor="location" className="block text-sm font-medium text-gray-700 mb-1">Location *</label>
-          <div className="relative">
-            <input type="text" name="location" id="location" value={formData.location} onChange={handleChange} required disabled={loading} list="location-options" className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary sm:text-sm disabled:bg-gray-50" placeholder="e.g., Office A" />
-            <datalist id="location-options">
-              {predefinedLocations.map(location => <option key={location} value={location} />)}
-            </datalist>
-          </div>
+          <label htmlFor="unit_id" className="block text-sm font-medium text-gray-700 mb-1">Unit *</label>
+          <select
+            name="unit_id"
+            id="unit_id"
+            value={formData.unit_id || ''}
+            onChange={(e) => setFormData(prev => ({ ...prev, unit_id: e.target.value ? Number(e.target.value) : null }))}
+            required
+            disabled={loading}
+            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary sm:text-sm disabled:bg-gray-50"
+          >
+            <option value="">-- Select Unit --</option>
+            {units.map(unit => (
+              <option key={unit.id} value={unit.id}>
+                {unit.name} ({unit.code})
+              </option>
+            ))}
+          </select>
+          <p className="mt-1 text-xs text-gray-500">Select the unit where this asset is located</p>
         </div>
 
         <div>

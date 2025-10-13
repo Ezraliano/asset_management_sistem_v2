@@ -10,6 +10,7 @@ use App\Http\Controllers\Api\MaintenanceController;
 use App\Http\Controllers\Api\IncidentReportController;
 use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\AssetLoanController;
+use App\Http\Controllers\Api\UnitController;
 
 /*
 |--------------------------------------------------------------------------
@@ -66,10 +67,16 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::middleware(['auth:sanctum'])->group(function () {
         // Users can view available assets for borrowing
         Route::get('/user-assets', [AssetController::class, 'getAvailableAssets']);
+
+        // Unit routes - accessible by all authenticated users
+        Route::get('/units', [UnitController::class, 'index']);
+        Route::get('/units/{unit}', [UnitController::class, 'show']);
+        Route::get('/units/{unit}/assets', [UnitController::class, 'assets']);
+        Route::get('/units/{unit}/users', [UnitController::class, 'users']);
     });
 
-    // Asset Loan Management Routes (Super Admin/Admin Holding Access)
-    Route::middleware('role:Super Admin,Admin Holding')->group(function () {
+    // Asset Loan Management Routes (Super Admin/Admin Holding/Admin Unit Access)
+    Route::middleware('role:Super Admin,Admin Holding,Admin Unit')->group(function () {
         Route::post('asset-loans/{assetLoan}/approve', [AssetLoanController::class, 'approve'])->name('asset-loans.approve');
         Route::post('asset-loans/{assetLoan}/reject', [AssetLoanController::class, 'reject'])->name('asset-loans.reject');
         Route::post('asset-loans/{assetLoan}/return', [AssetLoanController::class, 'returnAsset'])->name('asset-loans.return');

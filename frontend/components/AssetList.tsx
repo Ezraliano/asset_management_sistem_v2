@@ -20,7 +20,7 @@ const AssetList: React.FC<AssetListProps> = ({ navigateTo }) => {
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setModalOpen] = useState(false);
   const [editingAsset, setEditingAsset] = useState<Asset | undefined>(undefined);
-  const [filters, setFilters] = useState({ category: '', location: '', status: '' });
+  const [filters, setFilters] = useState({ category: '', unit_id: '', status: '' });
   const [showFilters, setShowFilters] = useState(false);
   const [error, setError] = useState<string>('');
   const [totalAssets, setTotalAssets] = useState(0);
@@ -201,10 +201,16 @@ const AssetList: React.FC<AssetListProps> = ({ navigateTo }) => {
     return [...new Set(categories)].sort();
   }, [assets]);
 
-  const uniqueLocations = useMemo(() => {
+  const uniqueUnits = useMemo(() => {
     if (!Array.isArray(assets)) return [];
-    const locations = assets.map(a => a.location).filter(Boolean);
-    return [...new Set(locations)].sort();
+    const units = assets.map(a => a.unit).filter(Boolean);
+    const uniqueUnitsMap = new Map();
+    units.forEach(unit => {
+      if (unit && !uniqueUnitsMap.has(unit.id)) {
+        uniqueUnitsMap.set(unit.id, unit);
+      }
+    });
+    return Array.from(uniqueUnitsMap.values()).sort((a, b) => a.name.localeCompare(b.name));
   }, [assets]);
 
   const handleFilterChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -214,7 +220,7 @@ const AssetList: React.FC<AssetListProps> = ({ navigateTo }) => {
   };
 
   const handleClearFilters = () => {
-    setFilters({ category: '', location: '', status: '' });
+    setFilters({ category: '', unit_id: '', status: '' });
     setCurrentPage(1);
   };
 
@@ -290,18 +296,18 @@ const AssetList: React.FC<AssetListProps> = ({ navigateTo }) => {
               </select>
             </div>
 
-            {/* Location Filter */}
+            {/* Unit Filter */}
             <div className="w-full">
-              <label htmlFor="location" className="block text-sm font-medium text-gray-700">Location</label>
+              <label htmlFor="unit_id" className="block text-sm font-medium text-gray-700">Unit</label>
               <select
-                id="location"
-                name="location"
-                value={filters.location}
+                id="unit_id"
+                name="unit_id"
+                value={filters.unit_id}
                 onChange={handleFilterChange}
                 className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-primary focus:border-primary sm:text-sm rounded-md"
               >
-                <option value="">All Locations</option>
-                {uniqueLocations.map(loc => <option key={loc} value={loc}>{loc}</option>)}
+                <option value="">All Units</option>
+                {uniqueUnits.map(unit => <option key={unit.id} value={unit.id}>{unit.name}</option>)}
               </select>
             </div>
 
@@ -382,7 +388,7 @@ const AssetList: React.FC<AssetListProps> = ({ navigateTo }) => {
                     <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Asset Tag</th>
                     <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Name</th>
                     <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Category</th>
-                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Location</th>
+                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Unit</th>
                     <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Value</th>
                     <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Status</th>
                     <th className="px-6 py-4 text-right text-xs font-semibold text-gray-700 uppercase tracking-wider">Actions</th>
@@ -402,7 +408,9 @@ const AssetList: React.FC<AssetListProps> = ({ navigateTo }) => {
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{asset.asset_tag}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{asset.name}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{asset.category}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{asset.location}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {asset.unit ? asset.unit.name : '-'}
+                      </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{formatToRupiah(asset.value)}</td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span className={`px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${statusColorMap[asset.status as AssetStatus] || 'bg-gray-100 text-gray-800'}`}>
