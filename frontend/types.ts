@@ -114,6 +114,25 @@ export interface AssetLoan {
   approver: User | null;
 }
 
+export interface AssetSale {
+  id: number;
+  asset_id: number;
+  sold_by_id: number;
+  sale_price: number;
+  sale_date: string;
+  buyer_name: string;
+  buyer_contact?: string;
+  sale_proof_path?: string;
+  reason: string;
+  notes?: string;
+  created_at: string;
+  updated_at: string;
+  asset: Asset;
+  sold_by: User;
+  profit_loss?: number;
+  is_profit?: boolean;
+}
+
 // TAMBAHKAN INTERFACE UNTUK CHART DATA
 export interface ChartData {
   name: string;
@@ -139,6 +158,8 @@ export type View =
   | { type: 'ASSET_LENDING' }
   | { type: 'ASSET_LOAN_MANAGEMENT' }
   | { type: 'ASSET_DETAIL', assetId: string }
+  | { type: 'ASSET_SALES' }
+  | { type: 'ASSET_SALE_DETAIL', saleId: string }
   | { type: 'QR_SCANNER' }
   | { type: 'USERS' }
   | { type: 'BULK_TRANSACTION' }

@@ -128,6 +128,14 @@ class AssetLoanController extends Controller
                 ], Response::HTTP_UNPROCESSABLE_ENTITY);
             }
 
+            // ✅ VALIDASI: Asset yang sudah terjual tidak bisa dipinjam
+            if ($asset->status === 'Terjual') {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Asset sudah terjual dan tidak dapat dipinjam'
+                ], Response::HTTP_UNPROCESSABLE_ENTITY);
+            }
+
             // Check if user has pending loan for the same asset
             $existingPendingLoan = AssetLoan::where('asset_id', $asset->id)
                 ->where('borrower_id', $user->id)

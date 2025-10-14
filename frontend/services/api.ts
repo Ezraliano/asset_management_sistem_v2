@@ -1,5 +1,5 @@
 // api.ts - PERBAIKAN RESPONSE HANDLING
-import { Asset, AssetMovement, Maintenance, User, DamageReport, LossReport, DashboardStats, AssetLoan, AssetLoanStatus, Unit } from '../types';
+import { Asset, AssetMovement, Maintenance, User, DamageReport, LossReport, DashboardStats, AssetLoan, AssetLoanStatus, Unit, AssetSale } from '../types';
 
 const API_BASE_URL = 'http://localhost:8000/api';
 
@@ -832,6 +832,152 @@ export const canAssetDepreciate = (depreciationData: any): boolean => {
 // Helper function untuk get depresiasi progress
 export const getDepreciationProgress = (depreciationData: any): number => {
   if (!depreciationData) return 0;
-  
+
   return depreciationData.completion_percentage || 0;
+};
+
+
+// ==================== ASSET SALES API ====================
+
+export const getAssetSales = async (params?: { unit_id?: number; search?: string; start_date?: string; end_date?: string }): Promise<AssetSale[]> => {
+  const queryParams = new URLSearchParams();
+  if (params?.unit_id) queryParams.append('unit_id', params.unit_id.toString());
+  if (params?.search) queryParams.append('search', params.search);
+  if (params?.start_date) queryParams.append('start_date', params.start_date);
+  if (params?.end_date) queryParams.append('end_date', params.end_date);
+
+  const queryString = queryParams.toString();
+  const endpoint = queryString ? `/asset-sales?${queryString}` : '/asset-sales';
+
+  try {
+    const response = await apiRequest(endpoint);
+    const handledResponse = handleApiResponse<any>(response);
+
+    // Check for Laravel pagination structure
+    if (handledResponse && typeof handledResponse === 'object' && Array.isArray(handledResponse.data)) {
+      return handledResponse.data;
+    }
+
+    // Fallback for direct array response
+    if (Array.isArray(handledResponse)) {
+      return handledResponse;
+    }
+
+    console.warn('Asset sales response is not in a recognized format:', handledResponse);
+    return [];
+  } catch (error: any) {
+    console.error('Error in getAssetSales:', error);
+    return [];
+  }
+};
+
+export const getAssetSaleById = async (id: number): Promise<AssetSale | null> => {
+  try {
+    const data = await apiRequest(`/asset-sales/${id}`);
+    return handleApiResponse<AssetSale>(data);
+  } catch (error) {
+    console.error('Get asset sale by ID error:', error);
+    return null;
+  }
+};
+
+export const createAssetSale = async (formData: FormData): Promise<AssetSale> => {
+  const token = localStorage.getItem('auth_token');
+
+  const response = await fetch(`${API_BASE_URL}/asset-sales`, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      // Don't set Content-Type for FormData, let browser set it
+    },
+    body: formData,
+  });
+
+  if (!response.ok) {
+    let errorDetail = `API error: ${response.status}`;
+    try {
+      const errorData = await response.json();
+      errorDetail = errorData.message || errorData.error || errorDetail;
+    } catch {
+      errorDetail = response.statusText || errorDetail;
+    }
+    throw new Error(errorDetail);
+  }
+
+  const data = await response.json();
+  return handleApiResponse<AssetSale>(data);
+};
+
+export const updateAssetSale = async (id: number, formData: FormData): Promise<AssetSale> => {
+  const token = localStorage.getItem('auth_token');
+
+  const response = await fetch(`${API_BASE_URL}/asset-sales/${id}`, {
+    method: 'POST', // Using POST with _method=PUT for FormData
+    headers: {
+      'Authorization': `Bearer ${token}`,
+    },
+    body: formData,
+  });
+
+  if (!response.ok) {
+    let errorDetail = `API error: ${response.status}`;
+    try {
+      const errorData = await response.json();
+      errorDetail = errorData.message || errorData.error || errorDetail;
+    } catch {
+      errorDetail = response.statusText || errorDetail;
+    }
+    throw new Error(errorDetail);
+  }
+
+  const data = await response.json();
+  return handleApiResponse<AssetSale>(data);
+};
+
+export const cancelAssetSale = async (id: number): Promise<boolean> => {
+  try {
+    const data = await apiRequest(`/asset-sales/${id}`, { method: 'DELETE' });
+    return data.success || true;
+  } catch (error) {
+    console.error('Cancel asset sale error:', error);
+    throw error;
+  }
+};
+
+export const getAssetSalesStatistics = async (): Promise<any> => {
+  try {
+    const data = await apiRequest('/asset-sales/statistics');
+    return handleApiResponse<any>(data);
+  } catch (error) {
+    console.error('Get asset sales statistics error:', error);
+    return null;
+  }
+};
+
+export const getAvailableAssetsForSale = async (search?: string): Promise<Asset[]> => {
+  const queryParams = new URLSearchParams();
+  if (search) queryParams.append('search', search);
+
+  const queryString = queryParams.toString();
+  const endpoint = queryString ? `/asset-sales/available-assets?${queryString}` : '/asset-sales/available-assets';
+
+  try {
+    const response = await apiRequest(endpoint);
+    const handledResponse = handleApiResponse<any>(response);
+
+    if (Array.isArray(handledResponse)) {
+      return handledResponse;
+    }
+
+    console.warn('Available assets for sale response is not in a recognized format:', handledResponse);
+    return [];
+  } catch (error: any) {
+    console.error('Error in getAvailableAssetsForSale:', error);
+    return [];
+  }
+};
+
+export const getAssetSaleProof = (saleId: number): string => {
+  const token = localStorage.getItem('auth_token');
+  return `${API_BASE_URL}/asset-sales/${saleId}/proof?token=${token}`;
 };

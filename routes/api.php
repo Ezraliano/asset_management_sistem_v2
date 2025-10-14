@@ -11,6 +11,7 @@ use App\Http\Controllers\Api\IncidentReportController;
 use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\AssetLoanController;
 use App\Http\Controllers\Api\UnitController;
+use App\Http\Controllers\Api\AssetSaleController;
 
 /*
 |--------------------------------------------------------------------------
@@ -84,6 +85,22 @@ Route::middleware(['auth:sanctum'])->group(function () {
     // ✅ PERBAIKAN: Asset return - accessible by both admins AND users (for their own loans)
     // Authorization logic handled in controller
     Route::post('asset-loans/{assetLoan}/return', [AssetLoanController::class, 'returnAsset'])->name('asset-loans.return');
+
+    // Asset Sales Routes - Super Admin, Admin Holding, Admin Unit
+    Route::middleware('role:Super Admin,Admin Holding,Admin Unit')->group(function () {
+        Route::get('/asset-sales', [AssetSaleController::class, 'index']);
+        Route::post('/asset-sales', [AssetSaleController::class, 'store']);
+        Route::get('/asset-sales/statistics', [AssetSaleController::class, 'statistics']);
+        Route::get('/asset-sales/available-assets', [AssetSaleController::class, 'getAvailableAssets']);
+        Route::get('/asset-sales/{id}', [AssetSaleController::class, 'show']);
+        Route::get('/asset-sales/{id}/proof', [AssetSaleController::class, 'getProofFile']);
+
+        // Update & Delete only for Super Admin & Admin Holding
+        Route::middleware('role:Super Admin,Admin Holding')->group(function () {
+            Route::put('/asset-sales/{id}', [AssetSaleController::class, 'update']);
+            Route::delete('/asset-sales/{id}', [AssetSaleController::class, 'destroy']);
+        });
+    });
 });
 
 // Fallback for undefined API routes

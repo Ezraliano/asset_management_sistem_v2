@@ -109,6 +109,17 @@ class RoleMiddleware
             }
         }
 
+        // ✅ Validasi untuk routes yang berhubungan dengan asset sales
+        $sale = $this->getSaleFromRequest($request);
+        if ($sale) {
+            if ($sale->asset->unit_id !== $user->unit_id) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Unauthorized to access sales for assets from another unit.'
+                ], 403);
+            }
+        }
+
         // ✅ Validasi untuk routes yang berhubungan dengan units
         $unit = $this->getUnitFromRequest($request);
         if ($unit) {
@@ -157,6 +168,22 @@ class RoleMiddleware
 
         if ($request->has('loan_id')) {
             return \App\Models\AssetLoan::find($request->loan_id);
+        }
+
+        return null;
+    }
+
+    /**
+     * Extract asset sale from request parameters
+     */
+    private function getSaleFromRequest(Request $request)
+    {
+        // Only check for asset-sales routes
+        if ($request->is('*/asset-sales/*')) {
+            $saleId = $request->route('id');
+            if ($saleId) {
+                return \App\Models\AssetSale::with('asset')->find($saleId);
+            }
         }
 
         return null;

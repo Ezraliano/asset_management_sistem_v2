@@ -6,6 +6,8 @@ import AssetLending from './components/AssetLending';
 import AssetLoanManagement from './components/AssetLoanManagement';
 import AssetList from './components/AssetList';
 import AssetDetail from './components/AssetDetail';
+import AssetSalesList from './components/AssetSalesList';
+import AssetSaleDetail from './components/AssetSaleDetail';
 import QRCodeScanner from './components/QRCodeScanner';
 import UserList from './components/UserList';
 import ReportView from './components/ReportView';
@@ -85,6 +87,10 @@ const AppContent: React.FC = () => {
         return <AssetLoanManagement />;
       case 'ASSET_DETAIL':
         return <AssetDetail assetId={view.assetId} navigateTo={navigateTo} />;
+      case 'ASSET_SALES':
+        return <AssetSalesList user={user} navigateTo={navigateTo} />;
+      case 'ASSET_SALE_DETAIL':
+        return <AssetSaleDetail saleId={view.saleId} user={user} navigateTo={navigateTo} />;
       case 'QR_SCANNER':
         return <QRCodeScanner navigateTo={navigateTo} />;
       case 'USERS':

@@ -87,6 +87,11 @@ class Asset extends Model
         return $this->belongsTo(Unit::class);
     }
 
+    public function sales(): HasMany
+    {
+        return $this->hasMany(AssetSale::class);
+    }
+
     public function calculateMonthlyDepreciation(): float
     {
         if ($this->useful_life <= 0) {
@@ -115,7 +120,17 @@ class Asset extends Model
 
     public function isActive(): bool
     {
-        return !in_array($this->status, ['Disposed', 'Lost']);
+        return !in_array($this->status, ['Disposed', 'Lost', 'Terjual']);
+    }
+
+    public function isSold(): bool
+    {
+        return $this->status === 'Terjual';
+    }
+
+    public function getSaleRecord()
+    {
+        return $this->sales()->latest()->first();
     }
 
     public function getElapsedMonths(): int
