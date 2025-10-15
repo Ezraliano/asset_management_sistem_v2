@@ -1,5 +1,5 @@
 // api.ts - PERBAIKAN RESPONSE HANDLING
-import { Asset, AssetMovement, Maintenance, User, DamageReport, LossReport, DashboardStats, AssetLoan, AssetLoanStatus, Unit, AssetSale } from '../types';
+import { Asset, AssetMovement, Maintenance, User, DamageReport, LossReport, DashboardStats, AssetLoan, AssetLoanStatus, Unit, AssetSale, IncidentReport } from '../types';
 
 const API_BASE_URL = 'http://localhost:8000/api';
 
@@ -980,4 +980,169 @@ export const getAvailableAssetsForSale = async (search?: string): Promise<Asset[
 export const getAssetSaleProof = (saleId: number): string => {
   const token = localStorage.getItem('auth_token');
   return `${API_BASE_URL}/asset-sales/${saleId}/proof?token=${token}`;
+};
+
+
+// ==================== ASSET LOAN RETURN APPROVAL API ====================
+
+export const getPendingReturns = async (params?: { per_page?: number; sort_by?: string; sort_order?: string }): Promise<any> => {
+  const queryParams = new URLSearchParams();
+  if (params?.per_page) queryParams.append('per_page', params.per_page.toString());
+  if (params?.sort_by) queryParams.append('sort_by', params.sort_by);
+  if (params?.sort_order) queryParams.append('sort_order', params.sort_order);
+
+  const queryString = queryParams.toString();
+  const endpoint = queryString ? `/asset-loans-pending-returns?${queryString}` : '/asset-loans-pending-returns';
+
+  try {
+    const response = await apiRequest(endpoint);
+    return handleApiResponse<any>(response);
+  } catch (error: any) {
+    console.error('Error in getPendingReturns:', error);
+    throw error;
+  }
+};
+
+export const approveAssetReturn = async (loanId: number, approvalData: {
+  verification_date: string;
+  condition: 'good' | 'damaged' | 'lost';
+  assessment_notes?: string;
+}): Promise<AssetLoan> => {
+  const data = await apiRequest(`/asset-loans/${loanId}/approve-return`, {
+    method: 'POST',
+    body: JSON.stringify(approvalData),
+  });
+  return handleApiResponse<AssetLoan>(data);
+};
+
+export const rejectAssetReturn = async (loanId: number, data: {
+  verification_date: string;
+  rejection_reason: string;
+}): Promise<AssetLoan> => {
+  const responseData = await apiRequest(`/asset-loans/${loanId}/reject-return`, {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+  return handleApiResponse<AssetLoan>(responseData);
+};
+
+export const getReturnProofPhoto = (loanId: number): string => {
+  const token = localStorage.getItem('auth_token');
+  return `${API_BASE_URL}/asset-loans/${loanId}/return-proof?token=${token}`;
+};
+
+
+// ==================== INCIDENT REPORTS API (ENHANCED) ====================
+
+export const getIncidentReports = async (params?: {
+  status?: string;
+  type?: string;
+  search?: string;
+  start_date?: string;
+  end_date?: string;
+  per_page?: number;
+}): Promise<any> => {
+  const queryParams = new URLSearchParams();
+  if (params?.status) queryParams.append('status', params.status);
+  if (params?.type) queryParams.append('type', params.type);
+  if (params?.search) queryParams.append('search', params.search);
+  if (params?.start_date) queryParams.append('start_date', params.start_date);
+  if (params?.end_date) queryParams.append('end_date', params.end_date);
+  if (params?.per_page) queryParams.append('per_page', params.per_page.toString());
+
+  const queryString = queryParams.toString();
+  const endpoint = queryString ? `/incident-reports?${queryString}` : '/incident-reports';
+
+  try {
+    const response = await apiRequest(endpoint);
+    return handleApiResponse<any>(response);
+  } catch (error: any) {
+    console.error('Error in getIncidentReports:', error);
+    return { data: [], total: 0 };
+  }
+};
+
+export const getIncidentReportById = async (id: number): Promise<IncidentReport | null> => {
+  try {
+    const data = await apiRequest(`/incident-reports/${id}`);
+    return handleApiResponse<IncidentReport>(data);
+  } catch (error) {
+    console.error('Get incident report by ID error:', error);
+    return null;
+  }
+};
+
+export const createIncidentReport = async (formData: FormData): Promise<IncidentReport> => {
+  const token = localStorage.getItem('auth_token');
+
+  const response = await fetch(`${API_BASE_URL}/incident-reports`, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      // Don't set Content-Type for FormData, let browser set it
+    },
+    body: formData,
+  });
+
+  if (!response.ok) {
+    let errorDetail = `API error: ${response.status}`;
+    try {
+      const errorData = await response.json();
+      errorDetail = errorData.message || errorData.error || errorDetail;
+    } catch {
+      errorDetail = response.statusText || errorDetail;
+    }
+    throw new Error(errorDetail);
+  }
+
+  const data = await response.json();
+  return handleApiResponse<IncidentReport>(data);
+};
+
+export const updateIncidentStatus = async (id: number, statusData: {
+  status: 'PENDING' | 'UNDER_REVIEW' | 'RESOLVED' | 'CLOSED';
+  resolution_notes?: string;
+  responsible_party?: string;
+}): Promise<IncidentReport> => {
+  const data = await apiRequest(`/incident-reports/${id}/update-status`, {
+    method: 'POST',
+    body: JSON.stringify(statusData),
+  });
+  return handleApiResponse<IncidentReport>(data);
+};
+
+export const deleteIncidentReport = async (id: number): Promise<boolean> => {
+  try {
+    const data = await apiRequest(`/incident-reports/${id}`, { method: 'DELETE' });
+    return data.success || true;
+  } catch (error) {
+    console.error('Delete incident report error:', error);
+    throw error;
+  }
+};
+
+export const getIncidentPhoto = (incidentId: number): string => {
+  const token = localStorage.getItem('auth_token');
+  return `${API_BASE_URL}/incident-reports/${incidentId}/photo?token=${token}`;
+};
+
+export const getAssetIncidentReports = async (assetId: number): Promise<IncidentReport[]> => {
+  try {
+    const data = await apiRequest(`/assets/${assetId}/incident-reports`);
+    const reports = handleApiResponse<IncidentReport[]>(data);
+    return Array.isArray(reports) ? reports : [];
+  } catch (error) {
+    console.error('Get asset incident reports error:', error);
+    return [];
+  }
+};
+
+export const getIncidentStatistics = async (): Promise<any> => {
+  try {
+    const data = await apiRequest('/incident-reports-statistics');
+    return handleApiResponse<any>(data);
+  } catch (error) {
+    console.error('Get incident statistics error:', error);
+    return null;
+  }
 };

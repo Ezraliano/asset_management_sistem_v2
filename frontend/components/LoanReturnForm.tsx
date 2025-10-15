@@ -15,7 +15,6 @@ const LoanReturnForm: React.FC<LoanReturnFormProps> = ({
   loading = false
 }) => {
   const [returnDate, setReturnDate] = useState(new Date().toISOString().split('T')[0]);
-  const [condition, setCondition] = useState<'good' | 'damaged' | 'lost'>('good');
   const [notes, setNotes] = useState('');
   const [selectedPhoto, setSelectedPhoto] = useState<File | null>(null);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
@@ -74,13 +73,11 @@ const LoanReturnForm: React.FC<LoanReturnFormProps> = ({
       // Create FormData for file upload
       const formData = new FormData();
       formData.append('return_date', returnDate);
-      formData.append('condition', condition);
       formData.append('notes', notes);
       formData.append('return_proof_photo', selectedPhoto);
 
       console.log('Submitting return:', {
         returnDate,
-        condition,
         notes,
         hasPhoto: !!selectedPhoto,
         loanId: loan.id
@@ -152,61 +149,10 @@ const LoanReturnForm: React.FC<LoanReturnFormProps> = ({
           <p className="text-xs text-gray-500 mt-1">Tanggal tidak boleh melebihi hari ini</p>
         </div>
 
-        {/* Condition */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Kondisi Asset *
-          </label>
-          <div className="space-y-2">
-            <label className="flex items-center p-3 border rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
-              <input
-                type="radio"
-                name="condition"
-                value="good"
-                checked={condition === 'good'}
-                onChange={(e) => setCondition(e.target.value as 'good' | 'damaged' | 'lost')}
-                className="mr-3 text-blue-600 focus:ring-blue-500"
-              />
-              <div>
-                <span className="font-medium text-gray-900">Baik</span>
-                <p className="text-xs text-gray-500">Asset dikembalikan dalam kondisi baik</p>
-              </div>
-            </label>
-            <label className="flex items-center p-3 border rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
-              <input
-                type="radio"
-                name="condition"
-                value="damaged"
-                checked={condition === 'damaged'}
-                onChange={(e) => setCondition(e.target.value as 'good' | 'damaged' | 'lost')}
-                className="mr-3 text-yellow-600 focus:ring-yellow-500"
-              />
-              <div>
-                <span className="font-medium text-gray-900">Rusak</span>
-                <p className="text-xs text-gray-500">Asset mengalami kerusakan</p>
-              </div>
-            </label>
-            <label className="flex items-center p-3 border rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
-              <input
-                type="radio"
-                name="condition"
-                value="lost"
-                checked={condition === 'lost'}
-                onChange={(e) => setCondition(e.target.value as 'good' | 'damaged' | 'lost')}
-                className="mr-3 text-red-600 focus:ring-red-500"
-              />
-              <div>
-                <span className="font-medium text-gray-900">Hilang</span>
-                <p className="text-xs text-gray-500">Asset hilang atau tidak dikembalikan</p>
-              </div>
-            </label>
-          </div>
-        </div>
-
         {/* Notes */}
         <div>
           <label htmlFor="notes" className="block text-sm font-medium text-gray-700 mb-2">
-            Catatan {condition !== 'good' && '*'}
+            Catatan
           </label>
           <textarea
             id="notes"
@@ -214,17 +160,11 @@ const LoanReturnForm: React.FC<LoanReturnFormProps> = ({
             onChange={(e) => setNotes(e.target.value)}
             rows={4}
             className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-            placeholder={condition !== 'good'
-              ? 'Jelaskan kondisi atau kerusakan asset...'
-              : 'Catatan tambahan (opsional)...'
-            }
-            required={condition !== 'good'}
+            placeholder="Catatan tambahan mengenai pengembalian asset (opsional)..."
           />
-          {condition !== 'good' && (
-            <p className="text-xs text-red-500 mt-1">
-              Catatan wajib diisi jika kondisi asset tidak baik
-            </p>
-          )}
+          <p className="text-xs text-gray-500 mt-1">
+            Tambahkan informasi kondisi asset atau catatan penting lainnya. Admin akan menilai kondisi asset saat validasi.
+          </p>
         </div>
 
         {/* Proof Photo */}
@@ -303,10 +243,10 @@ const LoanReturnForm: React.FC<LoanReturnFormProps> = ({
           </button>
           <button
             type="submit"
-            disabled={isSubmitting || loading || !returnDate || !selectedPhoto || (condition !== 'good' && !notes.trim())}
+            disabled={isSubmitting || loading || !returnDate || !selectedPhoto}
             className="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:bg-gray-300 disabled:cursor-not-allowed"
           >
-            {isSubmitting || loading ? 'Memproses...' : 'Proses Pengembalian'}
+            {isSubmitting || loading ? 'Memproses...' : 'Ajukan Pengembalian'}
           </button>
         </div>
       </form>

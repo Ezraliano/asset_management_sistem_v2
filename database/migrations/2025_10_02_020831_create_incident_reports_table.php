@@ -18,7 +18,13 @@ return new class extends Migration
             $table->enum('type', ['Damage', 'Loss']);
             $table->text('description');
             $table->date('date');
-            $table->string('status'); // e.g., 'Reported', 'Repaired', 'Found', etc.
+            $table->enum('status', ['PENDING', 'UNDER_REVIEW', 'RESOLVED', 'CLOSED'])->default('PENDING');
+            // Evidence and review fields
+            $table->string('evidence_photo_path')->nullable();
+            $table->foreignId('reviewed_by')->nullable()->constrained('users')->nullOnDelete();
+            $table->timestamp('review_date')->nullable();
+            $table->text('resolution_notes')->nullable();
+            $table->string('responsible_party')->nullable();
             $table->timestamps();
         });
     }

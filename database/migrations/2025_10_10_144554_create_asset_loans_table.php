@@ -20,7 +20,7 @@ return new class extends Migration
             $table->date('expected_return_date');
             $table->date('actual_return_date')->nullable();
             $table->text('purpose');
-            $table->enum('status', ['PENDING', 'APPROVED', 'REJECTED', 'RETURNED'])->default('PENDING');
+            $table->enum('status', ['PENDING', 'APPROVED', 'REJECTED', 'RETURNED', 'PENDING_RETURN'])->default('PENDING');
             $table->foreignId('approved_by')->nullable()->constrained('users')->nullOnDelete();
             $table->date('approval_date')->nullable();
             $table->string('loan_proof_photo_path')->nullable();
@@ -28,6 +28,10 @@ return new class extends Migration
             $table->enum('return_condition', ['good', 'damaged', 'lost'])->nullable();
             $table->text('return_notes')->nullable();
             $table->text('rejection_reason')->nullable();
+            // Return approval fields
+            $table->foreignId('return_verified_by')->nullable()->constrained('users')->nullOnDelete();
+            $table->timestamp('return_verification_date')->nullable();
+            $table->text('return_rejection_reason')->nullable();
             $table->timestamps();
         });
     }

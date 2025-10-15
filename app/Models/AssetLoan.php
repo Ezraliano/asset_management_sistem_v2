@@ -31,6 +31,9 @@ class AssetLoan extends Model
         'return_condition',
         'return_notes',
         'rejection_reason',
+        'return_verified_by',
+        'return_verification_date',
+        'return_rejection_reason',
     ];
 
     /**
@@ -55,5 +58,13 @@ class AssetLoan extends Model
     public function approver(): BelongsTo
     {
         return $this->belongsTo(User::class, 'approved_by');
+    }
+
+    /**
+     * Get the user who verified the return.
+     */
+    public function returnVerifier(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'return_verified_by');
     }
 }

@@ -1,13 +1,14 @@
 // AssetDetail.tsx - PERBAIKAN LENGKAP DENGAN ERROR HANDLING DAN SAFE DATA ACCESS
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { 
-  getAssetById, 
-  getAssetHistory, 
-  getMaintenanceHistory, 
-  getDamageReports, 
+import {
+  getAssetById,
+  getAssetHistory,
+  getMaintenanceHistory,
+  getDamageReports,
   getLossReports,
   getAssetDepreciation,
-  generateAssetDepreciation
+  generateAssetDepreciation,
+  getCurrentUser
 } from '../services/api';
 import { Asset, AssetMovement, Maintenance, DamageReport, LossReport, View } from '../types';
 import { QRCodeCanvas } from 'qrcode.react';
@@ -17,6 +18,7 @@ import Modal from './Modal';
 import MoveAssetForm from './MoveAssetForm';
 import ReportIssueForm from './ReportIssueForm';
 import AddMaintenanceForm from './AddMaintenanceForm';
+import LossReportDetailModal from './LossReportDetailModal';
 import { useTranslation } from '../hooks/useTranslation';
 
 interface AssetDetailProps {
@@ -57,8 +59,11 @@ const AssetDetail: React.FC<AssetDetailProps> = ({ assetId, navigateTo }) => {
   const [isMoveModalOpen, setMoveModalOpen] = useState(false);
   const [isReportModalOpen, setReportModalOpen] = useState(false);
   const [isMaintModalOpen, setMaintModalOpen] = useState(false);
+  const [isLossDetailModalOpen, setLossDetailModalOpen] = useState(false);
+  const [selectedLossReport, setSelectedLossReport] = useState<LossReport | null>(null);
   const [error, setError] = useState<string>('');
   const [successMessage, setSuccessMessage] = useState<string>('');
+  const [currentUser, setCurrentUser] = useState<any>(null);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -141,6 +146,13 @@ const AssetDetail: React.FC<AssetDetailProps> = ({ assetId, navigateTo }) => {
   useEffect(() => {
     fetchData();
     fetchDepreciationData();
+
+    // Fetch current user
+    const loadUser = async () => {
+      const user = await getCurrentUser();
+      setCurrentUser(user);
+    };
+    loadUser();
   }, [fetchData, fetchDepreciationData]);
 
   // ✅ PERBAIKAN: Handle Generate Depreciation dengan error handling yang lebih baik
@@ -300,6 +312,22 @@ const AssetDetail: React.FC<AssetDetailProps> = ({ assetId, navigateTo }) => {
   const canGenerateDepreciation = useMemo(() => {
     return isDepreciable && remainingMonths > 0 && currentValue > 0;
   }, [isDepreciable, remainingMonths, currentValue]);
+
+  // Handler untuk membuka modal detail laporan kehilangan
+  const handleViewLossReportDetail = (report: LossReport) => {
+    setSelectedLossReport(report);
+    setLossDetailModalOpen(true);
+  };
+
+  const handleCloseLossDetailModal = () => {
+    setLossDetailModalOpen(false);
+    setSelectedLossReport(null);
+  };
+
+  const handleLossReportSuccess = () => {
+    handleCloseLossDetailModal();
+    fetchData(); // Refresh data after validation
+  };
 
   if (loading) {
     return (
@@ -762,11 +790,15 @@ const AssetDetail: React.FC<AssetDetailProps> = ({ assetId, navigateTo }) => {
                                         <div>
                                             <span className="font-medium text-gray-900">Status:</span>
                                             <span className={`ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                                                report.status === 'Resolved' ? 'bg-green-100 text-green-800' :
-                                                report.status === 'In Progress' ? 'bg-blue-100 text-blue-800' :
-                                                'bg-orange-100 text-orange-800'
+                                                report.status === 'RESOLVED' ? 'bg-green-100 text-green-800' :
+                                                report.status === 'UNDER_REVIEW' ? 'bg-blue-100 text-blue-800' :
+                                                report.status === 'CLOSED' ? 'bg-red-100 text-red-800' :
+                                                'bg-yellow-100 text-yellow-800'
                                             }`}>
-                                                {report.status}
+                                                {report.status === 'PENDING' ? 'Menunggu Validasi' :
+                                                 report.status === 'UNDER_REVIEW' ? 'Sedang Ditinjau' :
+                                                 report.status === 'RESOLVED' ? 'Disetujui' :
+                                                 report.status === 'CLOSED' ? 'Ditolak' : report.status}
                                             </span>
                                         </div>
                                         <div className="text-sm text-gray-500">
@@ -783,6 +815,19 @@ const AssetDetail: React.FC<AssetDetailProps> = ({ assetId, navigateTo }) => {
                                             <span className="ml-2">{report.reporter.name}</span>
                                         </div>
                                     )}
+                                    {/* Button Detail Laporan */}
+                                    <div className="mt-3 pt-3 border-t border-orange-200">
+                                        <button
+                                            onClick={() => handleViewLossReportDetail(report)}
+                                            className="flex items-center text-sm font-medium text-orange-700 hover:text-orange-900 transition-colors"
+                                        >
+                                            <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                            </svg>
+                                            Detail Laporan
+                                        </button>
+                                    </div>
                                 </li>
                             ))}
                         </ul>
@@ -881,6 +926,18 @@ const AssetDetail: React.FC<AssetDetailProps> = ({ assetId, navigateTo }) => {
             }}
         />
       </Modal>
+
+      {/* Modal for Loss Report Detail */}
+      {isLossDetailModalOpen && selectedLossReport && currentUser && (
+        <Modal isOpen={isLossDetailModalOpen} onClose={handleCloseLossDetailModal}>
+          <LossReportDetailModal
+            report={selectedLossReport}
+            currentUser={currentUser}
+            onClose={handleCloseLossDetailModal}
+            onSuccess={handleLossReportSuccess}
+          />
+        </Modal>
+      )}
     </div>
   );
 };

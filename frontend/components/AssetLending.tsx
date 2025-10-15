@@ -1,12 +1,14 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { 
-  getAvailableAssets, 
-  getAssetLoans, 
-  getCurrentUser, 
+import {
+  getAvailableAssets,
+  getAssetLoans,
+  getCurrentUser,
   requestAssetLoan,
   approveAssetLoan,
   rejectAssetLoan,
-  returnAssetLoan
+  returnAssetLoan,
+  approveAssetReturn,
+  rejectAssetReturn
 } from '../services/api';
 import { Asset, AssetLoan, AssetLoanStatus, User } from '../types';
 import { BorrowIcon, CalendarIcon, SearchIcon } from './icons';
@@ -15,6 +17,7 @@ import AssetLoanForm from './AssetLoanForm';
 import LoanApprovalForm from './LoanApprovalForm';
 import LoanRejectionForm from './LoanRejectionForm';
 import LoanReturnForm from './LoanReturnForm';
+import ReturnValidationModal from './ReturnValidationModal';
 
 const AssetLending: React.FC = () => {
   const [availableAssets, setAvailableAssets] = useState<Asset[]>([]);
@@ -31,6 +34,7 @@ const AssetLending: React.FC = () => {
   const [isApprovalModalOpen, setApprovalModalOpen] = useState(false);
   const [isRejectionModalOpen, setRejectionModalOpen] = useState(false);
   const [isReturnModalOpen, setReturnModalOpen] = useState(false);
+  const [isValidationModalOpen, setValidationModalOpen] = useState(false);
   const [selectedAsset, setSelectedAsset] = useState<Asset | null>(null);
   const [selectedLoan, setSelectedLoan] = useState<AssetLoan | null>(null);
   const [actionLoading, setActionLoading] = useState(false);
@@ -81,6 +85,11 @@ const AssetLending: React.FC = () => {
   const handleReturnClick = (loan: AssetLoan) => {
     setSelectedLoan(loan);
     setReturnModalOpen(true);
+  };
+
+  const handleValidateReturnClick = (loan: AssetLoan) => {
+    setSelectedLoan(loan);
+    setValidationModalOpen(true);
   };
 
   // Handle form submissions
@@ -257,6 +266,8 @@ const AssetLending: React.FC = () => {
         return 'bg-yellow-100 text-yellow-800 border border-yellow-200';
       case AssetLoanStatus.APPROVED:
         return 'bg-blue-100 text-blue-800 border border-blue-200';
+      case AssetLoanStatus.PENDING_RETURN:
+        return 'bg-purple-100 text-purple-800 border border-purple-200';
       case AssetLoanStatus.REJECTED:
         return 'bg-red-100 text-red-800 border border-red-200';
       case AssetLoanStatus.RETURNED:
@@ -303,6 +314,18 @@ const AssetLending: React.FC = () => {
             className="px-3 py-1 text-xs bg-blue-500 text-white rounded-md hover:bg-blue-600 disabled:bg-gray-400 transition-colors"
           >
             {isUserOwnLoan && !canManageLoans ? 'Kembalikan Aset' : 'Proses Pengembalian'}
+          </button>
+        );
+      case AssetLoanStatus.PENDING_RETURN:
+        // Only admins can validate return
+        if (!canManageLoans) return null;
+        return (
+          <button
+            onClick={() => handleValidateReturnClick(loan)}
+            disabled={actionLoading}
+            className="px-3 py-1 text-xs bg-purple-500 text-white rounded-md hover:bg-purple-600 disabled:bg-gray-400 transition-colors"
+          >
+            Validasi Pengembalian
           </button>
         );
       default:
@@ -566,8 +589,9 @@ const AssetLending: React.FC = () => {
               <option value="ALL">Semua Status</option>
               <option value={AssetLoanStatus.PENDING}>Pending</option>
               <option value={AssetLoanStatus.APPROVED}>Disetujui</option>
-              <option value={AssetLoanStatus.REJECTED}>Ditolak</option>
+              <option value={AssetLoanStatus.PENDING_RETURN}>Pending Return</option>
               <option value={AssetLoanStatus.RETURNED}>Dikembalikan</option>
+              <option value={AssetLoanStatus.REJECTED}>Ditolak</option>
             </select>
           </div>
         </div>
@@ -645,6 +669,7 @@ const AssetLending: React.FC = () => {
                         <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusBadge(loan.status)}`}>
                           {loan.status === AssetLoanStatus.PENDING && 'Menunggu'}
                           {loan.status === AssetLoanStatus.APPROVED && 'Disetujui'}
+                          {loan.status === AssetLoanStatus.PENDING_RETURN && 'Pending Return'}
                           {loan.status === AssetLoanStatus.REJECTED && 'Ditolak'}
                           {loan.status === AssetLoanStatus.RETURNED && 'Dikembalikan'}
                         </span>
@@ -727,6 +752,41 @@ const AssetLending: React.FC = () => {
             />
           </Modal>
         </>
+      )}
+
+      {/* Return Validation Modal */}
+      {selectedLoan && isValidationModalOpen && (
+        <ReturnValidationModal
+          loan={selectedLoan}
+          onApprove={async (data) => {
+            try {
+              setActionLoading(true);
+              await approveAssetReturn(selectedLoan.id, data);
+              setSuccessMessage('Pengembalian berhasil divalidasi! Asset status telah diupdate.');
+              setValidationModalOpen(false);
+              fetchData();
+            } catch (error: any) {
+              setError(error.message || 'Gagal memvalidasi pengembalian.');
+            } finally {
+              setActionLoading(false);
+            }
+          }}
+          onReject={async (data) => {
+            try {
+              setActionLoading(true);
+              await rejectAssetReturn(selectedLoan.id, data);
+              setSuccessMessage('Pengembalian ditolak. User dapat mengajukan pengembalian ulang.');
+              setValidationModalOpen(false);
+              fetchData();
+            } catch (error: any) {
+              setError(error.message || 'Gagal menolak pengembalian.');
+            } finally {
+              setActionLoading(false);
+            }
+          }}
+          onClose={() => setValidationModalOpen(false)}
+          loading={actionLoading}
+        />
       )}
     </div>
   );

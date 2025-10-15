@@ -77,9 +77,17 @@ export interface IncidentReport {
   type: 'Damage' | 'Loss';
   description: string;
   date: string;
-  status: string;
+  status: 'PENDING' | 'UNDER_REVIEW' | 'RESOLVED' | 'CLOSED';
+  evidence_photo_path?: string;
+  reviewed_by?: number;
+  review_date?: string;
+  resolution_notes?: string;
+  responsible_party?: string;
+  created_at: string;
+  updated_at: string;
   asset?: Asset;
   reporter?: User;
+  reviewer?: User;
 }
 
 export type DamageReport = IncidentReport;
@@ -90,6 +98,8 @@ export enum AssetLoanStatus {
   APPROVED = 'APPROVED',
   REJECTED = 'REJECTED',
   RETURNED = 'RETURNED',
+  PENDING_RETURN = 'PENDING_RETURN',
+  LOST = 'LOST' 
 }
 
 export interface AssetLoan {
@@ -105,13 +115,20 @@ export interface AssetLoan {
   approved_by: number | null;
   approval_date: string | null;
   loan_proof_photo_path: string | null;
+  return_proof_photo_path: string | null;
+  return_condition: 'good' | 'damaged' | 'lost' | null;
   return_notes: string | null;
   rejection_reason: string | null;
+  // Return approval fields
+  return_verified_by: number | null;
+  return_verification_date: string | null;
+  return_rejection_reason: string | null;
   created_at: string;
   updated_at: string;
   asset: Asset;
   borrower: User;
   approver: User | null;
+  return_verifier?: User | null;
 }
 
 export interface AssetSale {

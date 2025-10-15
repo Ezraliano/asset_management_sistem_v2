@@ -17,12 +17,18 @@ class IncidentReport extends Model
         'description',
         'date',
         'status',
+        'evidence_photo_path',
+        'reviewed_by',
+        'review_date',
+        'resolution_notes',
+        'responsible_party',
     ];
 
     protected function casts(): array
     {
         return [
             'date' => 'date',
+            'review_date' => 'datetime',
         ];
     }
 
@@ -34,5 +40,10 @@ class IncidentReport extends Model
     public function reporter(): BelongsTo
     {
         return $this->belongsTo(User::class, 'reporter_id');
+    }
+
+    public function reviewer(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'reviewed_by');
     }
 }

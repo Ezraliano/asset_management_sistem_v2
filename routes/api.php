@@ -49,8 +49,24 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::post('/assets/{id}/generate-pending-depreciation', [AssetDepreciationController::class, 'generatePendingForAsset']);
         Route::apiResource('maintenances', MaintenanceController::class);
         Route::get('/assets/{assetId}/maintenances', [MaintenanceController::class, 'getAssetMaintenances']);
-        Route::apiResource('incident-reports', IncidentReportController::class);
+    });
+
+    // Incident Report Routes - All authenticated users can view/create, admin can update status
+    Route::middleware(['auth:sanctum'])->group(function () {
+        Route::get('/incident-reports', [IncidentReportController::class, 'index']);
+        Route::post('/incident-reports', [IncidentReportController::class, 'store']);
+        Route::get('/incident-reports/{id}', [IncidentReportController::class, 'show']);
+        Route::get('/incident-reports/{id}/photo', [IncidentReportController::class, 'getIncidentPhoto']);
         Route::get('/assets/{assetId}/incident-reports', [IncidentReportController::class, 'getAssetIncidentReports']);
+        Route::get('/incident-reports-statistics', [IncidentReportController::class, 'statistics']);
+
+        // Update status - Admin only (authorization in controller)
+        Route::post('/incident-reports/{id}/update-status', [IncidentReportController::class, 'updateStatus']);
+
+        // Delete - Super Admin & Admin Holding only
+        Route::middleware('role:Super Admin,Admin Holding')->group(function () {
+            Route::delete('/incident-reports/{id}', [IncidentReportController::class, 'destroy']);
+        });
     });
 
     // Asset Loan Routes - Base routes for all authenticated users (role-based filtering in controller)
@@ -80,10 +96,15 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::middleware('role:Super Admin,Admin Holding,Admin Unit')->group(function () {
         Route::post('asset-loans/{assetLoan}/approve', [AssetLoanController::class, 'approve'])->name('asset-loans.approve');
         Route::post('asset-loans/{assetLoan}/reject', [AssetLoanController::class, 'reject'])->name('asset-loans.reject');
+
+        // Return Approval Routes (Admin only)
+        Route::post('asset-loans/{assetLoan}/approve-return', [AssetLoanController::class, 'approveReturn'])->name('asset-loans.approve-return');
+        Route::post('asset-loans/{assetLoan}/reject-return', [AssetLoanController::class, 'rejectReturn'])->name('asset-loans.reject-return');
+        Route::get('asset-loans-pending-returns', [AssetLoanController::class, 'getPendingReturns'])->name('asset-loans.pending-returns');
     });
 
-    // ✅ PERBAIKAN: Asset return - accessible by both admins AND users (for their own loans)
-    // Authorization logic handled in controller
+    // ✅ Asset return - accessible by users (for their own loans)
+    // User submits return request, admin will approve/reject
     Route::post('asset-loans/{assetLoan}/return', [AssetLoanController::class, 'returnAsset'])->name('asset-loans.return');
 
     // Asset Sales Routes - Super Admin, Admin Holding, Admin Unit
