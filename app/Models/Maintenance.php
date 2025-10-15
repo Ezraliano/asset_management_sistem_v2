@@ -12,7 +12,13 @@ class Maintenance extends Model
 
     protected $fillable = [
         'asset_id',
+        'type',
         'date',
+        'unit_id',
+        'party_type',
+        'technician_name',
+        'phone_number',
+        'photo_proof',
         'description',
         'status',
     ];
@@ -23,9 +29,14 @@ class Maintenance extends Model
             'date' => 'date',
         ];
     }
-    
+
     public function asset(): BelongsTo
     {
         return $this->belongsTo(Asset::class);
+    }
+
+    public function unit(): BelongsTo
+    {
+        return $this->belongsTo(Unit::class);
     }
 }

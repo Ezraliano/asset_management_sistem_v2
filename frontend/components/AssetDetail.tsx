@@ -8,9 +8,10 @@ import {
   getLossReports,
   getAssetDepreciation,
   generateAssetDepreciation,
-  getCurrentUser
+  getCurrentUser,
+  getAssetLoanHistory
 } from '../services/api';
-import { Asset, AssetMovement, Maintenance, DamageReport, LossReport, View } from '../types';
+import { Asset, AssetMovement, Maintenance, DamageReport, LossReport, View, AssetLoan } from '../types';
 import { QRCodeCanvas } from 'qrcode.react';
 import { BackIcon, HistoryIcon, MaintenanceIcon, DamageIcon, MoveIcon, DownloadIcon, DepreciationIcon } from './icons';
 import { formatToRupiah } from '../utils/formatters';
@@ -48,6 +49,7 @@ const AssetDetail: React.FC<AssetDetailProps> = ({ assetId, navigateTo }) => {
   const { t } = useTranslation();
   const [asset, setAsset] = useState<Asset | null>(null);
   const [history, setHistory] = useState<AssetMovement[]>([]);
+  const [loanHistory, setLoanHistory] = useState<AssetLoan[]>([]);
   const [maintenance, setMaintenance] = useState<Maintenance[]>([]);
   const [damageReports, setDamageReports] = useState<DamageReport[]>([]);
   const [lossReports, setLossReports] = useState<LossReport[]>([]);
@@ -69,9 +71,10 @@ const AssetDetail: React.FC<AssetDetailProps> = ({ assetId, navigateTo }) => {
     setLoading(true);
     setError('');
     try {
-      const [assetData, historyData, maintenanceData, damageData, lossData] = await Promise.all([
+      const [assetData, historyData, loanHistoryData, maintenanceData, damageData, lossData] = await Promise.all([
         getAssetById(assetId),
         getAssetHistory(assetId),
+        getAssetLoanHistory(assetId),
         getMaintenanceHistory(assetId),
         getDamageReports(assetId),
         getLossReports(assetId)
@@ -94,18 +97,21 @@ const AssetDetail: React.FC<AssetDetailProps> = ({ assetId, navigateTo }) => {
       }
       
       setAsset(actualAssetData as Asset);
-      
+
       // ✅ PERBAIKAN: Ensure arrays dengan safety check
-      setHistory(Array.isArray(historyData) ? historyData : 
+      setHistory(Array.isArray(historyData) ? historyData :
                 Array.isArray((historyData as any)?.data) ? (historyData as any).data : []);
-      
-      setMaintenance(Array.isArray(maintenanceData) ? maintenanceData : 
+
+      setLoanHistory(Array.isArray(loanHistoryData) ? loanHistoryData :
+                    Array.isArray((loanHistoryData as any)?.data) ? (loanHistoryData as any).data : []);
+
+      setMaintenance(Array.isArray(maintenanceData) ? maintenanceData :
                     Array.isArray((maintenanceData as any)?.data) ? (maintenanceData as any).data : []);
-      
-      setDamageReports(Array.isArray(damageData) ? damageData : 
+
+      setDamageReports(Array.isArray(damageData) ? damageData :
                       Array.isArray((damageData as any)?.data) ? (damageData as any).data : []);
-      
-      setLossReports(Array.isArray(lossData) ? lossData : 
+
+      setLossReports(Array.isArray(lossData) ? lossData :
                     Array.isArray((lossData as any)?.data) ? (lossData as any).data : []);
     } catch (err: any) {
       console.error('Error fetching asset details:', err);
@@ -626,12 +632,12 @@ const AssetDetail: React.FC<AssetDetailProps> = ({ assetId, navigateTo }) => {
                         <MoveIcon />
                         <span className="ml-2">{t('asset_detail.move_asset')}</span>
                     </button>
-                    <button 
+                    <button
                         onClick={() => setMaintModalOpen(true)}
                         className="flex items-center justify-center text-sm font-medium bg-yellow-50 text-yellow-700 px-4 py-2 rounded-lg shadow-sm hover:bg-yellow-100 border border-yellow-200 transition-colors"
                     >
                         <MaintenanceIcon />
-                        <span className="ml-2">{t('asset_detail.add_maintenance')}</span>
+                        <span className="ml-2">Perbaikan dan Pemeliharaan</span>
                     </button>
                     <button 
                         onClick={() => setReportModalOpen(true)}
@@ -666,57 +672,129 @@ const AssetDetail: React.FC<AssetDetailProps> = ({ assetId, navigateTo }) => {
         <div className="p-6">
             {activeTab === 'history' && (
                 <div>
-                    <h3 className="text-xl font-semibold mb-4 text-gray-900">{t('asset_detail.history.title')}</h3>
-                    {history.length === 0 ? (
-                        <div className="text-center py-8 text-gray-500 bg-gray-50 rounded-lg">
-                            <p>No movement history found</p>
-                        </div>
-                    ) : (
-                        <ul className="space-y-3">
-                            {history.map(movement => (
-                                <li key={movement.id} className="p-4 bg-gray-50 rounded-lg border border-gray-200 hover:bg-gray-100 transition-colors">
-                                    <div className="flex justify-between items-start">
-                                        <div className="flex-1">
-                                            <div className="flex items-center mb-2">
-                                                <span className="font-medium text-gray-900">Unit:</span>
-                                                <span className="ml-2 text-gray-700">{movement.location}</span>
-                                            </div>
-                                            {movement.moved_by && (
-                                                <div className="flex items-center text-sm text-gray-600">
-                                                    <span className="font-medium">Moved by:</span>
-                                                    <span className="ml-2">{movement.moved_by.name}</span>
+                    <h3 className="text-xl font-semibold mb-4 text-gray-900">Riwayat</h3>
+
+                    {/* Riwayat Peminjaman */}
+                    <div className="mb-6">
+                        <h4 className="text-lg font-semibold mb-3 text-gray-800">Riwayat Peminjaman</h4>
+                        {loanHistory.length === 0 ? (
+                            <div className="text-center py-6 text-gray-500 bg-gray-50 rounded-lg">
+                                <p>Belum ada riwayat peminjaman</p>
+                            </div>
+                        ) : (
+                            <ul className="space-y-3">
+                                {loanHistory.map(loan => (
+                                    <li key={loan.id} className="p-4 bg-blue-50 rounded-lg border border-blue-200 hover:bg-blue-100 transition-colors">
+                                        <div className="flex justify-between items-start mb-2">
+                                            <div className="flex-1">
+                                                <div className="flex items-center mb-2">
+                                                    <span className="font-medium text-gray-900">Peminjam:</span>
+                                                    <span className="ml-2 text-gray-700">{loan.borrower?.name || 'N/A'}</span>
                                                 </div>
-                                            )}
+                                                <div className="flex items-center mb-2">
+                                                    <span className="font-medium text-gray-900">Status:</span>
+                                                    <span className={`ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                                                        loan.status === 'RETURNED' ? 'bg-green-100 text-green-800' :
+                                                        loan.status === 'APPROVED' ? 'bg-blue-100 text-blue-800' :
+                                                        loan.status === 'PENDING_RETURN' ? 'bg-yellow-100 text-yellow-800' :
+                                                        loan.status === 'REJECTED' ? 'bg-red-100 text-red-800' :
+                                                        loan.status === 'LOST' ? 'bg-gray-100 text-gray-800' :
+                                                        'bg-gray-100 text-gray-800'
+                                                    }`}>
+                                                        {loan.status === 'RETURNED' ? 'Dikembalikan' :
+                                                         loan.status === 'APPROVED' ? 'Dipinjam' :
+                                                         loan.status === 'PENDING_RETURN' ? 'Menunggu Validasi Pengembalian' :
+                                                         loan.status === 'REJECTED' ? 'Ditolak' :
+                                                         loan.status === 'LOST' ? 'Hilang' :
+                                                         loan.status === 'PENDING' ? 'Menunggu Persetujuan' : loan.status}
+                                                    </span>
+                                                </div>
+                                                <div className="text-sm text-gray-600">
+                                                    <div><strong>Tanggal Peminjaman:</strong> {formatDate(loan.loan_date || loan.request_date)}</div>
+                                                    {loan.actual_return_date && (
+                                                        <div><strong>Tanggal Pengembalian:</strong> {formatDate(loan.actual_return_date)}</div>
+                                                    )}
+                                                    {loan.return_condition && (
+                                                        <div><strong>Kondisi Pengembalian:</strong> {
+                                                            loan.return_condition === 'good' ? 'Baik' :
+                                                            loan.return_condition === 'damaged' ? 'Rusak' :
+                                                            loan.return_condition === 'lost' ? 'Hilang' : loan.return_condition
+                                                        }</div>
+                                                    )}
+                                                    <div><strong>Tujuan:</strong> {loan.purpose}</div>
+                                                </div>
+                                            </div>
+                                            <div className="text-sm text-gray-500 whitespace-nowrap">
+                                                {formatDateTime(loan.created_at)}
+                                            </div>
                                         </div>
-                                        <div className="text-sm text-gray-500 whitespace-nowrap">
-                                            {formatDateTime(movement.moved_at)}
+                                    </li>
+                                ))}
+                            </ul>
+                        )}
+                    </div>
+
+                    {/* Riwayat Perpindahan Unit */}
+                    <div>
+                        <h4 className="text-lg font-semibold mb-3 text-gray-800">Riwayat Perpindahan Unit</h4>
+                        {history.length === 0 ? (
+                            <div className="text-center py-6 text-gray-500 bg-gray-50 rounded-lg">
+                                <p>Belum ada riwayat perpindahan unit</p>
+                            </div>
+                        ) : (
+                            <ul className="space-y-3">
+                                {history.map(movement => (
+                                    <li key={movement.id} className="p-4 bg-gray-50 rounded-lg border border-gray-200 hover:bg-gray-100 transition-colors">
+                                        <div className="flex justify-between items-start">
+                                            <div className="flex-1">
+                                                <div className="flex items-center mb-2">
+                                                    <span className="font-medium text-gray-900">Unit:</span>
+                                                    <span className="ml-2 text-gray-700">{movement.location}</span>
+                                                </div>
+                                                {movement.moved_by && (
+                                                    <div className="flex items-center text-sm text-gray-600">
+                                                        <span className="font-medium">Dipindahkan oleh:</span>
+                                                        <span className="ml-2">{movement.moved_by.name}</span>
+                                                    </div>
+                                                )}
+                                            </div>
+                                            <div className="text-sm text-gray-500 whitespace-nowrap">
+                                                {formatDateTime(movement.moved_at)}
+                                            </div>
                                         </div>
-                                    </div>
-                                </li>
-                            ))}
-                        </ul>
-                    )}
+                                    </li>
+                                ))}
+                            </ul>
+                        )}
+                    </div>
                 </div>
             )}
             
             {activeTab === 'maintenance' && (
                 <div>
-                    <h3 className="text-xl font-semibold mb-4 text-gray-900">{t('asset_detail.maintenance.title')}</h3>
+                    <h3 className="text-xl font-semibold mb-4 text-gray-900">Riwayat Perbaikan dan Pemeliharaan</h3>
                     {maintenance.length === 0 ? (
                         <div className="text-center py-8 text-gray-500 bg-gray-50 rounded-lg">
-                            <p>No maintenance records found</p>
+                            <p>Belum ada riwayat perbaikan dan pemeliharaan</p>
                         </div>
                     ) : (
-                        <ul className="space-y-3">
+                        <ul className="space-y-4">
                             {maintenance.map(maint => (
-                                <li key={maint.id} className="p-4 bg-yellow-50 rounded-lg border border-yellow-200 hover:bg-yellow-100 transition-colors">
-                                    <div className="flex justify-between items-start mb-2">
-                                        <div>
-                                            <span className="font-medium text-gray-900">Status:</span>
-                                            <span className={`ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                                <li key={maint.id} className={`p-4 rounded-lg border hover:shadow-md transition-all ${
+                                    maint.type === 'Perbaikan' ? 'bg-red-50 border-red-200 hover:bg-red-100' : 'bg-yellow-50 border-yellow-200 hover:bg-yellow-100'
+                                }`}>
+                                    <div className="flex justify-between items-start mb-3">
+                                        <div className="flex items-center gap-2">
+                                            <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-semibold ${
+                                                maint.type === 'Perbaikan' ? 'bg-red-600 text-white' : 'bg-yellow-600 text-white'
+                                            }`}>
+                                                {maint.type}
+                                            </span>
+                                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
                                                 maint.status === 'Completed' ? 'bg-green-100 text-green-800' :
                                                 maint.status === 'In Progress' ? 'bg-blue-100 text-blue-800' :
-                                                'bg-yellow-100 text-yellow-800'
+                                                maint.status === 'Scheduled' ? 'bg-purple-100 text-purple-800' :
+                                                'bg-gray-100 text-gray-800'
                                             }`}>
                                                 {maint.status}
                                             </span>
@@ -725,10 +803,48 @@ const AssetDetail: React.FC<AssetDetailProps> = ({ assetId, navigateTo }) => {
                                             {formatDate(maint.date)}
                                         </div>
                                     </div>
-                                    <div className="mt-2">
-                                        <span className="font-medium text-gray-900">Description:</span>
-                                        <p className="mt-1 text-gray-700">{maint.description}</p>
+
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-3">
+                                        {maint.unit && (
+                                            <div>
+                                                <span className="text-xs font-medium text-gray-500">Unit:</span>
+                                                <p className="text-sm text-gray-900">{maint.unit.name}</p>
+                                            </div>
+                                        )}
+                                        <div>
+                                            <span className="text-xs font-medium text-gray-500">Pihak yang menangani:</span>
+                                            <p className="text-sm text-gray-900">{maint.party_type}</p>
+                                        </div>
+                                        <div>
+                                            <span className="text-xs font-medium text-gray-500">Nama Teknisi:</span>
+                                            <p className="text-sm text-gray-900">{maint.technician_name}</p>
+                                        </div>
+                                        <div>
+                                            <span className="text-xs font-medium text-gray-500">No Telepon:</span>
+                                            <p className="text-sm text-gray-900">{maint.phone_number}</p>
+                                        </div>
                                     </div>
+
+                                    {maint.description && (
+                                        <div className="mt-3 pt-3 border-t border-gray-200">
+                                            <span className="text-xs font-medium text-gray-500">Deskripsi:</span>
+                                            <p className="mt-1 text-sm text-gray-700">{maint.description}</p>
+                                        </div>
+                                    )}
+
+                                    {maint.photo_proof && (
+                                        <div className="mt-3 pt-3 border-t border-gray-200">
+                                            <span className="text-xs font-medium text-gray-500">Foto Bukti:</span>
+                                            <div className="mt-2">
+                                                <img
+                                                    src={`http://localhost:8000/storage/${maint.photo_proof}`}
+                                                    alt="Bukti Perbaikan/Pemeliharaan"
+                                                    className="max-w-xs rounded-lg border border-gray-300 shadow-sm hover:shadow-md transition-shadow cursor-pointer"
+                                                    onClick={() => window.open(`http://localhost:8000/storage/${maint.photo_proof}`, '_blank')}
+                                                />
+                                            </div>
+                                        </div>
+                                    )}
                                 </li>
                             ))}
                         </ul>

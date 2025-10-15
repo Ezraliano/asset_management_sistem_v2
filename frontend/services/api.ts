@@ -1031,6 +1031,17 @@ export const getReturnProofPhoto = (loanId: number): string => {
   return `${API_BASE_URL}/asset-loans/${loanId}/return-proof?token=${token}`;
 };
 
+export const getAssetLoanHistory = async (assetId: string): Promise<AssetLoan[]> => {
+  try {
+    const data = await apiRequest(`/assets/${assetId}/loan-history`);
+    const loanHistory = handleApiResponse<AssetLoan[]>(data);
+    return Array.isArray(loanHistory) ? loanHistory : [];
+  } catch (error) {
+    console.error('Get asset loan history error:', error);
+    return [];
+  }
+};
+
 
 // ==================== INCIDENT REPORTS API (ENHANCED) ====================
 

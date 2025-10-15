@@ -1367,12 +1367,60 @@ class AssetLoanController extends Controller
     }
 
     /**
+     * Get loan history for a specific asset
+     */
+    public function getAssetLoanHistory($assetId)
+    {
+        try {
+            $user = Auth::user();
+
+            // Get asset to check permissions
+            $asset = Asset::with('unit')->find($assetId);
+
+            if (!$asset) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Asset not found'
+                ], Response::HTTP_NOT_FOUND);
+            }
+
+            // Check permissions for Admin Unit
+            if ($user->role === 'Admin Unit' && $user->unit_id && $asset->unit_id !== $user->unit_id) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Unauthorized to view loan history for assets from other units'
+                ], Response::HTTP_FORBIDDEN);
+            }
+
+            // Get all loan history for the asset
+            $loanHistory = AssetLoan::with(['borrower', 'approver', 'returnVerifier'])
+                ->where('asset_id', $assetId)
+                ->orderBy('created_at', 'desc')
+                ->get();
+
+            return response()->json([
+                'success' => true,
+                'data' => $loanHistory
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error("Error fetching loan history for asset {$assetId}: " . $e->getMessage());
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to fetch loan history',
+                'error' => $e->getMessage()
+            ], Response::HTTP_INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    /**
      * Bulk action for loans (approve/reject multiple)
      */
     public function bulkAction(Request $request)
     {
         DB::beginTransaction();
-        
+
         try {
             $user = Auth::user();
             $validated = $request->validate([
@@ -1444,9 +1492,9 @@ class AssetLoanController extends Controller
 
         } catch (\Illuminate\Validation\ValidationException $e) {
             DB::rollBack();
-            
+
             Log::error('Validation error in bulk action: ' . json_encode($e->errors()));
-            
+
             return response()->json([
                 'success' => false,
                 'message' => 'Validation failed',
@@ -1455,9 +1503,9 @@ class AssetLoanController extends Controller
 
         } catch (\Exception $e) {
             DB::rollBack();
-            
+
             Log::error('Error in bulk action: ' . $e->getMessage());
-            
+
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to perform bulk action',

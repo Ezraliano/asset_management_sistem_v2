@@ -78,6 +78,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::get('/asset-loans', [AssetLoanController::class, 'index']);
         Route::post('/asset-loans', [AssetLoanController::class, 'store']);
         Route::get('/asset-loans/{assetLoan}', [AssetLoanController::class, 'show']);
+        Route::get('/assets/{assetId}/loan-history', [AssetLoanController::class, 'getAssetLoanHistory']);
     });
 
     // Additional routes for specific roles

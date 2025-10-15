@@ -54,10 +54,17 @@ export interface Asset {
 export interface Maintenance {
   id: number;
   asset_id: number;
+  type: 'Perbaikan' | 'Pemeliharaan';
   date: string;
-  description: string;
+  unit_id?: number | null;
+  party_type: 'Internal' | 'External';
+  technician_name: string;
+  phone_number: string;
+  photo_proof?: string | null;
+  description?: string | null;
   status: MaintenanceStatus;
   asset?: Asset;
+  unit?: Unit;
 }
 
 export interface AssetMovement {
