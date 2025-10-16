@@ -19,7 +19,7 @@ return new class extends Migration
             $table->decimal('value', 15, 2);
             $table->datetime('purchase_date');
             $table->integer('useful_life')->comment('in months');
-            $table->enum('status', ['Available', 'Terpinjam', 'Terjual', 'Lost', 'Dalam Perbaikan'])->default('Available');
+            $table->enum('status', ['Available', 'Terpinjam', 'Terjual', 'Lost', 'Dalam Perbaikan','Rusak','Dalam Pemeliharaan'])->default('Available');
             $table->foreignId('unit_id')->nullable()->constrained('units')->onDelete('cascade');
             $table->timestamps();
         });

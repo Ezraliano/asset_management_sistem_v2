@@ -3,14 +3,17 @@ export enum AssetStatus {
   AVAILABLE = 'Available',
   TERPINJAM = 'Terpinjam',
   TERJUAL = 'Terjual',
-  LOST = 'Lost'
+  LOST = 'Lost',
+  DALAM_PERBAIKAN = 'Dalam Perbaikan',
+  RUSAK = 'Rusak',
+  DALAM_PEMELIHARAAN = 'Dalam Pemeliharaan'
 }
 
 export enum MaintenanceStatus {
-  SCHEDULED = 'Scheduled',
-  IN_PROGRESS = 'In Progress',
-  COMPLETED = 'Completed',
-  CANCELLED = 'Cancelled'
+  PENDING = 'PENDING',
+  IN_PROGRESS = 'IN_PROGRESS',
+  COMPLETED = 'COMPLETED',
+  CANCELLED = 'CANCELLED'
 }
 
 export interface Unit {
@@ -58,7 +61,7 @@ export interface Maintenance {
   date: string;
   unit_id?: number | null;
   party_type: 'Internal' | 'External';
-  technician_name: string;
+  instansi: string;
   phone_number: string;
   photo_proof?: string | null;
   description?: string | null;
@@ -67,9 +70,12 @@ export interface Maintenance {
   validated_by?: number | null;
   validation_date?: string | null;
   validation_notes?: string | null;
+  completed_by?: number | null;
+  completion_date?: string | null;
   asset?: Asset;
   unit?: Unit;
   validator?: User;
+  completedBy?: User;
 }
 
 export interface AssetMovement {

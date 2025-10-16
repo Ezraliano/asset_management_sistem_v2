@@ -17,7 +17,7 @@ class Maintenance extends Model
         'date',
         'unit_id',
         'party_type',
-        'technician_name',
+        'instansi',
         'phone_number',
         'photo_proof',
         'description',
@@ -26,6 +26,8 @@ class Maintenance extends Model
         'validated_by',
         'validation_date',
         'validation_notes',
+        'completed_by',
+        'completion_date',
     ];
 
     protected function casts(): array
@@ -33,6 +35,7 @@ class Maintenance extends Model
         return [
             'date' => 'date',
             'validation_date' => 'datetime',
+            'completion_date' => 'datetime',
         ];
     }
 
@@ -49,5 +52,60 @@ class Maintenance extends Model
     public function validator(): BelongsTo
     {
         return $this->belongsTo(User::class, 'validated_by');
+    }
+
+    public function completedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'completed_by');
+    }
+
+    /**
+     * Scope untuk filter berdasarkan unit (untuk Admin Unit)
+     */
+    public function scopeForUnit($query, $unitId)
+    {
+        return $query->whereHas('asset', function ($q) use ($unitId) {
+            $q->where('unit_id', $unitId);
+        });
+    }
+
+    /**
+     * Scope untuk maintenance yang pending validation
+     */
+    public function scopePendingValidation($query)
+    {
+        return $query->where('validation_status', 'PENDING');
+    }
+
+    /**
+     * Scope untuk maintenance yang approved
+     */
+    public function scopeApproved($query)
+    {
+        return $query->where('validation_status', 'APPROVED');
+    }
+
+    /**
+     * Check if maintenance is approved
+     */
+    public function isApproved(): bool
+    {
+        return $this->validation_status === 'APPROVED';
+    }
+
+    /**
+     * Check if maintenance is completed
+     */
+    public function isCompleted(): bool
+    {
+        return $this->status === 'COMPLETED';
+    }
+
+    /**
+     * Check if maintenance is in progress
+     */
+    public function isInProgress(): bool
+    {
+        return $this->status === 'IN_PROGRESS';
     }
 }

@@ -238,6 +238,60 @@ class User extends Authenticatable
     }
 
     /**
+     * Check if user can validate maintenance records.
+     */
+    public function canValidateMaintenance(Maintenance $maintenance): bool
+    {
+        // Super Admin and Admin Holding can validate all maintenance records
+        if (in_array($this->role, ['Super Admin', 'Admin Holding'])) {
+            return true;
+        }
+
+        // Admin Unit can only validate maintenance for assets in their unit
+        if ($this->role === 'Admin Unit' && $this->unit_id && $maintenance->asset && $maintenance->asset->unit_id === $this->unit_id) {
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * Check if user can complete maintenance records.
+     */
+    public function canCompleteMaintenance(Maintenance $maintenance): bool
+    {
+        // Super Admin and Admin Holding can complete all maintenance records
+        if (in_array($this->role, ['Super Admin', 'Admin Holding'])) {
+            return true;
+        }
+
+        // Admin Unit can only complete maintenance for assets in their unit
+        if ($this->role === 'Admin Unit' && $this->unit_id && $maintenance->asset && $maintenance->asset->unit_id === $this->unit_id) {
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * Check if user can create maintenance records.
+     */
+    public function canCreateMaintenance(Asset $asset): bool
+    {
+        // Super Admin and Admin Holding can create maintenance for all assets
+        if (in_array($this->role, ['Super Admin', 'Admin Holding'])) {
+            return true;
+        }
+
+        // Admin Unit can only create maintenance for assets in their unit
+        if ($this->role === 'Admin Unit' && $this->unit_id && $asset->unit_id === $this->unit_id) {
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
      * Get user's unit name or default message.
      */
     public function getUnitName(): string

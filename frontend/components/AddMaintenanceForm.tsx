@@ -13,7 +13,7 @@ const AddMaintenanceForm: React.FC<AddMaintenanceFormProps> = ({ asset, onSucces
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
   const [unitId, setUnitId] = useState<number | ''>('');
   const [partyType, setPartyType] = useState<'Internal' | 'External'>('Internal');
-  const [technicianName, setTechnicianName] = useState('');
+  const [instansi, setInstansi] = useState('');
   const [phoneNumber, setPhoneNumber] = useState('');
   const [photoProof, setPhotoProof] = useState<File | null>(null);
   const [description, setDescription] = useState('');
@@ -46,7 +46,7 @@ const AddMaintenanceForm: React.FC<AddMaintenanceFormProps> = ({ asset, onSucces
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!technicianName || !phoneNumber) {
+    if (!instansi || !phoneNumber) {
       alert('Mohon isi semua field yang wajib');
       return;
     }
@@ -59,7 +59,7 @@ const AddMaintenanceForm: React.FC<AddMaintenanceFormProps> = ({ asset, onSucces
       formData.append('date', date);
       if (unitId) formData.append('unit_id', unitId.toString());
       formData.append('party_type', partyType);
-      formData.append('technician_name', technicianName);
+      formData.append('instansi', instansi);
       formData.append('phone_number', phoneNumber);
       if (photoProof) formData.append('photo_proof', photoProof);
       if (description) formData.append('description', description);
@@ -199,19 +199,19 @@ const AddMaintenanceForm: React.FC<AddMaintenanceFormProps> = ({ asset, onSucces
         </div>
       </div>
 
-      {/* Nama Orang yang memperbaiki/memelihara */}
+      {/* Nama Instansi yang memperbaiki/memelihara */}
       <div>
-        <label htmlFor="technician_name" className="block text-sm font-medium text-gray-700">
-          Nama Orang yang {type === 'Perbaikan' ? 'memperbaiki' : 'memelihara'} <span className="text-red-500">*</span>
+        <label htmlFor="instansi" className="block text-sm font-medium text-gray-700">
+          Nama Instansi yang {type === 'Perbaikan' ? 'memperbaiki' : 'memelihara'} <span className="text-red-500">*</span>
         </label>
         <input
           type="text"
-          id="technician_name"
-          value={technicianName}
-          onChange={(e) => setTechnicianName(e.target.value)}
+          id="instansi"
+          value={instansi}
+          onChange={(e) => setInstansi(e.target.value)}
           required
           className="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary sm:text-sm"
-          placeholder="Masukkan nama teknisi"
+          placeholder="Masukkan nama instansi"
         />
       </div>
 

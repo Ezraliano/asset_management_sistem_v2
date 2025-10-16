@@ -18,17 +18,21 @@ return new class extends Migration
             $table->date('date');
             $table->foreignId('unit_id')->nullable()->constrained('units')->onDelete('set null'); // Unit yang memperbaiki/memelihara
             $table->enum('party_type', ['Internal', 'External']); // Pihak yang menangani
-            $table->string('technician_name'); // Nama orang yang memperbaiki/memelihara
+            $table->string('instansi'); // Nama instansi yang memperbaiki/memelihara
             $table->string('phone_number'); // No Telepon
             $table->string('photo_proof')->nullable(); // Foto Bukti
             $table->text('description')->nullable(); // Deskripsi (optional)
-            $table->enum('status', ['Scheduled', 'In Progress', 'Completed', 'Cancelled'])->default('Completed');
+            $table->enum('status', ['PENDING', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED'])->default('PENDING');
 
-            // // Validation fields
-            // $table->enum('validation_status', ['PENDING', 'APPROVED', 'REJECTED'])->default('PENDING'); // Status validasi
-            // $table->foreignId('validated_by')->nullable()->constrained('users')->onDelete('set null'); // User yang memvalidasi
-            // $table->timestamp('validation_date')->nullable(); // Tanggal validasi
-            // $table->text('validation_notes')->nullable(); // Catatan validasi
+            // Validation fields
+            $table->enum('validation_status', ['PENDING', 'APPROVED', 'REJECTED'])->default('PENDING'); // Status validasi
+            $table->foreignId('validated_by')->nullable()->constrained('users')->onDelete('set null'); // User yang memvalidasi
+            $table->timestamp('validation_date')->nullable(); // Tanggal validasi
+            $table->text('validation_notes')->nullable(); // Catatan validasi
+
+            // Completion fields
+            $table->foreignId('completed_by')->nullable()->constrained('users')->onDelete('set null'); // User yang menyelesaikan
+            $table->timestamp('completion_date')->nullable(); // Tanggal penyelesaian
 
             $table->timestamps();
         });

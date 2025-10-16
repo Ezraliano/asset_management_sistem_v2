@@ -835,8 +835,8 @@ const AssetDetail: React.FC<AssetDetailProps> = ({ assetId, navigateTo }) => {
                                             <p className="text-sm text-gray-900">{maint.party_type}</p>
                                         </div>
                                         <div>
-                                            <span className="text-xs font-medium text-gray-500">Nama Teknisi:</span>
-                                            <p className="text-sm text-gray-900">{maint.technician_name}</p>
+                                            <span className="text-xs font-medium text-gray-500">Nama Instansi:</span>
+                                            <p className="text-sm text-gray-900">{maint.instansi}</p>
                                         </div>
                                         <div>
                                             <span className="text-xs font-medium text-gray-500">No Telepon:</span>
