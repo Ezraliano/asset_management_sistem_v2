@@ -11,7 +11,7 @@ interface ReportIssueFormProps {
 
 const ReportIssueForm: React.FC<ReportIssueFormProps> = ({ asset, onSuccess, onClose }) => {
   const { t } = useTranslation();
-  // This form is now dedicated to Loss reports only
+  const [reportType, setReportType] = useState<'Damage' | 'Loss'>('Loss');
   const [description, setDescription] = useState('');
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
   const [selectedPhoto, setSelectedPhoto] = useState<File | null>(null);
@@ -71,7 +71,7 @@ const ReportIssueForm: React.FC<ReportIssueFormProps> = ({ asset, onSuccess, onC
       // Create FormData for file upload
       const formData = new FormData();
       formData.append('asset_id', asset.id.toString());
-      formData.append('type', 'Loss'); // Always Loss
+      formData.append('type', reportType);
       formData.append('description', description);
       formData.append('date', date);
       formData.append('evidence_photo', selectedPhoto);
@@ -92,24 +92,73 @@ const ReportIssueForm: React.FC<ReportIssueFormProps> = ({ asset, onSuccess, onC
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      <h2 className="text-2xl font-bold">Laporkan Aset Hilang - {asset.name}</h2>
+      <h2 className="text-2xl font-bold">Laporkan Masalah - {asset.name}</h2>
+
+      {/* Radio Button untuk memilih Tipe Laporan */}
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-2">
+          Tipe Laporan <span className="text-red-500">*</span>
+        </label>
+        <div className="flex space-x-4">
+          <label className="flex items-center">
+            <input
+              type="radio"
+              name="reportType"
+              value="Damage"
+              checked={reportType === 'Damage'}
+              onChange={(e) => setReportType(e.target.value as 'Damage' | 'Loss')}
+              className="mr-2"
+            />
+            <span className="text-sm">Laporan Kerusakan</span>
+          </label>
+          <label className="flex items-center">
+            <input
+              type="radio"
+              name="reportType"
+              value="Loss"
+              checked={reportType === 'Loss'}
+              onChange={(e) => setReportType(e.target.value as 'Damage' | 'Loss')}
+              className="mr-2"
+            />
+            <span className="text-sm">Laporan Kehilangan</span>
+          </label>
+        </div>
+      </div>
 
       {/* Info Alert */}
-      <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
+      <div className={`border rounded-lg p-4 ${
+        reportType === 'Loss'
+          ? 'bg-orange-50 border-orange-200'
+          : 'bg-red-50 border-red-200'
+      }`}>
         <div className="flex items-start">
-          <svg className="h-5 w-5 text-orange-400 mt-0.5" viewBox="0 0 20 20" fill="currentColor">
+          <svg className={`h-5 w-5 mt-0.5 ${
+            reportType === 'Loss' ? 'text-orange-400' : 'text-red-400'
+          }`} viewBox="0 0 20 20" fill="currentColor">
             <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
           </svg>
           <div className="ml-3">
-            <p className="text-sm text-orange-800">
-              Form ini khusus untuk melaporkan <strong>aset hilang</strong>. Laporan Anda akan direview oleh Super Admin dan Admin Holding untuk validasi.
+            <p className={`text-sm ${
+              reportType === 'Loss' ? 'text-orange-800' : 'text-red-800'
+            }`}>
+              {reportType === 'Loss' ? (
+                <>
+                  Form ini untuk melaporkan <strong>aset hilang</strong>. Laporan Anda akan direview oleh Super Admin dan Admin Holding untuk validasi.
+                </>
+              ) : (
+                <>
+                  Form ini untuk melaporkan <strong>kerusakan aset</strong>. Laporan Anda akan direview untuk tindakan perbaikan yang diperlukan.
+                </>
+              )}
             </p>
           </div>
         </div>
       </div>
 
       <div>
-        <label htmlFor="description" className="block text-sm font-medium text-gray-700">{t('report_issue_form.description')}</label>
+        <label htmlFor="description" className="block text-sm font-medium text-gray-700">
+          Deskripsi {reportType === 'Loss' ? 'Kehilangan' : 'Kerusakan'} <span className="text-red-500">*</span>
+        </label>
         <textarea
           name="description"
           id="description"
@@ -118,7 +167,11 @@ const ReportIssueForm: React.FC<ReportIssueFormProps> = ({ asset, onSuccess, onC
           onChange={(e) => setDescription(e.target.value)}
           required
           className="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary sm:text-sm"
-          placeholder={t('report_issue_form.placeholders.description')}
+          placeholder={
+            reportType === 'Loss'
+              ? 'Berikan deskripsi detail mengenai kerusakan atau kehilangan...'
+              : 'Berikan deskripsi detail mengenai kerusakan aset...'
+          }
         />
         <div className="flex justify-between mt-1">
           <p className="text-xs text-gray-500">Minimal 10 karakter</p>
@@ -127,7 +180,9 @@ const ReportIssueForm: React.FC<ReportIssueFormProps> = ({ asset, onSuccess, onC
       </div>
 
       <div>
-        <label htmlFor="date" className="block text-sm font-medium text-gray-700">{t('report_issue_form.date')}</label>
+        <label htmlFor="date" className="block text-sm font-medium text-gray-700">
+          Tanggal Kejadian <span className="text-red-500">*</span>
+        </label>
         <input
           type="date"
           name="date"
@@ -201,7 +256,7 @@ const ReportIssueForm: React.FC<ReportIssueFormProps> = ({ asset, onSuccess, onC
         )}
 
         <p className="text-xs text-gray-500 mt-2">
-          Upload foto bukti kehilangan (maksimal 2MB, format: JPG, PNG, GIF)
+          Upload foto bukti {reportType === 'Loss' ? 'kehilangan' : 'kerusakan'} (maksimal 2MB, format: JPG, PNG, GIF)
         </p>
       </div>
 

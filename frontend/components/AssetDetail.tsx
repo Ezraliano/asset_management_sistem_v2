@@ -21,6 +21,7 @@ import ReportIssueForm from './ReportIssueForm';
 import AddMaintenanceForm from './AddMaintenanceForm';
 import LossReportDetailModal from './LossReportDetailModal';
 import MaintenanceValidationModal from './MaintenanceValidationModal';
+import DamageReportValidationModal from './DamageReportValidationModal';
 import { useTranslation } from '../hooks/useTranslation';
 
 interface AssetDetailProps {
@@ -66,6 +67,8 @@ const AssetDetail: React.FC<AssetDetailProps> = ({ assetId, navigateTo }) => {
   const [selectedLossReport, setSelectedLossReport] = useState<LossReport | null>(null);
   const [isMaintenanceDetailModalOpen, setMaintenanceDetailModalOpen] = useState(false);
   const [selectedMaintenance, setSelectedMaintenance] = useState<Maintenance | null>(null);
+  const [isDamageReportDetailModalOpen, setDamageReportDetailModalOpen] = useState(false);
+  const [selectedDamageReport, setSelectedDamageReport] = useState<DamageReport | null>(null);
   const [error, setError] = useState<string>('');
   const [successMessage, setSuccessMessage] = useState<string>('');
   const [currentUser, setCurrentUser] = useState<any>(null);
@@ -351,6 +354,22 @@ const AssetDetail: React.FC<AssetDetailProps> = ({ assetId, navigateTo }) => {
 
   const handleMaintenanceSuccess = () => {
     handleCloseMaintenanceDetailModal();
+    fetchData(); // Refresh data after validation
+  };
+
+  // Handler untuk membuka modal detail damage report
+  const handleViewDamageReportDetail = (report: DamageReport) => {
+    setSelectedDamageReport(report);
+    setDamageReportDetailModalOpen(true);
+  };
+
+  const handleCloseDamageReportDetailModal = () => {
+    setDamageReportDetailModalOpen(false);
+    setSelectedDamageReport(null);
+  };
+
+  const handleDamageReportSuccess = () => {
+    handleCloseDamageReportDetailModal();
     fetchData(); // Refresh data after validation
   };
 
@@ -935,6 +954,19 @@ const AssetDetail: React.FC<AssetDetailProps> = ({ assetId, navigateTo }) => {
                                             <span className="ml-2">{report.reporter.name}</span>
                                         </div>
                                     )}
+                                    {/* Button Detail / Validasi Laporan */}
+                                    <div className="mt-3 pt-3 border-t border-red-200">
+                                        <button
+                                            onClick={() => handleViewDamageReportDetail(report)}
+                                            className="flex items-center text-sm font-medium text-red-700 hover:text-red-900 transition-colors"
+                                        >
+                                            <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                            </svg>
+                                            Lihat Detail / Validasi
+                                        </button>
+                                    </div>
                                 </li>
                             ))}
                         </ul>
@@ -1110,6 +1142,18 @@ const AssetDetail: React.FC<AssetDetailProps> = ({ assetId, navigateTo }) => {
             currentUser={currentUser}
             onClose={handleCloseMaintenanceDetailModal}
             onSuccess={handleMaintenanceSuccess}
+          />
+        </Modal>
+      )}
+
+      {/* Modal for Damage Report Validation */}
+      {isDamageReportDetailModalOpen && selectedDamageReport && currentUser && (
+        <Modal isOpen={isDamageReportDetailModalOpen} onClose={handleCloseDamageReportDetailModal}>
+          <DamageReportValidationModal
+            report={selectedDamageReport}
+            currentUser={currentUser}
+            onClose={handleCloseDamageReportDetailModal}
+            onSuccess={handleDamageReportSuccess}
           />
         </Modal>
       )}

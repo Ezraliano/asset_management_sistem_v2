@@ -320,9 +320,9 @@ class IncidentReportController extends Controller
                         Log::info("✅ Auto-updated loan status to LOST for asset {$incident->asset_id} due to approved loss incident");
                     }
                 } elseif ($incident->type === 'Damage') {
-                    $incident->asset->update(['status' => 'Dalam Perbaikan']);
-                    
-                    Log::info("✅ Auto-updated asset status to Dalam Perbaikan for asset {$incident->asset_id} due to approved damage incident");
+                    $incident->asset->update(['status' => 'Rusak']);
+
+                    Log::info("✅ Auto-updated asset status to Rusak for asset {$incident->asset_id} due to approved damage incident");
                 }
             } elseif ($newStatus === 'PENDING' && $oldStatus !== 'PENDING') {
                 // Jika status dikembalikan ke PENDING, reset asset status jika perlu
@@ -559,7 +559,7 @@ class IncidentReportController extends Controller
                             ]);
                         }
                     } elseif ($incident->type === 'Damage') {
-                        $incident->asset->update(['status' => 'Dalam Perbaikan']);
+                        $incident->asset->update(['status' => 'Rusak']);
                     }
                     
                     $updatedAssets[] = $incident->asset_id;

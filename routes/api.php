@@ -64,6 +64,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
 
         // Update status - Admin only (authorization in controller)
         Route::post('/incident-reports/{id}/update-status', [IncidentReportController::class, 'updateStatus']);
+        Route::put('/incident-reports/{id}/status', [IncidentReportController::class, 'updateStatus']);
 
         // Delete - Super Admin & Admin Holding only
         Route::middleware('role:Super Admin,Admin Holding')->group(function () {
