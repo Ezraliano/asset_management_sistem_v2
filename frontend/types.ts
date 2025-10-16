@@ -126,6 +126,8 @@ export interface AssetLoan {
   borrower_id: number;
   request_date: string;
   loan_date: string | null;
+  start_time: string | null;
+  end_time: string | null;
   expected_return_date: string;
   actual_return_date: string | null;
   purpose: string;

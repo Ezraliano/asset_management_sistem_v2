@@ -9,6 +9,9 @@ interface AssetLoanFormProps {
 }
 
 const AssetLoanForm: React.FC<AssetLoanFormProps> = ({ asset, onSubmit, onCancel, loading = false }) => {
+  const [loanDate, setLoanDate] = useState('');
+  const [startTime, setStartTime] = useState('');
+  const [endTime, setEndTime] = useState('');
   const [expectedReturnDate, setExpectedReturnDate] = useState('');
   const [purpose, setPurpose] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -25,14 +28,23 @@ const AssetLoanForm: React.FC<AssetLoanFormProps> = ({ asset, onSubmit, onCancel
     e.preventDefault();
     setError(null);
 
-    if (!expectedReturnDate || !purpose) {
+    if (!loanDate || !startTime || !endTime || !expectedReturnDate || !purpose) {
       setError('Mohon isi semua field.');
+      return;
+    }
+
+    // Validasi waktu
+    if (startTime >= endTime) {
+      setError('Jam selesai harus lebih besar dari jam mulai.');
       return;
     }
 
     // Call parent's onSubmit with loan data
     onSubmit({
       asset_id: asset.id,
+      loan_date: loanDate,
+      start_time: startTime,
+      end_time: endTime,
       expected_return_date: expectedReturnDate,
       purpose: purpose,
     });
@@ -66,6 +78,53 @@ const AssetLoanForm: React.FC<AssetLoanFormProps> = ({ asset, onSubmit, onCancel
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-5">
+        <div>
+          <label htmlFor="loanDate" className="block text-sm font-medium text-gray-700 mb-2">
+            Tanggal Peminjaman *
+          </label>
+          <input
+            type="date"
+            id="loanDate"
+            value={loanDate}
+            onChange={(e) => setLoanDate(e.target.value)}
+            className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            required
+          />
+          <p className="text-xs text-gray-500 mt-1">Pilih tanggal ketika Anda ingin meminjam asset</p>
+        </div>
+
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label htmlFor="startTime" className="block text-sm font-medium text-gray-700 mb-2">
+              Jam Mulai *
+            </label>
+            <input
+              type="time"
+              id="startTime"
+              value={startTime}
+              onChange={(e) => setStartTime(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              required
+            />
+            <p className="text-xs text-gray-500 mt-1">Jam mulai peminjaman</p>
+          </div>
+
+          <div>
+            <label htmlFor="endTime" className="block text-sm font-medium text-gray-700 mb-2">
+              Jam Selesai *
+            </label>
+            <input
+              type="time"
+              id="endTime"
+              value={endTime}
+              onChange={(e) => setEndTime(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              required
+            />
+            <p className="text-xs text-gray-500 mt-1">Jam selesai peminjaman</p>
+          </div>
+        </div>
+
         <div>
           <label htmlFor="expectedReturnDate" className="block text-sm font-medium text-gray-700 mb-2">
             Tanggal Pengembalian yang Diharapkan *

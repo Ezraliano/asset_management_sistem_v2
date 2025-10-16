@@ -332,26 +332,35 @@ const handleSubmit = async (e: React.FormEvent) => {
 
         <div>
           <label htmlFor="unit_id" className="block text-sm font-medium text-gray-700 mb-1">Unit *</label>
-          <select
-            name="unit_id"
-            id="unit_id"
-            value={formData.unit_id || ''}
-            onChange={(e) => setFormData(prev => ({ ...prev, unit_id: e.target.value ? Number(e.target.value) : null }))}
-            required
-            disabled={loading || isUnitLocked}
-            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary sm:text-sm disabled:bg-gray-50"
-          >
-            <option value="">-- Select Unit --</option>
-            {units.map(unit => (
-              <option key={unit.id} value={unit.id}>
-                {unit.name} ({unit.code})
-              </option>
-            ))}
-          </select>
-          {isUnitLocked ? (
-            <p className="mt-1 text-xs text-blue-600">Unit automatically set to your assigned unit (Admin Unit)</p>
+          {isUnitLocked && currentUser?.unit_id ? (
+            <>
+              <input
+                type="text"
+                value={units.find(u => u.id === currentUser.unit_id)?.name || ''}
+                disabled
+                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm bg-gray-100 cursor-not-allowed"
+              />
+              <p className="mt-1 text-xs text-blue-600">
+                Unit diatur secara otomatis sesuai dengan unit Anda.
+              </p>
+            </>
           ) : (
-            <p className="mt-1 text-xs text-gray-500">Select the unit where this asset is located</p>
+            <select
+              name="unit_id"
+              id="unit_id"
+              value={formData.unit_id || ''}
+              onChange={(e) => setFormData(prev => ({ ...prev, unit_id: e.target.value ? Number(e.target.value) : null }))}
+              required
+              disabled={loading}
+              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary sm:text-sm disabled:bg-gray-50"
+            >
+              <option value="">-- Pilih Unit --</option>
+              {units.map(unit => (
+                <option key={unit.id} value={unit.id}>
+                  {unit.name} ({unit.code})
+                </option>
+              ))}
+            </select>
           )}
         </div>
 

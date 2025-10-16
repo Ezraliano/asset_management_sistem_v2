@@ -17,6 +17,8 @@ return new class extends Migration
             $table->foreignId('borrower_id')->constrained('users')->cascadeOnDelete();
             $table->date('request_date');
             $table->date('loan_date')->nullable();
+            $table->time('start_time')->nullable();
+            $table->time('end_time')->nullable();
             $table->date('expected_return_date');
             $table->date('actual_return_date')->nullable();
             $table->text('purpose');

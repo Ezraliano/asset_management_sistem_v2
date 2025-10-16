@@ -118,13 +118,21 @@ const LoanReturnForm: React.FC<LoanReturnFormProps> = ({
           <div>
             <span className="font-medium">Tanggal Peminjaman:</span>
             <p className="text-gray-600">
-              {loan.approval_date
-                ? new Date(loan.approval_date).toLocaleDateString('id-ID')
+              {loan.loan_date
+                ? new Date(loan.loan_date).toLocaleDateString('id-ID')
                 : '-'
               }
             </p>
           </div>
-          <div className="col-span-2">
+          <div>
+            <span className="font-medium">Waktu:</span>
+            <p className="text-gray-600">
+              {loan.start_time && loan.end_time
+                ? `${loan.start_time} - ${loan.end_time} WIB`
+                : '-'}
+            </p>
+          </div>
+          <div>
             <span className="font-medium">Tanggal Pengembalian Diharapkan:</span>
             <p className="text-gray-600">{new Date(loan.expected_return_date).toLocaleDateString('id-ID')}</p>
           </div>

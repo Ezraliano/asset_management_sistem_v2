@@ -105,6 +105,9 @@ class AssetLoanController extends Controller
         try {
             $request->validate([
                 'asset_id' => 'required|exists:assets,id',
+                'loan_date' => 'required|date',
+                'start_time' => 'required|date_format:H:i',
+                'end_time' => 'required|date_format:H:i|after:start_time',
                 'expected_return_date' => 'required|date|after_or_equal:today',
                 'purpose' => 'required|string|max:500',
             ]);
@@ -153,6 +156,9 @@ class AssetLoanController extends Controller
                 'asset_id' => $asset->id,
                 'borrower_id' => $user->id,
                 'request_date' => Carbon::today(),
+                'loan_date' => $request->loan_date,
+                'start_time' => $request->start_time,
+                'end_time' => $request->end_time,
                 'expected_return_date' => $request->expected_return_date,
                 'purpose' => $request->purpose,
                 'status' => 'PENDING', // Initial status

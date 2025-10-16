@@ -20,6 +20,8 @@ class AssetLoan extends Model
         'borrower_id',
         'request_date',
         'loan_date',
+        'start_time',
+        'end_time',
         'expected_return_date',
         'actual_return_date',
         'purpose',
