@@ -170,6 +170,37 @@ export interface AssetSale {
   is_profit?: boolean;
 }
 
+export enum AssetRequestStatus {
+  PENDING = 'PENDING',
+  APPROVED = 'APPROVED',
+  REJECTED = 'REJECTED'
+}
+
+export interface AssetRequest {
+  id: number;
+  requester_unit_id: number;
+  requester_id: number;
+  asset_id: number;
+  request_date: string;
+  needed_date: string;
+  expected_return_date: string;
+  start_time: string | null;
+  end_time: string | null;
+  purpose: string;
+  reason: string;
+  status: AssetRequestStatus;
+  reviewed_by: number | null;
+  review_date: string | null;
+  rejection_reason: string | null;
+  approval_notes: string | null;
+  created_at: string;
+  updated_at: string;
+  requesterUnit: Unit;
+  requester: User;
+  asset: Asset;
+  reviewer: User | null;
+}
+
 // TAMBAHKAN INTERFACE UNTUK CHART DATA
 export interface ChartData {
   name: string;

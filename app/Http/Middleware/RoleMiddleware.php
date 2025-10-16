@@ -87,6 +87,12 @@ class RoleMiddleware
             ], 403);
         }
 
+        // ✅ EXCEPTION: Skip unit validation for asset-requests (they need to access assets from other units)
+        if ($request->is('api/asset-requests') || $request->is('api/asset-requests/*')) {
+            // Asset request feature specifically allows cross-unit asset access
+            return $next($request);
+        }
+
         // ✅ Validasi untuk routes yang berhubungan dengan assets
         $asset = $this->getAssetFromRequest($request);
         if ($asset) {

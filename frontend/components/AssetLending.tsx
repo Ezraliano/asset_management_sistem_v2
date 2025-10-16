@@ -8,7 +8,8 @@ import {
   rejectAssetLoan,
   returnAssetLoan,
   approveAssetReturn,
-  rejectAssetReturn
+  rejectAssetReturn,
+  createAssetRequest
 } from '../services/api';
 import { Asset, AssetLoan, AssetLoanStatus, User } from '../types';
 import { BorrowIcon, CalendarIcon, SearchIcon } from './icons';
@@ -18,6 +19,8 @@ import LoanApprovalForm from './LoanApprovalForm';
 import LoanRejectionForm from './LoanRejectionForm';
 import LoanReturnForm from './LoanReturnForm';
 import ReturnValidationModal from './ReturnValidationModal';
+import AssetRequestList from './AssetRequestList';
+import AssetRequestForm from './AssetRequestForm';
 
 const AssetLending: React.FC = () => {
   const [availableAssets, setAvailableAssets] = useState<Asset[]>([]);
@@ -29,6 +32,9 @@ const AssetLending: React.FC = () => {
   const [statusFilter, setStatusFilter] = useState<AssetLoanStatus | 'ALL'>('ALL');
   const [unitFilter, setUnitFilter] = useState<string>('ALL');
 
+  // View Mode State - for switching between loan list and asset requests
+  const [viewMode, setViewMode] = useState<'LOANS' | 'REQUESTS'>('LOANS');
+
   // Modal States
   const [isLoanModalOpen, setLoanModalOpen] = useState(false);
   const [isApprovalModalOpen, setApprovalModalOpen] = useState(false);
@@ -39,6 +45,10 @@ const AssetLending: React.FC = () => {
   const [selectedLoan, setSelectedLoan] = useState<AssetLoan | null>(null);
   const [actionLoading, setActionLoading] = useState(false);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+
+  // Asset Request States
+  const [isRequestFormOpen, setRequestFormOpen] = useState(false);
+  const [requestFormLoading, setRequestFormLoading] = useState(false);
 
   // Fetch data function
   const fetchData = async () => {
@@ -63,6 +73,17 @@ const AssetLending: React.FC = () => {
 
   useEffect(() => {
     fetchData();
+
+    // Listen for openRequestForm event from AssetRequestList
+    const handleOpenRequestForm = () => {
+      setRequestFormOpen(true);
+    };
+
+    window.addEventListener('openRequestForm', handleOpenRequestForm as EventListener);
+
+    return () => {
+      window.removeEventListener('openRequestForm', handleOpenRequestForm as EventListener);
+    };
   }, []);
 
   // Handle borrow request
@@ -333,6 +354,21 @@ const AssetLending: React.FC = () => {
     }
   };
 
+  // Handle Asset Request Form Submit
+  const handleRequestFormSubmit = async (requestData: any) => {
+    setRequestFormLoading(true);
+    try {
+      await createAssetRequest(requestData);
+      setSuccessMessage('Request peminjaman asset berhasil diajukan!');
+      setRequestFormOpen(false);
+      fetchData();
+    } catch (error: any) {
+      setError(error.message || 'Gagal mengajukan request');
+    } finally {
+      setRequestFormLoading(false);
+    }
+  };
+
   // Clear messages after delay
   useEffect(() => {
     if (successMessage || error) {
@@ -356,24 +392,57 @@ const AssetLending: React.FC = () => {
     <div className="space-y-6">
       {/* Header Section */}
       <div className="bg-white p-6 rounded-xl shadow-md">
-        <h1 className="text-2xl font-bold text-gray-800 mb-2">Peminjaman Aset</h1>
+        <div className="flex justify-between items-center mb-2">
+          <h1 className="text-2xl font-bold text-gray-800">Peminjaman Aset</h1>
+
+          {/* View Mode Toggle - Only show for Admin Unit */}
+          {currentUser?.role === 'Admin Unit' && (
+            <div className="flex gap-2">
+              <button
+                onClick={() => setViewMode('LOANS')}
+                className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
+                  viewMode === 'LOANS'
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                }`}
+              >
+                Peminjaman
+              </button>
+              <button
+                onClick={() => setViewMode('REQUESTS')}
+                className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
+                  viewMode === 'REQUESTS'
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                }`}
+              >
+                Asset Requests
+              </button>
+            </div>
+          )}
+        </div>
+
         <p className="text-gray-600">
-          Kelola permintaan peminjaman aset di sistem Anda
+          {viewMode === 'LOANS'
+            ? 'Kelola permintaan peminjaman aset di sistem Anda'
+            : 'Request peminjaman asset dari unit lain'}
         </p>
-        
+
         {/* User Info */}
         {currentUser && (
           <div className="mt-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-blue-800 font-medium">
-                  <strong>Role:</strong> {currentUser.role} 
+                  <strong>Role:</strong> {currentUser.role}
                   {currentUser.unit && ` • Unit: ${currentUser.unit.name}`}
                 </p>
                 <p className="text-blue-600 text-sm mt-1">
-                  {currentUser.role === 'User' && 'Anda hanya dapat meminjam asset di unit Anda sendiri'}
-                  {currentUser.role === 'Admin Unit' && 'Anda dapat mengelola peminjaman dan meminjam asset di unit Anda'}
-                  {['Super Admin', 'Admin Holding'].includes(currentUser.role) && 'Anda dapat mengelola semua unit dan meminjam asset'}
+                  {viewMode === 'REQUESTS'
+                    ? 'Anda dapat request peminjaman asset dari unit lain melalui approval Admin Holding/Super Admin'
+                    : currentUser.role === 'User' ? 'Anda hanya dapat meminjam asset di unit Anda sendiri'
+                    : currentUser.role === 'Admin Unit' ? 'Anda dapat mengelola peminjaman dan meminjam asset di unit Anda'
+                    : 'Anda dapat mengelola semua unit dan meminjam asset'}
                 </p>
               </div>
             </div>
@@ -394,8 +463,15 @@ const AssetLending: React.FC = () => {
         </div>
       )}
 
-      {/* ✅ PERBAIKAN: Section 1: Request New Loan (for ALL Roles) */}
-      {canSeeAvailableAssets && (
+      {/* Show Asset Request List when in REQUESTS view mode */}
+      {viewMode === 'REQUESTS' && currentUser?.role === 'Admin Unit' ? (
+        <div className="bg-white p-6 rounded-xl shadow-md">
+          <AssetRequestList currentUser={currentUser} />
+        </div>
+      ) : (
+        <>
+          {/* ✅ PERBAIKAN: Section 1: Request New Loan (for ALL Roles) */}
+          {canSeeAvailableAssets && (
         <div className="bg-white p-6 rounded-xl shadow-md">
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-xl font-semibold text-gray-800">
@@ -710,6 +786,20 @@ const AssetLending: React.FC = () => {
           </div>
         )}
       </div>
+        </>
+      )}
+
+      {/* Asset Request Form Modal */}
+      {isRequestFormOpen && (
+        <Modal isOpen={isRequestFormOpen} onClose={() => setRequestFormOpen(false)}>
+          <AssetRequestForm
+            onSubmit={handleRequestFormSubmit}
+            onCancel={() => setRequestFormOpen(false)}
+            loading={requestFormLoading}
+            userUnit={currentUser?.unit || null}
+          />
+        </Modal>
+      )}
 
       {/* Modals */}
       {selectedAsset && (

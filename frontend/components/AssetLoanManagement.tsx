@@ -1,23 +1,29 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { getAssetLoans, approveAssetLoan, rejectAssetLoan, returnAssetLoan, getCurrentUser, approveAssetReturn, rejectAssetReturn } from '../services/api';
+import { getAssetLoans, approveAssetLoan, rejectAssetLoan, returnAssetLoan, getCurrentUser, approveAssetReturn, rejectAssetReturn, createAssetRequest } from '../services/api';
 import { AssetLoan, AssetLoanStatus, User } from '../types';
 import Modal from './Modal';
 import LoanApprovalForm from './LoanApprovalForm';
 import LoanRejectionForm from './LoanRejectionForm';
 import ReturnValidationModal from './ReturnValidationModal';
+import AssetRequestList from './AssetRequestList';
+import AssetRequestForm from './AssetRequestForm';
 
 const AssetLoanManagement: React.FC = () => {
   const [allLoans, setAllLoans] = useState<AssetLoan[]>([]);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<AssetLoanStatus>(AssetLoanStatus.PENDING);
+  const [activeTab, setActiveTab] = useState<AssetLoanStatus | 'REQUESTS'>(AssetLoanStatus.PENDING);
 
   // Modal States
   const [isModalOpen, setModalOpen] = useState(false);
   const [selectedLoan, setSelectedLoan] = useState<AssetLoan | null>(null);
   const [modalAction, setModalAction] = useState<'approve' | 'reject' | 'return' | 'validate_return' | null>(null);
   const [actionLoading, setActionLoading] = useState(false);
+
+  // Asset Request States
+  const [isRequestFormOpen, setRequestFormOpen] = useState(false);
+  const [requestFormLoading, setRequestFormLoading] = useState(false);
 
   const fetchData = async () => {
     setLoading(true);
@@ -38,9 +44,21 @@ const AssetLoanManagement: React.FC = () => {
 
   useEffect(() => {
     fetchData();
+
+    // Listen for openRequestForm event from AssetRequestList
+    const handleOpenRequestForm = () => {
+      handleRequestFormOpen();
+    };
+
+    window.addEventListener('openRequestForm', handleOpenRequestForm as EventListener);
+
+    return () => {
+      window.removeEventListener('openRequestForm', handleOpenRequestForm as EventListener);
+    };
   }, []);
 
   const filteredLoans = useMemo(() => {
+    if (activeTab === 'REQUESTS') return [];
     return allLoans.filter(loan => loan.status === activeTab);
   }, [allLoans, activeTab]);
 
@@ -75,7 +93,7 @@ const AssetLoanManagement: React.FC = () => {
         });
         alert('Peminjaman berhasil ditolak!');
       } else if (modalAction === 'return') {
-        await returnAssetLoan(selectedLoan.id, { return_notes: formData.return_notes });
+        await returnAssetLoan(selectedLoan.id, formData);
         alert('Asset berhasil dikembalikan!');
       }
       
@@ -97,7 +115,32 @@ const AssetLoanManagement: React.FC = () => {
     setActionLoading(false);
   };
 
-  const TabButton: React.FC<{ status: AssetLoanStatus, label: string }> = ({ status, label }) => (
+  const handleRequestFormOpen = () => {
+    setRequestFormOpen(true);
+  };
+
+  const handleRequestFormClose = () => {
+    setRequestFormOpen(false);
+  };
+
+  const handleRequestFormSubmit = async (requestData: any) => {
+    setRequestFormLoading(true);
+    try {
+      await createAssetRequest(requestData);
+      alert('Request peminjaman asset berhasil diajukan!');
+      setRequestFormOpen(false);
+      // Refresh data if on requests tab
+      if (activeTab === 'REQUESTS') {
+        fetchData();
+      }
+    } catch (error: any) {
+      alert(`Gagal mengajukan request: ${error.message}`);
+    } finally {
+      setRequestFormLoading(false);
+    }
+  };
+
+  const TabButton: React.FC<{ status: AssetLoanStatus | 'REQUESTS', label: string }> = ({ status, label }) => (
     <button
       onClick={() => setActiveTab(status)}
       className={`px-4 py-2 text-sm font-medium rounded-md ${activeTab === status ? 'bg-primary text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}>
@@ -146,7 +189,19 @@ const AssetLoanManagement: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold text-gray-800">Manajemen Peminjaman Aset</h1>
+      <div className="flex justify-between items-center">
+        <h1 className="text-2xl font-bold text-gray-800">Manajemen Peminjaman Aset</h1>
+
+        {/* Show Request Button for Admin Unit */}
+        {currentUser?.role === 'Admin Unit' && activeTab === 'REQUESTS' && (
+          <button
+            onClick={handleRequestFormOpen}
+            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm font-medium"
+          >
+            + Request Asset Antar Unit
+          </button>
+        )}
+      </div>
 
       <div className="flex space-x-2 border-b pb-2 overflow-x-auto">
         <TabButton status={AssetLoanStatus.PENDING} label="Pending" />
@@ -154,11 +209,18 @@ const AssetLoanManagement: React.FC = () => {
         <TabButton status={AssetLoanStatus.PENDING_RETURN} label="Pending Return" />
         <TabButton status={AssetLoanStatus.RETURNED} label="Returned" />
         <TabButton status={AssetLoanStatus.REJECTED} label="Rejected" />
+        <TabButton status="REQUESTS" label="Asset Requests" />
       </div>
 
-      <div className="bg-white p-4 rounded-xl shadow-md">
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
+      {/* Show Asset Requests List when REQUESTS tab is active */}
+      {activeTab === 'REQUESTS' ? (
+        <div className="bg-white p-4 rounded-xl shadow-md">
+          <AssetRequestList currentUser={currentUser} />
+        </div>
+      ) : (
+        <div className="bg-white p-4 rounded-xl shadow-md">
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Aset</th>
@@ -237,6 +299,19 @@ const AssetLoanManagement: React.FC = () => {
           </table>
         </div>
       </div>
+      )}
+
+      {/* Request Form Modal */}
+      {isRequestFormOpen && (
+        <Modal isOpen={isRequestFormOpen} onClose={handleRequestFormClose}>
+          <AssetRequestForm
+            onSubmit={handleRequestFormSubmit}
+            onCancel={handleRequestFormClose}
+            loading={requestFormLoading}
+            userUnit={currentUser?.unit || null}
+          />
+        </Modal>
+      )}
 
       {/* ✅ PERBAIKAN: Single Modal untuk semua action */}
       {selectedLoan && isModalOpen && modalAction !== 'validate_return' && (

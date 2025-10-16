@@ -1,5 +1,5 @@
 // api.ts - PERBAIKAN RESPONSE HANDLING
-import { Asset, AssetMovement, Maintenance, User, DamageReport, LossReport, DashboardStats, AssetLoan, AssetLoanStatus, Unit, AssetSale, IncidentReport } from '../types';
+import { Asset, AssetMovement, Maintenance, User, DamageReport, LossReport, DashboardStats, AssetLoan, AssetLoanStatus, Unit, AssetSale, IncidentReport, AssetRequest } from '../types';
 
 const API_BASE_URL = 'http://localhost:8000/api';
 
@@ -1164,4 +1164,76 @@ export const getIncidentStatistics = async (): Promise<any> => {
     console.error('Get incident statistics error:', error);
     return null;
   }
+};
+
+
+// ==================== ASSET REQUESTS API ====================
+
+export const getAssetRequests = async (params?: { status?: string }): Promise<any[]> => {
+  const queryParams = new URLSearchParams();
+  if (params?.status) queryParams.append('status', params.status);
+
+  const queryString = queryParams.toString();
+  const endpoint = queryString ? `/asset-requests?${queryString}` : '/asset-requests';
+
+  try {
+    const response = await apiRequest(endpoint);
+    const handledResponse = handleApiResponse<any>(response);
+
+    if (Array.isArray(handledResponse)) {
+      return handledResponse;
+    }
+
+    console.warn('Asset requests response is not in a recognized format:', handledResponse);
+    return [];
+  } catch (error: any) {
+    console.error('Error in getAssetRequests:', error);
+    return [];
+  }
+};
+
+export const getAssetRequestById = async (id: number): Promise<any | null> => {
+  try {
+    const data = await apiRequest(`/asset-requests/${id}`);
+    return handleApiResponse<any>(data);
+  } catch (error) {
+    console.error('Get asset request by ID error:', error);
+    return null;
+  }
+};
+
+export const createAssetRequest = async (requestData: {
+  asset_id: number;
+  needed_date: string;
+  expected_return_date: string;
+  start_time: string;
+  end_time: string;
+  purpose: string;
+  reason: string;
+}): Promise<any> => {
+  const data = await apiRequest('/asset-requests', {
+    method: 'POST',
+    body: JSON.stringify(requestData),
+  });
+  return handleApiResponse<any>(data);
+};
+
+export const approveAssetRequest = async (id: number, approvalData: {
+  approval_notes?: string
+}): Promise<any> => {
+  const data = await apiRequest(`/asset-requests/${id}/approve`, {
+    method: 'POST',
+    body: JSON.stringify(approvalData),
+  });
+  return handleApiResponse<any>(data);
+};
+
+export const rejectAssetRequest = async (id: number, rejectionData: {
+  rejection_reason: string
+}): Promise<any> => {
+  const data = await apiRequest(`/asset-requests/${id}/reject`, {
+    method: 'POST',
+    body: JSON.stringify(rejectionData),
+  });
+  return handleApiResponse<any>(data);
 };

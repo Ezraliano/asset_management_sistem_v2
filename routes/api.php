@@ -12,6 +12,7 @@ use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\AssetLoanController;
 use App\Http\Controllers\Api\UnitController;
 use App\Http\Controllers\Api\AssetSaleController;
+use App\Http\Controllers\Api\AssetRequestController;
 
 /*
 |--------------------------------------------------------------------------
@@ -105,6 +106,17 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::post('asset-loans/{assetLoan}/approve-return', [AssetLoanController::class, 'approveReturn'])->name('asset-loans.approve-return');
         Route::post('asset-loans/{assetLoan}/reject-return', [AssetLoanController::class, 'rejectReturn'])->name('asset-loans.reject-return');
         Route::get('asset-loans-pending-returns', [AssetLoanController::class, 'getPendingReturns'])->name('asset-loans.pending-returns');
+
+        // Asset Request Routes - Admin Unit can create, Admin Holding & Super Admin can approve/reject
+        Route::get('/asset-requests', [AssetRequestController::class, 'index']);
+        Route::post('/asset-requests', [AssetRequestController::class, 'store']);
+        Route::get('/asset-requests/{id}', [AssetRequestController::class, 'show']);
+    });
+
+    // Asset Request Approval Routes - Only Super Admin & Admin Holding
+    Route::middleware('role:Super Admin,Admin Holding')->group(function () {
+        Route::post('/asset-requests/{id}/approve', [AssetRequestController::class, 'approve']);
+        Route::post('/asset-requests/{id}/reject', [AssetRequestController::class, 'reject']);
     });
 
     // ✅ Asset return - accessible by users (for their own loans)

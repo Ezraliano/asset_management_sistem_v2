@@ -21,6 +21,7 @@ class AssetController extends Controller
             $unit_id = $request->query('unit_id');
             $status = $request->query('status');
             $search = $request->query('search');
+            $for_request = $request->query('for_request'); // Parameter khusus untuk asset request
 
             // Mulai query dengan eager loading untuk depreciations dan unit
             $query = Asset::with(['depreciations' => function($query) {
@@ -29,8 +30,14 @@ class AssetController extends Controller
 
             // ✅ PERBAIKAN: Filter berdasarkan unit user
             $user = Auth::user();
-            if ($user && in_array($user->role, ['Admin Unit', 'User'])) {
-                // Admin Unit & User hanya bisa lihat asset di unit mereka
+
+            // ✅ EXCEPTION: Jika for_request=true, Admin Unit bisa lihat asset dari unit lain
+            if ($for_request === 'true' && $user && $user->role === 'Admin Unit' && $user->unit_id) {
+                // Admin Unit request: hanya lihat asset dari unit LAIN yang Available
+                $query->where('unit_id', '!=', $user->unit_id)
+                      ->where('status', 'Available');
+            } elseif ($user && in_array($user->role, ['Admin Unit', 'User'])) {
+                // Admin Unit & User hanya bisa lihat asset di unit mereka (behavior normal)
                 if ($user->unit_id) {
                     $query->where('unit_id', $user->unit_id);
                 } else {
