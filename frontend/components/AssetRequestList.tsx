@@ -237,6 +237,7 @@ const AssetRequestList: React.FC<AssetRequestListProps> = ({ currentUser }) => {
         <Modal isOpen={isValidationModalOpen} onClose={handleCloseModal}>
           <AssetRequestValidationModal
             request={selectedRequest}
+            currentUser={currentUser}
             onSuccess={handleValidationSuccess}
             onCancel={handleCloseModal}
           />

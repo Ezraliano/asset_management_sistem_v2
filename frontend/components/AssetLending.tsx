@@ -388,6 +388,37 @@ const AssetLending: React.FC = () => {
     );
   }
 
+  const renderViewModeDescription = () => {
+    if (viewMode === 'LOANS') {
+      return 'Kelola permintaan peminjaman aset di sistem Anda';
+    }
+    // REQUESTS view
+    if (currentUser?.role === 'Admin Unit') {
+      return 'Request peminjaman asset dari unit lain';
+    }
+    return 'Validasi request peminjaman asset antar unit';
+  };
+
+  const renderRoleDescription = () => {
+    if (viewMode === 'REQUESTS') {
+      if (currentUser?.role === 'Admin Unit') {
+        return 'Anda dapat membuat request peminjaman asset untuk unit Anda.';
+      }
+      return 'Anda dapat memvalidasi request peminjaman asset dari semua unit.';
+    }
+
+    // LOANS view
+    switch (currentUser?.role) {
+      case 'User':
+        return 'Anda hanya dapat meminjam asset di unit Anda sendiri';
+      case 'Admin Unit':
+        return 'Anda dapat mengelola peminjaman dan meminjam asset di unit Anda';
+      default:
+        return 'Anda dapat mengelola semua unit dan meminjam asset';
+    }
+  };
+
+
   return (
     <div className="space-y-6">
       {/* Header Section */}
@@ -395,8 +426,8 @@ const AssetLending: React.FC = () => {
         <div className="flex justify-between items-center mb-2">
           <h1 className="text-2xl font-bold text-gray-800">Peminjaman Aset</h1>
 
-          {/* View Mode Toggle - Only show for Admin Unit */}
-          {currentUser?.role === 'Admin Unit' && (
+          {/* View Mode Toggle - Show for Admins */}
+          {['Super Admin', 'Admin Holding', 'Admin Unit'].includes(currentUser?.role || '') && (
             <div className="flex gap-2">
               <button
                 onClick={() => setViewMode('LOANS')}
@@ -423,9 +454,7 @@ const AssetLending: React.FC = () => {
         </div>
 
         <p className="text-gray-600">
-          {viewMode === 'LOANS'
-            ? 'Kelola permintaan peminjaman aset di sistem Anda'
-            : 'Request peminjaman asset dari unit lain'}
+          {renderViewModeDescription()}
         </p>
 
         {/* User Info */}
@@ -438,11 +467,7 @@ const AssetLending: React.FC = () => {
                   {currentUser.unit && ` • Unit: ${currentUser.unit.name}`}
                 </p>
                 <p className="text-blue-600 text-sm mt-1">
-                  {viewMode === 'REQUESTS'
-                    ? 'Anda dapat request peminjaman asset dari unit lain melalui approval Admin Holding/Super Admin'
-                    : currentUser.role === 'User' ? 'Anda hanya dapat meminjam asset di unit Anda sendiri'
-                    : currentUser.role === 'Admin Unit' ? 'Anda dapat mengelola peminjaman dan meminjam asset di unit Anda'
-                    : 'Anda dapat mengelola semua unit dan meminjam asset'}
+                  {renderRoleDescription()}
                 </p>
               </div>
             </div>
@@ -464,7 +489,7 @@ const AssetLending: React.FC = () => {
       )}
 
       {/* Show Asset Request List when in REQUESTS view mode */}
-      {viewMode === 'REQUESTS' && currentUser?.role === 'Admin Unit' ? (
+      {viewMode === 'REQUESTS' && ['Super Admin', 'Admin Holding', 'Admin Unit'].includes(currentUser?.role || '') ? (
         <div className="bg-white p-6 rounded-xl shadow-md">
           <AssetRequestList currentUser={currentUser} />
         </div>

@@ -3,12 +3,14 @@ import { AssetRequest } from '../types';
 
 interface AssetRequestValidationModalProps {
   request: AssetRequest;
+  currentUser: any;
   onSuccess: () => void;
   onCancel: () => void;
 }
 
 const AssetRequestValidationModal: React.FC<AssetRequestValidationModalProps> = ({
   request,
+  currentUser,
   onSuccess,
   onCancel,
 }) => {
@@ -83,7 +85,9 @@ const AssetRequestValidationModal: React.FC<AssetRequestValidationModalProps> = 
     }
   };
 
-  const canValidate = request.status === 'PENDING';
+  const canValidate =
+    (currentUser?.role === 'Super Admin' || currentUser?.role === 'Admin Holding') &&
+    request.status === 'PENDING';
 
   return (
     <div className="bg-white p-6 rounded-lg shadow-lg max-w-3xl mx-auto max-h-[90vh] overflow-y-auto">
@@ -93,14 +97,16 @@ const AssetRequestValidationModal: React.FC<AssetRequestValidationModalProps> = 
       <div className="mb-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
         <h4 className="font-semibold text-gray-700 mb-3">Informasi Request</h4>
         <div className="grid grid-cols-2 gap-4 text-sm">
-          <div>
+          <div className={currentUser?.role === 'Admin Unit' ? 'col-span-2' : ''}>
             <span className="font-medium text-gray-600">Unit Pemohon:</span>
-            <p className="text-gray-900 mt-1">{request.requesterUnit?.name || 'N/A'}</p>
+            <p className="text-gray-900 mt-1">{request.requesterUnit?.name || request.requester?.name || 'N/A'}</p>
           </div>
-          <div>
-            <span className="font-medium text-gray-600">Nama Pemohon:</span>
-            <p className="text-gray-900 mt-1">{request.requester?.name || 'N/A'}</p>
-          </div>
+          {currentUser?.role !== 'Admin Unit' && (
+            <div>
+              <span className="font-medium text-gray-600">Nama Pemohon:</span>
+              <p className="text-gray-900 mt-1">{request.requester?.name || 'N/A'}</p>
+            </div>
+          )}
           <div>
             <span className="font-medium text-gray-600">Tanggal Request:</span>
             <p className="text-gray-900 mt-1">
