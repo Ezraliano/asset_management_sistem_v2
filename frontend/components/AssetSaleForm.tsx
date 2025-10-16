@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { createAssetSale, getAvailableAssetsForSale } from '../services/api';
 import { Asset, User } from '../types';
+import { formatToRupiah, unformatRupiah } from '../utils/formatters';
 
 interface AssetSaleFormProps {
   user: User;
@@ -16,6 +17,7 @@ const AssetSaleForm: React.FC<AssetSaleFormProps> = ({ user, onSuccess, onCancel
   // Form fields
   const [assetId, setAssetId] = useState<number | null>(null);
   const [salePrice, setSalePrice] = useState('');
+  const [displaySalePrice, setDisplaySalePrice] = useState('');
   const [saleDate, setSaleDate] = useState(new Date().toISOString().split('T')[0]);
   const [buyerName, setBuyerName] = useState('');
   const [buyerContact, setBuyerContact] = useState('');
@@ -43,6 +45,19 @@ const AssetSaleForm: React.FC<AssetSaleFormProps> = ({ user, onSuccess, onCancel
     }
   };
 
+  const handleSalePriceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const rawValue = e.target.value;
+    const numericValue = unformatRupiah(rawValue);
+    
+    setSalePrice(numericValue.toString());
+    
+    if (rawValue === '' || rawValue === 'Rp') {
+      setDisplaySalePrice('');
+    } else {
+      setDisplaySalePrice(formatToRupiah(numericValue));
+    }
+  };
+
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
 
@@ -50,7 +65,8 @@ const AssetSaleForm: React.FC<AssetSaleFormProps> = ({ user, onSuccess, onCancel
       newErrors.assetId = 'Pilih aset yang akan dijual';
     }
 
-    if (!salePrice || parseFloat(salePrice) <= 0) {
+    const price = parseFloat(salePrice);
+    if (isNaN(price) || price <= 0) {
       newErrors.salePrice = 'Harga jual harus lebih dari 0';
     }
 
@@ -187,7 +203,7 @@ const AssetSaleForm: React.FC<AssetSaleFormProps> = ({ user, onSuccess, onCancel
               <div className="text-sm">
                 <div className="font-medium text-gray-800">Informasi Aset:</div>
                 <div className="mt-1 text-gray-600">
-                  <div>Nilai Perolehan: Rp {selectedAsset.value.toLocaleString('id-ID')}</div>
+                  <div>Nilai Perolehan: {formatToRupiah(selectedAsset.value)}</div>
                   <div>Status: {selectedAsset.status}</div>
                   {selectedAsset.unit && <div>Unit: {selectedAsset.unit.name}</div>}
                 </div>
@@ -198,18 +214,16 @@ const AssetSaleForm: React.FC<AssetSaleFormProps> = ({ user, onSuccess, onCancel
           {/* Sale Price */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Harga Jual (Rp) <span className="text-red-500">*</span>
+              Harga Jual <span className="text-red-500">*</span>
             </label>
             <input
-              type="number"
-              min="0"
-              step="0.01"
-              value={salePrice}
-              onChange={(e) => setSalePrice(e.target.value)}
+              type="text"
+              value={displaySalePrice}
+              onChange={handleSalePriceChange}
               className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
                 errors.salePrice ? 'border-red-500' : 'border-gray-300'
               }`}
-              placeholder="Masukkan harga jual"
+              placeholder="Contoh: Rp1.000.000"
               disabled={loading}
             />
             {errors.salePrice && (

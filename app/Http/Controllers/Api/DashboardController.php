@@ -62,9 +62,11 @@ class DashboardController extends Controller
 
         $totalAssets = $assetQuery->count();
         $totalValue = $assetQuery->sum('value');
-        $assetsInUse = (clone $assetQuery)->where('status', 'In Use')->count();
-        $assetsInRepair = (clone $assetQuery)->where('status', 'In Repair')->count();
-        $scheduledMaintenances = (clone $maintenanceQuery)->where('status', 'Scheduled')->count();
+        $assetsInUse = (clone $assetQuery)->where('status', 'Available')->count();
+        $assetsInRepair = (clone $assetQuery)->where('status', 'Dalam Perbaikan')->count();
+        $assetsInMaintenance = (clone $assetQuery)->where('status', 'Dalam Pemeliharaan')->count();
+        $assetsSold = (clone $assetQuery)->where('status', 'Terjual')->count();
+        $assetsLost = (clone $assetQuery)->where('status', 'Lost')->count();
         $activeIncidents = (clone $incidentQuery)->whereNotIn('status', ['RESOLVED', 'CLOSED'])->count();
 
         // Hitung asset yang sedang dipinjam (status APPROVED)
@@ -110,8 +112,10 @@ class DashboardController extends Controller
                 'assets_in_use' => $assetsInUse,
                 'assets_in_repair' => $assetsInRepair,
                 'approved_loans' => $approvedLoans,
-                'scheduled_maintenances' => $scheduledMaintenances,
+                'scheduled_maintenances' => $assetsInMaintenance,
                 'active_incidents' => $activeIncidents,
+                'assets_sold' => $assetsSold,
+                'assets_lost' => $assetsLost,
                 'assets_by_category' => $assetsByCategory,
                 'assets_by_location' => $assetsByLocation,
             ]

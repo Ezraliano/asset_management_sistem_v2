@@ -209,7 +209,7 @@ const Dashboard: React.FC<DashboardProps> = ({ navigateTo }) => {
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <div className="bg-white p-6 rounded-lg shadow-md border border-gray-200">
           <h3 className="text-lg font-semibold text-medium-text">{t('Total Asset')}</h3>
           <p className="text-3xl font-bold text-primary">{stats.total_assets}</p>
@@ -225,7 +225,7 @@ const Dashboard: React.FC<DashboardProps> = ({ navigateTo }) => {
         </div>
         
         <div className="bg-white p-6 rounded-lg shadow-md border border-gray-200">
-          <h3 className="text-lg font-semibold text-medium-text">{t('Asset Yang Digunakan')}</h3>
+          <h3 className="text-lg font-semibold text-medium-text">{t('Asset Yang Tersedia')}</h3>
           <p className="text-3xl font-bold text-green-600">{stats.assets_in_use}</p>
           <p className="text-sm text-gray-500 mt-1">Asset dalam penggunaan</p>
         </div>
@@ -246,6 +246,24 @@ const Dashboard: React.FC<DashboardProps> = ({ navigateTo }) => {
           <h3 className="text-lg font-semibold text-medium-text">{t('Insiden Kerusakan Asset')}</h3>
           <p className="text-3xl font-bold text-red-500">{stats.active_incidents}</p>
           <p className="text-sm text-gray-500 mt-1">Insiden aktif</p>
+        </div>
+
+        <div className="bg-white p-6 rounded-lg shadow-md border border-gray-200">
+          <h3 className="text-lg font-semibold text-medium-text">{t('Asset Dalam Pemeliharaan')}</h3>
+          <p className="text-3xl font-bold text-cyan-500">{stats.scheduled_maintenances}</p>
+          <p className="text-sm text-gray-500 mt-1">Asset yang sedang dipelihara</p>
+        </div>
+
+        <div className="bg-white p-6 rounded-lg shadow-md border border-gray-200">
+          <h3 className="text-lg font-semibold text-medium-text">{t('Aset Yang Dijual')}</h3>
+          <p className="text-3xl font-bold text-purple-500">{stats.assets_sold || 0}</p>
+          <p className="text-sm text-gray-500 mt-1">Asset yang telah terjual</p>
+        </div>
+
+        <div className="bg-white p-6 rounded-lg shadow-md border border-gray-200">
+          <h3 className="text-lg font-semibold text-medium-text">{t('Asset Hilang')}</h3>
+          <p className="text-3xl font-bold text-gray-500">{stats.assets_lost || 0}</p>
+          <p className="text-sm text-gray-500 mt-1">Asset yang hilang</p>
         </div>
       </div>
 

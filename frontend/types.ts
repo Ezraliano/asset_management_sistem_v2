@@ -183,6 +183,8 @@ export interface DashboardStats {
   approved_loans: number;
   scheduled_maintenances: number;
   active_incidents: number;
+  assets_sold: number;
+  assets_lost: number;
   assets_by_category: ChartData[];
   assets_by_location: ChartData[];
 }
