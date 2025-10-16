@@ -201,9 +201,14 @@ const AssetLending: React.FC = () => {
     // Apply role-based filtering
     if (currentUser) {
       if (currentUser.role === 'User') {
+        // For 'User' role, show loans they have borrowed
         loans = loans.filter(loan => loan.borrower_id === currentUser.id);
       } else if (currentUser.role === 'Admin Unit' && currentUser.unit_id) {
-        loans = loans.filter(loan => loan.asset.unit_id === currentUser.unit_id);
+        // For 'Admin Unit' role, show loans where their unit is the lender OR the borrower
+        loans = loans.filter(loan => 
+          loan.asset.unit_id === currentUser.unit_id || 
+          loan.borrower.unit_id === currentUser.unit_id
+        );
       }
     }
 

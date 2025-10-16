@@ -195,7 +195,7 @@ export interface AssetRequest {
   approval_notes: string | null;
   created_at: string;
   updated_at: string;
-  requesterUnit: Unit;
+  requester_unit: Unit;
   requester: User;
   asset: Asset;
   reviewer: User | null;

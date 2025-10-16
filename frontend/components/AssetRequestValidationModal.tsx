@@ -99,7 +99,7 @@ const AssetRequestValidationModal: React.FC<AssetRequestValidationModalProps> = 
         <div className="grid grid-cols-2 gap-4 text-sm">
           <div className={currentUser?.role === 'Admin Unit' ? 'col-span-2' : ''}>
             <span className="font-medium text-gray-600">Unit Pemohon:</span>
-            <p className="text-gray-900 mt-1">{request.requesterUnit?.name || request.requester?.name || 'N/A'}</p>
+            <p className="text-gray-900 mt-1">{request.requester_unit?.name || request.requester?.name || 'N/A'}</p>
           </div>
           {currentUser?.role !== 'Admin Unit' && (
             <div>

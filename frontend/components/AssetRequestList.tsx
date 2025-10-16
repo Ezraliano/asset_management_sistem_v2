@@ -188,7 +188,7 @@ const AssetRequestList: React.FC<AssetRequestListProps> = ({ currentUser }) => {
                   <td className="px-4 py-3">
                     <div>
                       <p className="text-sm text-gray-900">
-                        {request.requesterUnit?.name || 'N/A'}
+                        {request.requester_unit?.name || 'N/A'}
                       </p>
                       <p className="text-xs text-gray-500">
                         {request.requester?.name || '-'}
