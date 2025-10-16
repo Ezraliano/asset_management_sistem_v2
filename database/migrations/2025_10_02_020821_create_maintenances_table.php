@@ -23,6 +23,13 @@ return new class extends Migration
             $table->string('photo_proof')->nullable(); // Foto Bukti
             $table->text('description')->nullable(); // Deskripsi (optional)
             $table->enum('status', ['Scheduled', 'In Progress', 'Completed', 'Cancelled'])->default('Completed');
+
+            // // Validation fields
+            // $table->enum('validation_status', ['PENDING', 'APPROVED', 'REJECTED'])->default('PENDING'); // Status validasi
+            // $table->foreignId('validated_by')->nullable()->constrained('users')->onDelete('set null'); // User yang memvalidasi
+            // $table->timestamp('validation_date')->nullable(); // Tanggal validasi
+            // $table->text('validation_notes')->nullable(); // Catatan validasi
+
             $table->timestamps();
         });
     }

@@ -49,6 +49,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::post('/assets/{id}/generate-pending-depreciation', [AssetDepreciationController::class, 'generatePendingForAsset']);
         Route::apiResource('maintenances', MaintenanceController::class);
         Route::get('/assets/{assetId}/maintenances', [MaintenanceController::class, 'getAssetMaintenances']);
+        Route::post('/maintenances/{id}/validate', [MaintenanceController::class, 'validate']);
     });
 
     // Incident Report Routes - All authenticated users can view/create, admin can update status

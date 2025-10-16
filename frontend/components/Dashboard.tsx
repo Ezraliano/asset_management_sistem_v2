@@ -1,7 +1,7 @@
 // Dashboard.tsx - DENGAN CHART DAN DIAGRAM LINGKARAN
 import React, { useState, useEffect } from 'react';
-import { View, DashboardStats, ChartData } from '../types';
-import { getDashboardStats } from '../services/api';
+import { View, DashboardStats, ChartData, Unit } from '../types';
+import { getDashboardStats, getCurrentUser, getUnits } from '../services/api';
 import { useTranslation } from '../hooks/useTranslation';
 import { formatToRupiah } from '../utils/formatters';
 
@@ -19,11 +19,32 @@ const Dashboard: React.FC<DashboardProps> = ({ navigateTo }) => {
   const { t } = useTranslation();
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [loading, setLoading] = useState(true);
+  const [currentUser, setCurrentUser] = useState<any>(null);
+  const [units, setUnits] = useState<Unit[]>([]);
+  const [selectedUnitId, setSelectedUnitId] = useState<string>('all');
+
+  useEffect(() => {
+    const loadInitialData = async () => {
+      try {
+        const [user, fetchedUnits] = await Promise.all([
+          getCurrentUser(),
+          getUnits()
+        ]);
+        setCurrentUser(user);
+        setUnits(fetchedUnits);
+      } catch (error) {
+        console.error('Failed to load user and units:', error);
+      }
+    };
+
+    loadInitialData();
+  }, []);
 
   useEffect(() => {
     const loadStats = async () => {
+      setLoading(true);
       try {
-        const data = await getDashboardStats();
+        const data = await getDashboardStats(selectedUnitId);
         setStats(data);
       } catch (error) {
         console.error('Failed to load dashboard stats:', error);
@@ -32,8 +53,10 @@ const Dashboard: React.FC<DashboardProps> = ({ navigateTo }) => {
       }
     };
 
-    loadStats();
-  }, []);
+    if (currentUser) {
+      loadStats();
+    }
+  }, [selectedUnitId, currentUser]);
 
   // Komponen untuk Bar Chart (Assets by Category)
   const BarChart: React.FC<{ data: ChartData[] }> = ({ data }) => {
@@ -154,10 +177,35 @@ const Dashboard: React.FC<DashboardProps> = ({ navigateTo }) => {
     );
   }
 
+  // Check if user can filter by unit (Super Admin or Admin Holding)
+  const canFilterByUnit = currentUser && ['Super Admin', 'Admin Holding'].includes(currentUser.role);
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h1 className="text-3xl font-bold text-dark-text">{t('dashboard.title')}</h1>
+
+        {/* Unit Filter Dropdown - Only for Super Admin and Admin Holding */}
+        {canFilterByUnit && (
+          <div className="flex items-center space-x-3">
+            <label htmlFor="unit-filter" className="text-sm font-medium text-gray-700">
+              Filter Unit:
+            </label>
+            <select
+              id="unit-filter"
+              value={selectedUnitId}
+              onChange={(e) => setSelectedUnitId(e.target.value)}
+              className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent bg-white shadow-sm"
+            >
+              <option value="all">Semua Unit</option>
+              {units.map((unit) => (
+                <option key={unit.id} value={unit.id}>
+                  {unit.name}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
       </div>
 
       {/* Stats Grid */}

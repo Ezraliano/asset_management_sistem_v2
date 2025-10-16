@@ -63,8 +63,13 @@ export interface Maintenance {
   photo_proof?: string | null;
   description?: string | null;
   status: MaintenanceStatus;
+  validation_status: 'PENDING' | 'APPROVED' | 'REJECTED';
+  validated_by?: number | null;
+  validation_date?: string | null;
+  validation_notes?: string | null;
   asset?: Asset;
   unit?: Unit;
+  validator?: User;
 }
 
 export interface AssetMovement {

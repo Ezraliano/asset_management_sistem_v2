@@ -1,7 +1,7 @@
 // AssetForm.tsx - DENGAN KALKULASI DEPRESIASI DINAMIS DAN SATU TOMBOL CLOSE
 import React, { useState, useEffect, useMemo } from 'react';
-import { addAsset, updateAsset, getUnits } from '../services/api';
-import { Asset, AssetStatus, Unit } from '../types';
+import { addAsset, updateAsset, getUnits, getCurrentUser } from '../services/api';
+import { Asset, AssetStatus, Unit, User } from '../types';
 import { useTranslation } from '../hooks/useTranslation';
 
 interface AssetFormProps {
@@ -34,45 +34,56 @@ const AssetForm: React.FC<AssetFormProps> = ({ asset, onSuccess, onClose }) => {
   const [valueInput, setValueInput] = useState('');
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [units, setUnits] = useState<Unit[]>([]);
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [isUnitLocked, setIsUnitLocked] = useState(false);
 
   useEffect(() => {
-    // Fetch units
-    const fetchUnits = async () => {
+    // Fetch units and current user
+    const fetchData = async () => {
       try {
-        const fetchedUnits = await getUnits();
+        const [fetchedUnits, user] = await Promise.all([
+          getUnits(),
+          getCurrentUser()
+        ]);
         setUnits(fetchedUnits);
+        setCurrentUser(user);
+
+        // Check if user is Admin Unit - auto-fill and lock unit field
+        const isAdminUnit = user && user.role === 'Admin Unit' && user.unit_id;
+        if (isAdminUnit) {
+          setIsUnitLocked(true);
+        }
+
+        // Set form data after knowing user role
+        if (asset) {
+          setFormData({
+            name: asset.name,
+            category: asset.category,
+            unit_id: asset.unit_id || null,
+            value: asset.value,
+            purchase_date: asset.purchase_date.split(' ')[0],
+            useful_life: asset.useful_life,
+            status: asset.status as AssetStatus,
+          });
+          setValueInput(formatNumberToRupiahInput(asset.value));
+        } else {
+          const today = new Date().toISOString().split('T')[0];
+          setFormData({
+            name: '',
+            category: '',
+            unit_id: isAdminUnit ? (user.unit_id as number) : null,
+            value: 0,
+            purchase_date: today,
+            useful_life: 36,
+            status: AssetStatus.AVAILABLE,
+          });
+          setValueInput('');
+        }
       } catch (err) {
-        console.error('Failed to fetch units:', err);
+        console.error('Failed to fetch data:', err);
       }
     };
-    fetchUnits();
-  }, []);
-
-  useEffect(() => {
-    if (asset) {
-      setFormData({
-        name: asset.name,
-        category: asset.category,
-        unit_id: asset.unit_id || null,
-        value: asset.value,
-        purchase_date: asset.purchase_date.split(' ')[0], // Hanya ambil bagian tanggal untuk input
-        useful_life: asset.useful_life,
-        status: asset.status as AssetStatus,
-      });
-      setValueInput(formatNumberToRupiahInput(asset.value));
-    } else {
-      const today = new Date().toISOString().split('T')[0];
-      setFormData({
-        name: '',
-        category: '',
-        unit_id: null,
-        value: 0,
-        purchase_date: today,
-        useful_life: 36,
-        status: AssetStatus.AVAILABLE,
-      });
-      setValueInput('');
-    }
+    fetchData();
   }, [asset]);
 
   // ✅ KALKULASI DEPRESIASI DINAMIS
@@ -327,7 +338,7 @@ const handleSubmit = async (e: React.FormEvent) => {
             value={formData.unit_id || ''}
             onChange={(e) => setFormData(prev => ({ ...prev, unit_id: e.target.value ? Number(e.target.value) : null }))}
             required
-            disabled={loading}
+            disabled={loading || isUnitLocked}
             className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary sm:text-sm disabled:bg-gray-50"
           >
             <option value="">-- Select Unit --</option>
@@ -337,7 +348,11 @@ const handleSubmit = async (e: React.FormEvent) => {
               </option>
             ))}
           </select>
-          <p className="mt-1 text-xs text-gray-500">Select the unit where this asset is located</p>
+          {isUnitLocked ? (
+            <p className="mt-1 text-xs text-blue-600">Unit automatically set to your assigned unit (Admin Unit)</p>
+          ) : (
+            <p className="mt-1 text-xs text-gray-500">Select the unit where this asset is located</p>
+          )}
         </div>
 
         <div>

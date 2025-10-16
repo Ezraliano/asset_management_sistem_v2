@@ -54,7 +54,7 @@ class MaintenanceController extends Controller
     public function getAssetMaintenances($assetId)
     {
         $maintenances = Maintenance::where('asset_id', $assetId)
-            ->with(['asset', 'unit'])
+            ->with(['asset', 'unit', 'validator'])
             ->orderBy('date', 'desc')
             ->get();
 
@@ -138,6 +138,57 @@ class MaintenanceController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Maintenance record deleted successfully'
+        ]);
+    }
+
+    public function validate(Request $request, $id)
+    {
+        $maintenance = Maintenance::find($id);
+
+        if (!$maintenance) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Maintenance record not found'
+            ], Response::HTTP_NOT_FOUND);
+        }
+
+        $user = $request->user();
+
+        // Check if user has permission to validate (Super Admin, Admin Holding, or Admin Unit)
+        $allowedRoles = ['Super Admin', 'Admin Holding', 'Admin Unit'];
+        if (!in_array($user->role, $allowedRoles)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You do not have permission to validate maintenance records'
+            ], Response::HTTP_FORBIDDEN);
+        }
+
+        $validated = $request->validate([
+            'validation_status' => 'required|in:APPROVED,REJECTED',
+            'validation_notes' => 'nullable|string',
+        ]);
+
+        $maintenance->update([
+            'validation_status' => $validated['validation_status'],
+            'validated_by' => $user->id,
+            'validation_date' => now(),
+            'validation_notes' => $validated['validation_notes'] ?? null,
+        ]);
+
+        // Change asset status when validation is approved
+        if ($validated['validation_status'] === 'APPROVED') {
+            $asset = $maintenance->asset;
+            if ($asset) {
+                // Set status to "In Repair" for Perbaikan or "In Maintenance" for Pemeliharaan
+                $newStatus = $maintenance->type === 'Perbaikan' ? 'In Repair' : 'In Maintenance';
+                $asset->update(['status' => $newStatus]);
+            }
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Maintenance validation updated successfully',
+            'data' => $maintenance->load(['asset', 'unit', 'validator'])
         ]);
     }
 }

@@ -114,8 +114,16 @@ export const getCurrentUser = async (): Promise<User | null> => {
 };
 
 // Dashboard API
-export const getDashboardStats = async (): Promise<DashboardStats> => {
-  const data = await apiRequest('/dashboard/stats');
+export const getDashboardStats = async (unitId?: string | number): Promise<DashboardStats> => {
+  const queryParams = new URLSearchParams();
+  if (unitId && unitId !== 'all') {
+    queryParams.append('unit_id', unitId.toString());
+  }
+
+  const queryString = queryParams.toString();
+  const endpoint = queryString ? `/dashboard/stats?${queryString}` : '/dashboard/stats';
+
+  const data = await apiRequest(endpoint);
   return handleApiResponse<DashboardStats>(data);
 };
 

@@ -20,6 +20,7 @@ import MoveAssetForm from './MoveAssetForm';
 import ReportIssueForm from './ReportIssueForm';
 import AddMaintenanceForm from './AddMaintenanceForm';
 import LossReportDetailModal from './LossReportDetailModal';
+import MaintenanceValidationModal from './MaintenanceValidationModal';
 import { useTranslation } from '../hooks/useTranslation';
 
 interface AssetDetailProps {
@@ -63,6 +64,8 @@ const AssetDetail: React.FC<AssetDetailProps> = ({ assetId, navigateTo }) => {
   const [isMaintModalOpen, setMaintModalOpen] = useState(false);
   const [isLossDetailModalOpen, setLossDetailModalOpen] = useState(false);
   const [selectedLossReport, setSelectedLossReport] = useState<LossReport | null>(null);
+  const [isMaintenanceDetailModalOpen, setMaintenanceDetailModalOpen] = useState(false);
+  const [selectedMaintenance, setSelectedMaintenance] = useState<Maintenance | null>(null);
   const [error, setError] = useState<string>('');
   const [successMessage, setSuccessMessage] = useState<string>('');
   const [currentUser, setCurrentUser] = useState<any>(null);
@@ -332,6 +335,22 @@ const AssetDetail: React.FC<AssetDetailProps> = ({ assetId, navigateTo }) => {
 
   const handleLossReportSuccess = () => {
     handleCloseLossDetailModal();
+    fetchData(); // Refresh data after validation
+  };
+
+  // Handler untuk membuka modal detail maintenance
+  const handleViewMaintenanceDetail = (maint: Maintenance) => {
+    setSelectedMaintenance(maint);
+    setMaintenanceDetailModalOpen(true);
+  };
+
+  const handleCloseMaintenanceDetailModal = () => {
+    setMaintenanceDetailModalOpen(false);
+    setSelectedMaintenance(null);
+  };
+
+  const handleMaintenanceSuccess = () => {
+    handleCloseMaintenanceDetailModal();
     fetchData(); // Refresh data after validation
   };
 
@@ -845,6 +864,34 @@ const AssetDetail: React.FC<AssetDetailProps> = ({ assetId, navigateTo }) => {
                                             </div>
                                         </div>
                                     )}
+
+                                    {/* Validation Status and Detail Button */}
+                                    <div className="mt-3 pt-3 border-t border-gray-200">
+                                        <div className="flex justify-between items-center">
+                                            <div>
+                                                <span className="text-xs font-medium text-gray-500">Status Validasi:</span>
+                                                <span className={`ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                                                    maint.validation_status === 'APPROVED' ? 'bg-green-100 text-green-800' :
+                                                    maint.validation_status === 'REJECTED' ? 'bg-red-100 text-red-800' :
+                                                    'bg-yellow-100 text-yellow-800'
+                                                }`}>
+                                                    {maint.validation_status === 'PENDING' ? 'Menunggu Validasi' :
+                                                     maint.validation_status === 'APPROVED' ? 'Disetujui' :
+                                                     maint.validation_status === 'REJECTED' ? 'Ditolak' : maint.validation_status}
+                                                </span>
+                                            </div>
+                                            <button
+                                                onClick={() => handleViewMaintenanceDetail(maint)}
+                                                className="flex items-center text-sm font-medium text-primary hover:text-primary-dark transition-colors"
+                                            >
+                                                <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                                </svg>
+                                                Lihat Detail / Validasi
+                                            </button>
+                                        </div>
+                                    </div>
                                 </li>
                             ))}
                         </ul>
@@ -1051,6 +1098,18 @@ const AssetDetail: React.FC<AssetDetailProps> = ({ assetId, navigateTo }) => {
             currentUser={currentUser}
             onClose={handleCloseLossDetailModal}
             onSuccess={handleLossReportSuccess}
+          />
+        </Modal>
+      )}
+
+      {/* Modal for Maintenance Validation */}
+      {isMaintenanceDetailModalOpen && selectedMaintenance && currentUser && (
+        <Modal isOpen={isMaintenanceDetailModalOpen} onClose={handleCloseMaintenanceDetailModal}>
+          <MaintenanceValidationModal
+            maintenance={selectedMaintenance}
+            currentUser={currentUser}
+            onClose={handleCloseMaintenanceDetailModal}
+            onSuccess={handleMaintenanceSuccess}
           />
         </Modal>
       )}
