@@ -156,9 +156,6 @@ const AssetRequestList: React.FC<AssetRequestListProps> = ({ currentUser }) => {
                   Unit Pemohon
                 </th>
                 <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">
-                  Unit Pemilik
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">
                   Tanggal Dibutuhkan
                 </th>
                 <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">
@@ -178,10 +175,7 @@ const AssetRequestList: React.FC<AssetRequestListProps> = ({ currentUser }) => {
                   <td className="px-4 py-3">
                     <div>
                       <p className="text-sm font-medium text-gray-900">
-                        {request.asset?.name || 'N/A'}
-                      </p>
-                      <p className="text-xs text-gray-500 font-mono">
-                        {request.asset?.asset_tag || '-'}
+                        {request.asset_name || 'N/A'}
                       </p>
                     </div>
                   </td>
@@ -194,11 +188,6 @@ const AssetRequestList: React.FC<AssetRequestListProps> = ({ currentUser }) => {
                         {request.requester?.name || '-'}
                       </p>
                     </div>
-                  </td>
-                  <td className="px-4 py-3">
-                    <p className="text-sm text-gray-900">
-                      {request.asset?.unit?.name || 'N/A'}
-                    </p>
                   </td>
                   <td className="px-4 py-3">
                     <p className="text-sm text-gray-900">
