@@ -229,9 +229,17 @@ class User extends Authenticatable
             return true;
         }
 
-        // Admin Unit can only process returns for assets in their unit
-        if ($this->role === 'Admin Unit' && $this->unit_id && $loan->asset->unit_id === $this->unit_id) {
-            return true;
+        // ✅ VALIDASI UNTUK ADMIN UNIT
+        // Admin Unit HANYA BOLEH process return untuk:
+        // 1. Asset ada di unit mereka (asset milik unit mereka)
+        // 2. DAN borrower juga dari unit mereka (peminjaman internal dalam unit yang sama)
+        if ($this->role === 'Admin Unit' && $this->unit_id) {
+            $assetBelongsToUserUnit = $loan->asset->unit_id === $this->unit_id;
+            $borrowerFromSameUnit = $loan->borrower &&
+                                    $loan->borrower->unit_id === $this->unit_id;
+
+            // Hanya boleh jika KEDUA kondisi terpenuhi
+            return $assetBelongsToUserUnit && $borrowerFromSameUnit;
         }
 
         return false;

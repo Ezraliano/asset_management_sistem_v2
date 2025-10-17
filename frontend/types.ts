@@ -180,7 +180,7 @@ export interface AssetRequest {
   id: number;
   requester_unit_id: number;
   requester_id: number;
-  asset_id: number;
+  asset_name: string;
   request_date: string;
   needed_date: string;
   expected_return_date: string;
@@ -197,7 +197,6 @@ export interface AssetRequest {
   updated_at: string;
   requester_unit: Unit;
   requester: User;
-  asset: Asset;
   reviewer: User | null;
 }
 

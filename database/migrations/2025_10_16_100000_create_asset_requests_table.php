@@ -15,7 +15,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('requester_unit_id')->constrained('units')->cascadeOnDelete();
             $table->foreignId('requester_id')->constrained('users')->cascadeOnDelete();
-            $table->foreignId('asset_id')->constrained('assets')->cascadeOnDelete();
+            $table->string('asset_name');
             $table->date('request_date');
             $table->date('needed_date');
             $table->date('expected_return_date');

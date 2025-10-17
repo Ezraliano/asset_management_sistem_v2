@@ -18,7 +18,7 @@ class AssetRequest extends Model
     protected $fillable = [
         'requester_unit_id',
         'requester_id',
-        'asset_id',
+        'asset_name',
         'request_date',
         'needed_date',
         'expected_return_date',
@@ -47,14 +47,6 @@ class AssetRequest extends Model
     public function requester(): BelongsTo
     {
         return $this->belongsTo(User::class, 'requester_id');
-    }
-
-    /**
-     * Get the asset being requested.
-     */
-    public function asset(): BelongsTo
-    {
-        return $this->belongsTo(Asset::class);
     }
 
     /**

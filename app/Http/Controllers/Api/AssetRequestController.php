@@ -28,7 +28,6 @@ class AssetRequestController extends Controller
             $query = AssetRequest::with([
                 'requesterUnit',
                 'requester',
-                'asset.unit',
                 'reviewer'
             ]);
 
@@ -69,7 +68,7 @@ class AssetRequestController extends Controller
 
         try {
             $request->validate([
-                'asset_id' => 'required|exists:assets,id',
+                'asset_name' => 'required|string|max:255',
                 'needed_date' => 'required|date|after_or_equal:today',
                 'expected_return_date' => 'required|date|after:needed_date',
                 'start_time' => 'required|date_format:H:i',
@@ -79,9 +78,8 @@ class AssetRequestController extends Controller
             ]);
 
             $user = Auth::user();
-            $asset = Asset::with('unit')->findOrFail($request->asset_id);
 
-            // Validate: Admin Unit can only request assets from other units
+            // Validate: Admin Unit must have a unit
             if ($user->role === 'Admin Unit') {
                 if (!$user->unit_id) {
                     return response()->json([
@@ -89,40 +87,12 @@ class AssetRequestController extends Controller
                         'message' => 'Unit tidak ditemukan untuk user ini'
                     ], Response::HTTP_FORBIDDEN);
                 }
-
-                if ($asset->unit_id === $user->unit_id) {
-                    return response()->json([
-                        'success' => false,
-                        'message' => 'Tidak dapat membuat request untuk asset di unit Anda sendiri. Silakan gunakan fitur peminjaman biasa.'
-                    ], Response::HTTP_UNPROCESSABLE_ENTITY);
-                }
-            }
-
-            // Check if asset is available
-            if (!in_array($asset->status, ['Available', 'Tersedia'])) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Asset tidak tersedia untuk dipinjam. Status saat ini: ' . $asset->status
-                ], Response::HTTP_UNPROCESSABLE_ENTITY);
-            }
-
-            // Check if there's already a pending request for this asset from this unit
-            $existingRequest = AssetRequest::where('asset_id', $asset->id)
-                ->where('requester_unit_id', $user->unit_id)
-                ->where('status', 'PENDING')
-                ->exists();
-
-            if ($existingRequest) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Unit Anda sudah memiliki request pending untuk asset ini'
-                ], Response::HTTP_UNPROCESSABLE_ENTITY);
             }
 
             $assetRequest = AssetRequest::create([
                 'requester_unit_id' => $user->unit_id,
                 'requester_id' => $user->id,
-                'asset_id' => $asset->id,
+                'asset_name' => $request->asset_name,
                 'request_date' => Carbon::today(),
                 'needed_date' => $request->needed_date,
                 'expected_return_date' => $request->expected_return_date,
@@ -135,12 +105,12 @@ class AssetRequestController extends Controller
 
             DB::commit();
 
-            Log::info("✅ Asset request created: Asset {$asset->name} requested by Unit {$user->unit->name}");
+            Log::info("✅ Asset request created: Asset '{$request->asset_name}' requested by Unit {$user->unit->name}");
 
             return response()->json([
                 'success' => true,
                 'message' => 'Request peminjaman asset berhasil diajukan',
-                'data' => $assetRequest->load(['requesterUnit', 'requester', 'asset.unit'])
+                'data' => $assetRequest->load(['requesterUnit', 'requester', 'reviewer'])
             ], Response::HTTP_CREATED);
 
         } catch (\Illuminate\Validation\ValidationException $e) {
@@ -165,8 +135,10 @@ class AssetRequestController extends Controller
     }
 
     /**
-     * Approve asset request and create asset loan
+     * Approve asset request
      * Only Super Admin and Admin Holding can approve
+     * NOTE: Since we only store asset_name (manual input),
+     * we don't create asset loan automatically anymore
      */
     public function approve(Request $request, $id)
     {
@@ -187,21 +159,13 @@ class AssetRequestController extends Controller
                 ], Response::HTTP_FORBIDDEN);
             }
 
-            $assetRequest = AssetRequest::with(['asset', 'requester', 'requesterUnit'])
+            $assetRequest = AssetRequest::with(['requester', 'requesterUnit'])
                 ->findOrFail($id);
 
             if ($assetRequest->status !== 'PENDING') {
                 return response()->json([
                     'success' => false,
                     'message' => 'Request sudah diproses sebelumnya'
-                ], Response::HTTP_UNPROCESSABLE_ENTITY);
-            }
-
-            // Check if asset is still available
-            if (!in_array($assetRequest->asset->status, ['Available', 'Tersedia'])) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Asset tidak lagi tersedia'
                 ], Response::HTTP_UNPROCESSABLE_ENTITY);
             }
 
@@ -213,35 +177,14 @@ class AssetRequestController extends Controller
                 'approval_notes' => $request->approval_notes,
             ]);
 
-            // Create asset loan automatically
-            $loan = AssetLoan::create([
-                'asset_id' => $assetRequest->asset_id,
-                'borrower_id' => $assetRequest->requester_id,
-                'request_date' => $assetRequest->request_date,
-                'loan_date' => $assetRequest->needed_date,
-                'start_time' => $assetRequest->start_time,
-                'end_time' => $assetRequest->end_time,
-                'expected_return_date' => $assetRequest->expected_return_date,
-                'purpose' => $assetRequest->purpose,
-                'status' => 'APPROVED',
-                'approved_by' => $user->id,
-                'approval_date' => Carbon::now(),
-            ]);
-
-            // Update asset status to Terpinjam
-            $assetRequest->asset->update(['status' => 'Terpinjam']);
-
             DB::commit();
 
-            Log::info("✅ Asset request approved: ID {$id} by {$user->name}, Loan created: {$loan->id}");
+            Log::info("✅ Asset request approved: ID {$id} (Asset: {$assetRequest->asset_name}) by {$user->name}");
 
             return response()->json([
                 'success' => true,
-                'message' => 'Request berhasil disetujui dan peminjaman telah dibuat',
-                'data' => [
-                    'request' => $assetRequest->fresh()->load(['reviewer', 'requester', 'asset']),
-                    'loan' => $loan->load(['asset', 'borrower', 'approver'])
-                ]
+                'message' => 'Request berhasil disetujui',
+                'data' => $assetRequest->fresh()->load(['reviewer', 'requester', 'requesterUnit'])
             ]);
 
         } catch (\Exception $e) {
@@ -279,7 +222,7 @@ class AssetRequestController extends Controller
                 ], Response::HTTP_FORBIDDEN);
             }
 
-            $assetRequest = AssetRequest::with(['asset', 'requester', 'requesterUnit'])
+            $assetRequest = AssetRequest::with(['requester', 'requesterUnit'])
                 ->findOrFail($id);
 
             if ($assetRequest->status !== 'PENDING') {
@@ -304,7 +247,7 @@ class AssetRequestController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'Request berhasil ditolak',
-                'data' => $assetRequest->fresh()->load(['reviewer', 'requester', 'asset'])
+                'data' => $assetRequest->fresh()->load(['reviewer', 'requester', 'requesterUnit'])
             ]);
 
         } catch (\Exception $e) {
@@ -330,7 +273,6 @@ class AssetRequestController extends Controller
             $assetRequest = AssetRequest::with([
                 'requesterUnit',
                 'requester',
-                'asset.unit',
                 'reviewer'
             ])->findOrFail($id);
 

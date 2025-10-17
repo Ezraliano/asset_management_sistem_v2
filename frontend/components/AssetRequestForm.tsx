@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Asset, Unit } from '../types';
+import React, { useState } from 'react';
+import { Unit } from '../types';
 
 interface AssetRequestFormProps {
   onSubmit: (requestData: any) => void;
@@ -14,9 +14,7 @@ const AssetRequestForm: React.FC<AssetRequestFormProps> = ({
   loading = false,
   userUnit
 }) => {
-  const [assets, setAssets] = useState<Asset[]>([]);
-  const [loadingAssets, setLoadingAssets] = useState(false);
-  const [selectedAsset, setSelectedAsset] = useState<Asset | null>(null);
+  const [assetName, setAssetName] = useState('');
   const [neededDate, setNeededDate] = useState('');
   const [startTime, setStartTime] = useState('');
   const [endTime, setEndTime] = useState('');
@@ -33,66 +31,11 @@ const AssetRequestForm: React.FC<AssetRequestFormProps> = ({
     return `${year}-${month}-${day}`;
   };
 
-  useEffect(() => {
-    fetchAvailableAssets();
-  }, []);
-
-  const fetchAvailableAssets = async () => {
-    setLoadingAssets(true);
-    try {
-      const token = localStorage.getItem('auth_token');
-      // Add for_request=true parameter to fetch assets from other units
-      const response = await fetch('http://localhost:8000/api/assets?for_request=true', {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-      });
-
-      if (!response.ok) throw new Error('Failed to fetch assets');
-
-      const data = await response.json();
-
-      // Handle paginated response
-      let assetsList: Asset[] = [];
-
-      if (data.success && data.data) {
-        // Check if data.data is paginated (has 'data' property) or direct array
-        if (data.data.data && Array.isArray(data.data.data)) {
-          // Paginated response
-          assetsList = data.data.data;
-        } else if (Array.isArray(data.data)) {
-          // Direct array response
-          assetsList = data.data;
-        }
-      }
-
-      // Backend already filters by unit_id != userUnit.id and status = Available
-      // So we just set the assets directly
-      setAssets(assetsList);
-
-      if (assetsList.length === 0) {
-        setError('Tidak ada asset Available dari unit lain yang dapat dipinjam saat ini.');
-      }
-    } catch (error: any) {
-      console.error('Error fetching assets:', error);
-      setError('Gagal memuat daftar asset. Pastikan Anda terhubung ke server.');
-    } finally {
-      setLoadingAssets(false);
-    }
-  };
-
-  const handleAssetSelect = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const assetId = parseInt(e.target.value);
-    const asset = assets.find(a => a.id === assetId);
-    setSelectedAsset(asset || null);
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
 
-    if (!selectedAsset || !neededDate || !startTime || !endTime || !expectedReturnDate || !purpose || !reason) {
+    if (!assetName || !neededDate || !startTime || !endTime || !expectedReturnDate || !purpose || !reason) {
       setError('Mohon isi semua field yang wajib.');
       return;
     }
@@ -111,7 +54,7 @@ const AssetRequestForm: React.FC<AssetRequestFormProps> = ({
 
     // Call parent's onSubmit with request data
     onSubmit({
-      asset_id: selectedAsset.id,
+      asset_name: assetName,
       needed_date: neededDate,
       expected_return_date: expectedReturnDate,
       start_time: startTime,
@@ -139,60 +82,24 @@ const AssetRequestForm: React.FC<AssetRequestFormProps> = ({
       )}
 
       <form onSubmit={handleSubmit} className="space-y-5">
-        {/* Asset Selection */}
+        {/* Asset Name Input */}
         <div>
-          <label htmlFor="asset" className="block text-sm font-medium text-gray-700 mb-2">
-            Pilih Asset yang Dibutuhkan *
+          <label htmlFor="assetName" className="block text-sm font-medium text-gray-700 mb-2">
+            Masukkan Asset Yang Dibutuhkan *
           </label>
-          {loadingAssets ? (
-            <div className="text-sm text-gray-500">Memuat daftar asset...</div>
-          ) : (
-            <>
-              <select
-                id="asset"
-                value={selectedAsset?.id || ''}
-                onChange={handleAssetSelect}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                required
-              >
-                <option value="">-- Pilih Asset --</option>
-                {assets.map((asset) => (
-                  <option key={asset.id} value={asset.id}>
-                    {asset.name} ({asset.asset_tag}) - {asset.unit?.name || 'N/A'}
-                  </option>
-                ))}
-              </select>
-              <p className="text-xs text-gray-500 mt-1">
-                Menampilkan asset Available dari unit lain
-              </p>
-            </>
-          )}
+          <input
+            type="text"
+            id="assetName"
+            value={assetName}
+            onChange={(e) => setAssetName(e.target.value)}
+            className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            placeholder="Masukkan nama asset yang dibutuhkan..."
+            required
+          />
+          <p className="text-xs text-gray-500 mt-1">
+            Ketik nama asset yang Anda butuhkan
+          </p>
         </div>
-
-        {/* Asset Info */}
-        {selectedAsset && (
-          <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
-            <h4 className="font-semibold text-gray-700 mb-2">Detail Asset</h4>
-            <div className="grid grid-cols-2 gap-3 text-sm">
-              <div>
-                <span className="font-medium text-gray-600">Nama:</span>
-                <p className="text-gray-900">{selectedAsset.name}</p>
-              </div>
-              <div>
-                <span className="font-medium text-gray-600">Kode:</span>
-                <p className="text-gray-900">{selectedAsset.asset_tag}</p>
-              </div>
-              <div>
-                <span className="font-medium text-gray-600">Kategori:</span>
-                <p className="text-gray-900">{selectedAsset.category}</p>
-              </div>
-              <div>
-                <span className="font-medium text-gray-600">Unit Pemilik:</span>
-                <p className="text-gray-900">{selectedAsset.unit?.name || 'N/A'}</p>
-              </div>
-            </div>
-          </div>
-        )}
 
         {/* Needed Date */}
         <div>
@@ -264,7 +171,7 @@ const AssetRequestForm: React.FC<AssetRequestFormProps> = ({
         {/* Purpose */}
         <div>
           <label htmlFor="purpose" className="block text-sm font-medium text-gray-700 mb-2">
-            Tujuan Peminjaman *
+            Tujuan Peminjaman Asset *
           </label>
           <textarea
             id="purpose"
@@ -281,7 +188,7 @@ const AssetRequestForm: React.FC<AssetRequestFormProps> = ({
         {/* Reason */}
         <div>
           <label htmlFor="reason" className="block text-sm font-medium text-gray-700 mb-2">
-            Alasan Request *
+            Alasan Request Peminjaman Asset *
           </label>
           <textarea
             id="reason"
@@ -311,7 +218,7 @@ const AssetRequestForm: React.FC<AssetRequestFormProps> = ({
           <button
             type="submit"
             className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:bg-blue-300"
-            disabled={loading || loadingAssets}
+            disabled={loading}
           >
             {loading ? 'Mengirim Request...' : 'Ajukan Request'}
           </button>

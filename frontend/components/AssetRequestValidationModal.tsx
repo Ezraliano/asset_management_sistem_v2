@@ -135,27 +135,9 @@ const AssetRequestValidationModal: React.FC<AssetRequestValidationModalProps> = 
       {/* Asset Info */}
       <div className="mb-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
         <h4 className="font-semibold text-gray-700 mb-3">Asset yang Diminta</h4>
-        <div className="grid grid-cols-2 gap-4 text-sm">
-          <div>
-            <span className="font-medium text-gray-600">Nama Asset:</span>
-            <p className="text-gray-900 mt-1">{request.asset?.name || 'N/A'}</p>
-          </div>
-          <div>
-            <span className="font-medium text-gray-600">Kode Asset:</span>
-            <p className="text-gray-900 mt-1 font-mono">{request.asset?.asset_tag || 'N/A'}</p>
-          </div>
-          <div>
-            <span className="font-medium text-gray-600">Kategori:</span>
-            <p className="text-gray-900 mt-1">{request.asset?.category || 'N/A'}</p>
-          </div>
-          <div>
-            <span className="font-medium text-gray-600">Unit Pemilik:</span>
-            <p className="text-gray-900 mt-1">{request.asset?.unit?.name || 'N/A'}</p>
-          </div>
-          <div>
-            <span className="font-medium text-gray-600">Status Asset:</span>
-            <p className="text-gray-900 mt-1">{request.asset?.status || 'N/A'}</p>
-          </div>
+        <div className="text-sm">
+          <span className="font-medium text-gray-600">Nama Asset:</span>
+          <p className="text-gray-900 mt-1">{request.asset_name || 'N/A'}</p>
         </div>
       </div>
 
@@ -186,14 +168,14 @@ const AssetRequestValidationModal: React.FC<AssetRequestValidationModalProps> = 
         </div>
 
         <div className="mt-4">
-          <span className="font-medium text-gray-600">Tujuan Peminjaman:</span>
+          <span className="font-medium text-gray-600">Tujuan Peminjaman Asset</span>
           <div className="text-gray-900 mt-1 bg-white p-3 rounded border">
             <p className="text-sm whitespace-pre-wrap">{request.purpose}</p>
           </div>
         </div>
 
         <div className="mt-4">
-          <span className="font-medium text-gray-600">Alasan Request:</span>
+          <span className="font-medium text-gray-600">Alasan Request Peminjaman</span>
           <div className="text-gray-900 mt-1 bg-white p-3 rounded border">
             <p className="text-sm whitespace-pre-wrap">{request.reason}</p>
           </div>

@@ -93,6 +93,13 @@ class RoleMiddleware
             return $next($request);
         }
 
+        // ✅ EXCEPTION: Skip unit validation for return approval/rejection routes
+        // Validasi untuk return approval akan dilakukan di controller level
+        if ($request->is('api/asset-loans/*/approve-return') || $request->is('api/asset-loans/*/reject-return')) {
+            // Let controller handle the authorization for cross-unit loan returns
+            return $next($request);
+        }
+
         // ✅ Validasi untuk routes yang berhubungan dengan assets
         $asset = $this->getAssetFromRequest($request);
         if ($asset) {
@@ -107,11 +114,14 @@ class RoleMiddleware
         // ✅ Validasi untuk routes yang berhubungan dengan asset loans
         $loan = $this->getLoanFromRequest($request);
         if ($loan) {
-            if ($loan->asset->unit_id !== $user->unit_id) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Unauthorized to manage loans for assets from another unit.'
-                ], 403);
+            // Skip validation untuk approve/reject loan - akan dihandle di controller
+            if (!$request->is('api/asset-loans/*/approve') && !$request->is('api/asset-loans/*/reject')) {
+                if ($loan->asset->unit_id !== $user->unit_id) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Unauthorized to manage loans for assets from another unit.'
+                    ], 403);
+                }
             }
         }
 
