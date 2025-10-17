@@ -1237,3 +1237,162 @@ export const rejectAssetRequest = async (id: number, rejectionData: {
   });
   return handleApiResponse<any>(data);
 };
+
+
+// ==================== REPORTS API ====================
+
+export interface ReportFilters {
+  unit_id?: string | number;
+  category?: string;
+  status?: string;
+  type?: string;
+  start_date?: string;
+  end_date?: string;
+  search?: string;
+}
+
+export interface ReportResponse<T = any> {
+  success: boolean;
+  message: string;
+  data: T[];
+  summary?: any;
+}
+
+export const getFullAssetReport = async (filters?: ReportFilters): Promise<any> => {
+  const queryParams = new URLSearchParams();
+  if (filters?.unit_id && filters.unit_id !== 'all') queryParams.append('unit_id', filters.unit_id.toString());
+  if (filters?.category) queryParams.append('category', filters.category);
+  if (filters?.status) queryParams.append('status', filters.status);
+  if (filters?.search) queryParams.append('search', filters.search);
+
+  const queryString = queryParams.toString();
+  const endpoint = queryString ? `/reports/full-asset?${queryString}` : '/reports/full-asset';
+
+  try {
+    // Return the full response object
+    return await apiRequest(endpoint);
+  } catch (error: any) {
+    console.error('Error in getFullAssetReport:', error);
+    // Return a consistent error object
+    return { success: false, message: error.message, data: [], summary: {} };
+  }
+};
+
+export const getMaintenanceReport = async (filters?: ReportFilters): Promise<any> => {
+  const queryParams = new URLSearchParams();
+  if (filters?.unit_id && filters.unit_id !== 'all') queryParams.append('unit_id', filters.unit_id.toString());
+  if (filters?.status) queryParams.append('status', filters.status);
+  if (filters?.start_date) queryParams.append('start_date', filters.start_date);
+  if (filters?.end_date) queryParams.append('end_date', filters.end_date);
+
+  const queryString = queryParams.toString();
+  const endpoint = queryString ? `/reports/maintenance?${queryString}` : '/reports/maintenance';
+
+  try {
+    // Return the full response object
+    return await apiRequest(endpoint);
+  } catch (error: any) {
+    console.error('Error in getMaintenanceReport:', error);
+    // Return a consistent error object
+    return { success: false, message: error.message, data: [], summary: {} };
+  }
+};
+
+export const getRepairReport = async (filters?: ReportFilters): Promise<any> => {
+  const queryParams = new URLSearchParams();
+  if (filters?.unit_id && filters.unit_id !== 'all') queryParams.append('unit_id', filters.unit_id.toString());
+  if (filters?.status) queryParams.append('status', filters.status);
+  if (filters?.start_date) queryParams.append('start_date', filters.start_date);
+  if (filters?.end_date) queryParams.append('end_date', filters.end_date);
+
+  const queryString = queryParams.toString();
+  const endpoint = queryString ? `/reports/repair?${queryString}` : '/reports/repair';
+
+  try {
+    // Return the full response object
+    return await apiRequest(endpoint);
+  } catch (error: any) {
+    console.error('Error in getRepairReport:', error);
+    // Return a consistent error object
+    return { success: false, message: error.message, data: [], summary: {} };
+  }
+};
+
+export const getLoanReport = async (filters?: ReportFilters): Promise<any> => {
+  const queryParams = new URLSearchParams();
+  if (filters?.unit_id && filters.unit_id !== 'all') queryParams.append('unit_id', filters.unit_id.toString());
+  if (filters?.status) queryParams.append('status', filters.status);
+  if (filters?.start_date) queryParams.append('start_date', filters.start_date);
+  if (filters?.end_date) queryParams.append('end_date', filters.end_date);
+
+  const queryString = queryParams.toString();
+  const endpoint = queryString ? `/reports/loan?${queryString}` : '/reports/loan';
+
+  try {
+    // Return the full response object
+    return await apiRequest(endpoint);
+  } catch (error: any) {
+    console.error('Error in getLoanReport:', error);
+    // Return a consistent error object
+    return { success: false, message: error.message, data: [], summary: {} };
+  }
+};
+
+export const getDamageReport = async (filters?: ReportFilters): Promise<any> => {
+  const queryParams = new URLSearchParams();
+  if (filters?.unit_id && filters.unit_id !== 'all') queryParams.append('unit_id', filters.unit_id.toString());
+  if (filters?.status) queryParams.append('status', filters.status);
+  if (filters?.start_date) queryParams.append('start_date', filters.start_date);
+  if (filters?.end_date) queryParams.append('end_date', filters.end_date);
+
+  const queryString = queryParams.toString();
+  const endpoint = queryString ? `/reports/damage?${queryString}` : '/reports/damage';
+
+  try {
+    // Return the full response object
+    return await apiRequest(endpoint);
+  } catch (error: any) {
+    console.error('Error in getDamageReport:', error);
+    // Return a consistent error object
+    return { success: false, message: error.message, data: [], summary: {} };
+  }
+};
+
+export const getSaleReport = async (filters?: ReportFilters): Promise<any> => {
+  const queryParams = new URLSearchParams();
+  if (filters?.unit_id && filters.unit_id !== 'all') queryParams.append('unit_id', filters.unit_id.toString());
+  if (filters?.start_date) queryParams.append('start_date', filters.start_date);
+  if (filters?.end_date) queryParams.append('end_date', filters.end_date);
+
+  const queryString = queryParams.toString();
+  const endpoint = queryString ? `/reports/sale?${queryString}` : '/reports/sale';
+
+  try {
+    // Return the full response object
+    return await apiRequest(endpoint);
+  } catch (error: any) {
+    console.error('Error in getSaleReport:', error);
+    // Return a consistent error object
+    return { success: false, message: error.message, data: [], summary: {} };
+  }
+};
+
+export const getLossReport = async (filters?: ReportFilters): Promise<any> => {
+  const queryParams = new URLSearchParams();
+  if (filters?.unit_id && filters.unit_id !== 'all') queryParams.append('unit_id', filters.unit_id.toString());
+  if (filters?.status) queryParams.append('status', filters.status);
+  if (filters?.start_date) queryParams.append('start_date', filters.start_date);
+  if (filters?.end_date) queryParams.append('end_date', filters.end_date);
+
+  const queryString = queryParams.toString();
+  const endpoint = queryString ? `/reports/loss?${queryString}` : '/reports/loss';
+
+  try {
+    // Return the full response object
+    return await apiRequest(endpoint);
+  } catch (error: any) {
+    console.error('Error in getLossReport:', error);
+    // Return a consistent error object
+    return { success: false, message: error.message, data: [], summary: {} };
+  }
+};

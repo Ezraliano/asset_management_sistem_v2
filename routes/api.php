@@ -13,6 +13,7 @@ use App\Http\Controllers\Api\AssetLoanController;
 use App\Http\Controllers\Api\UnitController;
 use App\Http\Controllers\Api\AssetSaleController;
 use App\Http\Controllers\Api\AssetRequestController;
+use App\Http\Controllers\Api\ReportController;
 
 /*
 |--------------------------------------------------------------------------
@@ -30,9 +31,15 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::get('/user', [AuthController::class, 'user']);
     Route::get('/dashboard/stats', [DashboardController::class, 'stats']);
     
-    // Group for Laporan & Audit (Admin Holding)
-    Route::middleware('role:Admin Holding')->group(function () {
-        // Future report routes can be placed here
+    // Group for Laporan & Reports (All authenticated users with role-based filtering in controller)
+    Route::middleware(['auth:sanctum'])->group(function () {
+        Route::get('/reports/full-asset', [ReportController::class, 'getFullAssetReport']);
+        Route::get('/reports/maintenance', [ReportController::class, 'getMaintenanceReport']);
+        Route::get('/reports/repair', [ReportController::class, 'getRepairReport']);
+        Route::get('/reports/loan', [ReportController::class, 'getLoanReport']);
+        Route::get('/reports/damage', [ReportController::class, 'getDamageReport']);
+        Route::get('/reports/sale', [ReportController::class, 'getSaleReport']);
+        Route::get('/reports/loss', [ReportController::class, 'getLossReport']);
     });
 
     // Group for Aset menu (Admin Holding, Admin Unit)

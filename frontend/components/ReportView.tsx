@@ -1,9 +1,16 @@
 import React, { useState } from 'react';
 import { DownloadIcon } from './icons';
 import { useTranslation } from '../hooks/useTranslation';
-import { getAssets, getAllMaintenance, getAllMovements, getAllDamageReports, getAllLossReports } from '../services/api';
+import {
+    getFullAssetReport,
+    getMaintenanceReport,
+    getRepairReport,
+    getLoanReport,
+    getDamageReport,
+    getSaleReport,
+    getLossReport
+} from '../services/api';
 import { exportToCsv, exportToPdf } from '../utils/exportUtils';
-import { calculateDepreciation } from '../utils/depreciation';
 
 interface ReportCardProps {
     title: string;
@@ -50,6 +57,7 @@ const ReportCard: React.FC<ReportCardProps> = ({ title, description, isLoading, 
 
 // Fungsi format Rupiah
 const formatToRupiah = (value: number): string => {
+    if (!value || isNaN(value)) return 'Rp 0';
     return new Intl.NumberFormat('id-ID', {
         style: 'currency',
         currency: 'IDR',
@@ -79,10 +87,33 @@ const truncateText = (text: string, maxLength: number = 50): string => {
     return text.substring(0, maxLength) + '...';
 };
 
+// Helper untuk mendapatkan data yang benar dari response API
+const getDataFromResponse = (response: any): any[] => {
+    console.log('Raw API Response:', response); // Debug log
+    
+    // Jika response memiliki structure {success, data, message}
+    if (response && typeof response === 'object') {
+        if (response.success && Array.isArray(response.data)) {
+            return response.data;
+        }
+        // Jika data langsung berupa array
+        if (Array.isArray(response.data)) {
+            return response.data;
+        }
+        // Jika response langsung berupa array
+        if (Array.isArray(response)) {
+            return response;
+        }
+    }
+    
+    console.warn('Invalid response format:', response);
+    return [];
+};
+
 const ReportView: React.FC = () => {
     const { t } = useTranslation();
     const [loadingReport, setLoadingReport] = useState<string | null>(null);
-    
+
     const reports = [
         {
             key: 'full_asset',
@@ -95,14 +126,29 @@ const ReportView: React.FC = () => {
             description: t('reports.cards.maintenance.description'),
         },
         {
-            key: 'audit',
-            title: t('reports.cards.audit.title'),
-            description: t('reports.cards.audit.description'),
+            key: 'repair',
+            title: t('reports.cards.repair.title'),
+            description: t('reports.cards.repair.description'),
         },
         {
-            key: 'damage_loss',
-            title: t('reports.cards.damage_loss.title'),
-            description: t('reports.cards.damage_loss.description'),
+            key: 'loan',
+            title: t('reports.cards.loan.title'),
+            description: t('reports.cards.loan.description'),
+        },
+        {
+            key: 'damage',
+            title: t('reports.cards.damage.title'),
+            description: t('reports.cards.damage.description'),
+        },
+        {
+            key: 'sale',
+            title: t('reports.cards.sale.title'),
+            description: t('reports.cards.sale.description'),
+        },
+        {
+            key: 'loss',
+            title: t('reports.cards.loss.title'),
+            description: t('reports.cards.loss.description'),
         },
     ];
 
@@ -110,112 +156,239 @@ const ReportView: React.FC = () => {
         setLoadingReport(reportKey);
         const reportInfo = reports.find(r => r.key === reportKey);
         const reportTitle = reportInfo ? reportInfo.title : 'Report';
-        
+
         try {
-            const allAssets = await getAssets();
-            const assetMap = new Map(allAssets.map(asset => [asset.id, asset]));
             let headers: string[] = [];
             let data: any[][] = [];
             let filename = `${reportKey}_report_${new Date().toISOString().split('T')[0]}.${format === 'PDF' ? 'pdf' : 'csv'}`;
 
+            console.log(`Exporting ${reportKey} report...`);
+
+            let response;
             switch (reportKey) {
                 case 'full_asset': {
+                    response = await getFullAssetReport();
+                    const reportData = getDataFromResponse(response);
+                    console.log('Full Asset Data:', reportData); // Debug log
+                    
                     headers = [
-                        t('reports.headers.id'), 
-                        t('reports.headers.name'), 
-                        t('reports.headers.category'), 
-                        t('reports.headers.location'), 
-                        'Nilai Asset Awal', // Ganti dari 'Nilai' menjadi 'Nilai Asset Awal'
-                        t('reports.headers.purchase_date'), 
-                        t('reports.headers.useful_life'), 
-                        t('reports.headers.status'), 
-                        t('reports.headers.monthly_depreciation'), 
-                        t('reports.headers.accumulated_depreciation'), 
+                        'ID',
+                        'Asset Tag',
+                        t('reports.headers.name'),
+                        t('reports.headers.category'),
+                        t('reports.headers.location'),
+                        'Unit',
+                        'Nilai Asset Awal',
+                        t('reports.headers.purchase_date'),
+                        t('reports.headers.useful_life'),
+                        t('reports.headers.status'),
+                        t('reports.headers.monthly_depreciation'),
+                        t('reports.headers.accumulated_depreciation'),
                         t('reports.headers.current_value')
                     ];
-                    data = allAssets.map(asset => {
-                        const { monthlyDepreciation, accumulatedDepreciation, currentValue } = calculateDepreciation(asset);
-                        
-                        // Format data dengan field yang benar dari backend
-                        return [
-                            asset.id, 
-                            truncateText(asset.name, 30), // Potong nama yang terlalu panjang
-                            asset.category, 
-                            truncateText(asset.location, 25), // Potong lokasi yang terlalu panjang
-                            formatToRupiah(asset.value), // Ini adalah nilai asset awal
-                            formatDate(asset.purchase_date),
-                            asset.useful_life ? `${asset.useful_life} bulan` : 'N/A',
-                            asset.status,
-                            formatToRupiah(monthlyDepreciation),
-                            formatToRupiah(accumulatedDepreciation), 
-                            formatToRupiah(currentValue)
-                        ];
-                    });
+                    data = reportData.map((asset: any) => [
+                        asset.id || 'N/A',
+                        asset.asset_tag || 'N/A',
+                        truncateText(asset.name, 30),
+                        asset.category || 'N/A',
+                        truncateText(asset.location, 25),
+                        truncateText(asset.unit_name, 20),
+                        formatToRupiah(asset.value || 0),
+                        formatDate(asset.purchase_date),
+                        asset.useful_life ? `${asset.useful_life} bulan` : 'N/A',
+                        asset.status || 'N/A',
+                        formatToRupiah(asset.monthly_depreciation || 0),
+                        formatToRupiah(asset.accumulated_depreciation || 0),
+                        formatToRupiah(asset.current_value || 0)
+                    ]);
                     break;
                 }
                 case 'maintenance': {
-                    const allMaintenance = await getAllMaintenance();
+                    response = await getMaintenanceReport();
+                    const reportData = getDataFromResponse(response);
+                    console.log('Maintenance Data:', reportData); // Debug log
+                    
                     headers = [
-                        t('reports.headers.asset_id'), 
-                        t('reports.headers.asset_name'), 
-                        t('reports.headers.date'), 
-                        t('reports.headers.description'), 
-                        t('reports.headers.status')
+                        'ID',
+                        'Asset Tag',
+                        t('reports.headers.asset_name'),
+                        'Unit',
+                        t('reports.headers.date'),
+                        t('reports.headers.description'),
+                        'Party Type',
+                        'Instansi',
+                        t('reports.headers.status'),
+                        'Validation Status'
                     ];
-                    data = allMaintenance.map(m => [
-                        m.assetId, 
-                        truncateText(assetMap.get(m.assetId)?.name || 'N/A', 30), 
-                        formatDate(m.date), 
-                        truncateText(m.description, 40), // Potong deskripsi yang panjang
-                        m.status
+                    data = reportData.map((m: any) => [
+                        m.id || 'N/A',
+                        m.asset_tag || 'N/A',
+                        truncateText(m.asset_name, 30),
+                        truncateText(m.unit_name, 20),
+                        formatDate(m.date),
+                        truncateText(m.description, 40),
+                        m.party_type || 'N/A',
+                        m.instansi || 'N/A',
+                        m.status || 'N/A',
+                        m.validation_status || 'N/A'
                     ]);
                     break;
                 }
-                case 'audit': {
-                    const allMovements = await getAllMovements();
+                case 'repair': {
+                    response = await getRepairReport();
+                    const reportData = getDataFromResponse(response);
+                    console.log('Repair Data:', reportData); // Debug log
+                    
                     headers = [
-                        t('reports.headers.asset_id'), 
-                        t('reports.headers.asset_name'), 
-                        t('reports.headers.new_location'), 
-                        t('reports.headers.moved_by'), 
-                        t('reports.headers.moved_at')
+                        'ID',
+                        'Asset Tag',
+                        t('reports.headers.asset_name'),
+                        'Unit',
+                        t('reports.headers.date'),
+                        t('reports.headers.description'),
+                        'Party Type',
+                        'Instansi',
+                        t('reports.headers.status'),
+                        'Validation Status'
                     ];
-                    data = allMovements.map(m => [
-                        m.assetId, 
-                        truncateText(assetMap.get(m.assetId)?.name || 'N/A', 30), 
-                        truncateText(m.location, 25), 
-                        truncateText(m.movedBy, 20), 
-                        formatDate(m.movedAt)
+                    data = reportData.map((r: any) => [
+                        r.id || 'N/A',
+                        r.asset_tag || 'N/A',
+                        truncateText(r.asset_name, 30),
+                        truncateText(r.unit_name, 20),
+                        formatDate(r.date),
+                        truncateText(r.description, 40),
+                        r.party_type || 'N/A',
+                        r.instansi || 'N/A',
+                        r.status || 'N/A',
+                        r.validation_status || 'N/A'
                     ]);
                     break;
                 }
-                case 'damage_loss': {
-                    const [damageReports, lossReports] = await Promise.all([getAllDamageReports(), getAllLossReports()]);
+                case 'loan': {
+                    response = await getLoanReport();
+                    const reportData = getDataFromResponse(response);
+                    console.log('Loan Data:', reportData); // Debug log
+                    
                     headers = [
-                        t('reports.headers.type'), 
-                        t('reports.headers.asset_id'), 
-                        t('reports.headers.asset_name'), 
-                        t('reports.headers.description'), 
-                        t('reports.headers.date'), 
+                        'ID',
+                        'Asset Tag',
+                        t('reports.headers.asset_name'),
+                        'Unit',
+                        'Borrower',
+                        'Request Date',
+                        'Loan Date',
+                        'Expected Return',
+                        'Actual Return',
+                        t('reports.headers.purpose'),
                         t('reports.headers.status')
                     ];
-                    const damageData = damageReports.map(d => [
-                        'Damage', 
-                        d.assetId, 
-                        truncateText(assetMap.get(d.assetId)?.name || 'N/A', 30), 
-                        truncateText(d.description, 40), 
-                        formatDate(d.date), 
-                        d.status
+                    data = reportData.map((l: any) => [
+                        l.id || 'N/A',
+                        l.asset_tag || 'N/A',
+                        truncateText(l.asset_name, 30),
+                        truncateText(l.unit_name, 20),
+                        l.borrower_name || 'N/A',
+                        formatDate(l.request_date),
+                        formatDate(l.loan_date),
+                        formatDate(l.expected_return_date),
+                        l.actual_return_date ? formatDate(l.actual_return_date) : 'N/A',
+                        truncateText(l.purpose, 40),
+                        l.status || 'N/A'
                     ]);
-                    const lossData = lossReports.map(l => [
-                        'Loss', 
-                        l.assetId, 
-                        truncateText(assetMap.get(l.assetId)?.name || 'N/A', 30), 
-                        truncateText(l.description, 40), 
-                        formatDate(l.date), 
-                        l.status
+                    break;
+                }
+                case 'damage': {
+                    response = await getDamageReport();
+                    const reportData = getDataFromResponse(response);
+                    console.log('Damage Data:', reportData); // Debug log
+                    
+                    headers = [
+                        'ID',
+                        'Asset Tag',
+                        t('reports.headers.asset_name'),
+                        'Unit',
+                        'Reporter',
+                        t('reports.headers.date'),
+                        t('reports.headers.description'),
+                        t('reports.headers.status'),
+                        'Responsible Party'
+                    ];
+                    data = reportData.map((d: any) => [
+                        d.id || 'N/A',
+                        d.asset_tag || 'N/A',
+                        truncateText(d.asset_name, 30),
+                        truncateText(d.unit_name, 20),
+                        d.reporter_name || 'N/A',
+                        formatDate(d.date),
+                        truncateText(d.description, 40),
+                        d.status || 'N/A',
+                        d.responsible_party || 'N/A'
                     ]);
-                    data = [...damageData, ...lossData];
+                    break;
+                }
+                case 'sale': {
+                    response = await getSaleReport();
+                    const reportData = getDataFromResponse(response);
+                    console.log('Sale Data:', reportData); // Debug log
+                    
+                    headers = [
+                        'ID',
+                        'Asset Tag',
+                        t('reports.headers.asset_name'),
+                        'Unit',
+                        'Original Value',
+                        'Book Value',
+                        'Sale Price',
+                        'Profit/Loss',
+                        'Sale Date',
+                        'Buyer Name'
+                    ];
+                    data = reportData.map((s: any) => [
+                        s.id || 'N/A',
+                        s.asset_tag || 'N/A',
+                        truncateText(s.asset_name, 30),
+                        truncateText(s.unit_name, 20),
+                        formatToRupiah(s.original_value || 0),
+                        formatToRupiah(s.book_value || 0),
+                        formatToRupiah(s.sale_price || 0),
+                        formatToRupiah(s.profit_loss || 0),
+                        formatDate(s.sale_date),
+                        s.buyer_name || 'N/A'
+                    ]);
+                    break;
+                }
+                case 'loss': {
+                    response = await getLossReport();
+                    const reportData = getDataFromResponse(response);
+                    console.log('Loss Data:', reportData); // Debug log
+                    
+                    headers = [
+                        'ID',
+                        'Asset Tag',
+                        t('reports.headers.asset_name'),
+                        'Unit',
+                        'Original Value',
+                        'Value at Loss',
+                        'Reporter',
+                        t('reports.headers.date'),
+                        t('reports.headers.description'),
+                        t('reports.headers.status'),
+                        'Responsible Party'
+                    ];
+                    data = reportData.map((l: any) => [
+                        l.id || 'N/A',
+                        l.asset_tag || 'N/A',
+                        truncateText(l.asset_name, 30),
+                        truncateText(l.unit_name, 20),
+                        formatToRupiah(l.original_value || 0),
+                        formatToRupiah(l.value_at_loss || 0),
+                        l.reporter_name || 'N/A',
+                        formatDate(l.date),
+                        truncateText(l.description, 40),
+                        l.status || 'N/A',
+                        l.responsible_party || 'N/A'
+                    ]);
                     break;
                 }
                 default:
@@ -224,6 +397,15 @@ const ReportView: React.FC = () => {
                     return;
             }
 
+            // Check if data is empty
+            if (data.length === 0) {
+                alert('Tidak ada data untuk diexport. Silakan coba lagi atau periksa koneksi Anda.');
+                setLoadingReport(null);
+                return;
+            }
+
+            console.log(`Exporting ${data.length} rows to ${format}`);
+
             if (format === 'PDF') {
                 exportToPdf(filename, reportTitle, headers, data);
             } else {
@@ -231,7 +413,7 @@ const ReportView: React.FC = () => {
             }
         } catch (error) {
             console.error(`Failed to export report ${reportKey}:`, error);
-            alert(`Could not generate report. See console for details.`);
+            alert(`Tidak dapat menghasilkan report. Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
         } finally {
             setLoadingReport(null);
         }

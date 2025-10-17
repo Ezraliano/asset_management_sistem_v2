@@ -221,24 +221,37 @@
       "new_location": "Lokasi Baru",
       "moved_by": "Dipindahkan Oleh",
       "moved_at": "Waktu Pindah",
-      "type": "Tipe"
+      "type": "Tipe",
+      "purpose": "Tujuan"
     },
     "cards": {
       "full_asset": {
-        "title": "Laporan Aset Lengkap",
-        "description": "Daftar lengkap semua aset dengan status, lokasi, dan nilai saat ini."
+        "title": "Laporan Asset Lengkap",
+        "description": "Daftar lengkap semua aset dengan status, lokasi, nilai, dan penyusutan."
       },
       "maintenance": {
-        "title": "Riwayat Pemeliharaan",
-        "description": "Log terperinci dari semua tugas pemeliharaan yang dijadwalkan dan selesai untuk semua aset."
+        "title": "Laporan Pemeliharaan Asset",
+        "description": "Log terperinci dari semua tugas pemeliharaan yang dijadwalkan dan selesai."
       },
-      "audit": {
-        "title": "Jejak Audit",
-        "description": "Laporan komprehensif dari semua tindakan sistem, termasuk pembuatan, pembaruan, dan perpindahan aset."
+      "repair": {
+        "title": "Laporan Perbaikan Asset",
+        "description": "Riwayat semua perbaikan yang dilakukan pada aset."
       },
-      "damage_loss": {
-        "title": "Laporan Kerusakan & Kehilangan",
-        "description": "Ringkasan semua kerusakan dan kehilangan yang dilaporkan dalam jangka waktu tertentu."
+      "loan": {
+        "title": "Laporan Peminjaman Asset",
+        "description": "Daftar semua peminjaman aset dengan status peminjaman dan pengembalian."
+      },
+      "damage": {
+        "title": "Laporan Kerusakan Asset",
+        "description": "Laporan semua kerusakan yang terjadi pada aset."
+      },
+      "sale": {
+        "title": "Laporan Penjualan Asset",
+        "description": "Riwayat penjualan aset dengan nilai buku dan keuntungan/kerugian."
+      },
+      "loss": {
+        "title": "Laporan Kehilangan Asset",
+        "description": "Laporan aset yang hilang dengan nilai kerugian."
       }
     }
   },
