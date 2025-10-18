@@ -114,10 +114,20 @@ export const getCurrentUser = async (): Promise<User | null> => {
 };
 
 // Dashboard API
-export const getDashboardStats = async (unitId?: string | number): Promise<DashboardStats> => {
+export const getDashboardStats = async (
+  unitId?: string | number,
+  startDate?: string,
+  endDate?: string
+): Promise<DashboardStats> => {
   const queryParams = new URLSearchParams();
   if (unitId && unitId !== 'all') {
     queryParams.append('unit_id', unitId.toString());
+  }
+  if (startDate) {
+    queryParams.append('start_date', startDate);
+  }
+  if (endDate) {
+    queryParams.append('end_date', endDate);
   }
 
   const queryString = queryParams.toString();

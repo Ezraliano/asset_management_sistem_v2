@@ -51,19 +51,19 @@ export const exportToPdf = (filename: string, title: string, headers: string[], 
     const getColumnStyles = (columnCount: number) => {
         const columnStyles: { [key: string]: any } = {};
         
-        if (columnCount === 11) { // Full Asset Report
-            const availableWidth = pageWidth - margin.left - margin.right - 20;
-            columnStyles[0] = { cellWidth: 40 };  // ID
-            columnStyles[1] = { cellWidth: 80 };  // Name
-            columnStyles[2] = { cellWidth: 70 };  // Category
-            columnStyles[3] = { cellWidth: 80 };  // Location
-            columnStyles[4] = { cellWidth: 90 };  // Nilai Asset Awal
-            columnStyles[5] = { cellWidth: 70 };  // Purchase Date
-            columnStyles[6] = { cellWidth: 70 };  // Useful Life
-            columnStyles[7] = { cellWidth: 60 };  // Status
-            columnStyles[8] = { cellWidth: 90 };  // Monthly Depreciation
-            columnStyles[9] = { cellWidth: 100 }; // Accumulated Depreciation
-            columnStyles[10] = { cellWidth: 80 }; // Current Value
+        if (columnCount === 12) { // Full Asset Report
+            columnStyles[0] = { cellWidth: 30 };  // ID
+            columnStyles[1] = { cellWidth: 60 };  // Asset Tag
+            columnStyles[2] = { cellWidth: 70 };  // Name
+            columnStyles[3] = { cellWidth: 60 };  // Category
+            columnStyles[4] = { cellWidth: 60 };  // Unit
+            columnStyles[5] = { cellWidth: 70 };  // Nilai Asset Awal
+            columnStyles[6] = { cellWidth: 60 };  // Purchase Date
+            columnStyles[7] = { cellWidth: 50 };  // Useful Life
+            columnStyles[8] = { cellWidth: 50 };  // Status
+            columnStyles[9] = { cellWidth: 70 };  // Monthly Depreciation
+            columnStyles[10] = { cellWidth: 80 }; // Accumulated Depreciation
+            columnStyles[11] = { cellWidth: 70 }; // Current Value
         } else if (columnCount === 5) { // Maintenance Report
             const availableWidth = pageWidth - margin.left - margin.right - 20;
             columnStyles[0] = { cellWidth: 60 };  // Asset ID

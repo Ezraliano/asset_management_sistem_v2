@@ -22,6 +22,8 @@ const Dashboard: React.FC<DashboardProps> = ({ navigateTo }) => {
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [units, setUnits] = useState<Unit[]>([]);
   const [selectedUnitId, setSelectedUnitId] = useState<string>('all');
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
 
   useEffect(() => {
     const loadInitialData = async () => {
@@ -44,7 +46,7 @@ const Dashboard: React.FC<DashboardProps> = ({ navigateTo }) => {
     const loadStats = async () => {
       setLoading(true);
       try {
-        const data = await getDashboardStats(selectedUnitId);
+        const data = await getDashboardStats(selectedUnitId, startDate, endDate);
         setStats(data);
       } catch (error) {
         console.error('Failed to load dashboard stats:', error);
@@ -56,7 +58,7 @@ const Dashboard: React.FC<DashboardProps> = ({ navigateTo }) => {
     if (currentUser) {
       loadStats();
     }
-  }, [selectedUnitId, currentUser]);
+  }, [selectedUnitId, currentUser, startDate, endDate]);
 
   // Komponen untuk Bar Chart (Assets by Category)
   const BarChart: React.FC<{ data: ChartData[] }> = ({ data }) => {
@@ -182,30 +184,54 @@ const Dashboard: React.FC<DashboardProps> = ({ navigateTo }) => {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
+      <div className="flex justify-between items-center flex-wrap gap-4">
         <h1 className="text-3xl font-bold text-dark-text">{t('dashboard.title')}</h1>
 
-        {/* Unit Filter Dropdown - Only for Super Admin and Admin Holding */}
-        {canFilterByUnit && (
-          <div className="flex items-center space-x-3">
-            <label htmlFor="unit-filter" className="text-sm font-medium text-gray-700">
-              Filter Unit:
-            </label>
-            <select
-              id="unit-filter"
-              value={selectedUnitId}
-              onChange={(e) => setSelectedUnitId(e.target.value)}
-              className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent bg-white shadow-sm"
-            >
-              <option value="all">Semua Unit</option>
-              {units.map((unit) => (
-                <option key={unit.id} value={unit.id}>
-                  {unit.name}
-                </option>
-              ))}
-            </select>
+        <div className="flex items-center space-x-3 flex-wrap">
+          {/* Date Filters */}
+          <div className="flex items-center space-x-2">
+            <label htmlFor="start-date" className="text-sm font-medium text-gray-700">Dari:</label>
+            <input
+              type="date"
+              id="start-date"
+              value={startDate}
+              onChange={(e) => setStartDate(e.target.value)}
+              className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary bg-white shadow-sm"
+            />
           </div>
-        )}
+          <div className="flex items-center space-x-2">
+            <label htmlFor="end-date" className="text-sm font-medium text-gray-700">Sampai:</label>
+            <input
+              type="date"
+              id="end-date"
+              value={endDate}
+              onChange={(e) => setEndDate(e.target.value)}
+              className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary bg-white shadow-sm"
+            />
+          </div>
+
+          {/* Unit Filter Dropdown */}
+          {canFilterByUnit && (
+            <div className="flex items-center space-x-2">
+              <label htmlFor="unit-filter" className="text-sm font-medium text-gray-700">
+                Unit:
+              </label>
+              <select
+                id="unit-filter"
+                value={selectedUnitId}
+                onChange={(e) => setSelectedUnitId(e.target.value)}
+                className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent bg-white shadow-sm"
+              >
+                <option value="all">Semua Unit</option>
+                {units.map((unit) => (
+                  <option key={unit.id} value={unit.id}>
+                    {unit.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Stats Grid */}
