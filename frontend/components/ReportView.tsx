@@ -113,6 +113,8 @@ const getDataFromResponse = (response: any): any[] => {
 const ReportView: React.FC = () => {
     const { t } = useTranslation();
     const [loadingReport, setLoadingReport] = useState<string | null>(null);
+    const [selectedMonth, setSelectedMonth] = useState<string>(String(new Date().getMonth() + 1));
+    const [selectedYear, setSelectedYear] = useState<string>(String(new Date().getFullYear()));
 
     const reports = [
         {
@@ -167,7 +169,7 @@ const ReportView: React.FC = () => {
             let response;
             switch (reportKey) {
                 case 'full_asset': {
-                    response = await getFullAssetReport();
+                    response = await getFullAssetReport({ month: selectedMonth, year: selectedYear });
                     const reportData = getDataFromResponse(response);
                     console.log('Full Asset Data:', reportData); // Debug log
                     
@@ -406,7 +408,8 @@ const ReportView: React.FC = () => {
 
             if (format === 'PDF') {
                 exportToPdf(filename, reportTitle, headers, data);
-            } else {
+            }
+            else {
                 exportToCsv(filename, headers, data);
             }
         } catch (error) {
@@ -419,7 +422,34 @@ const ReportView: React.FC = () => {
 
     return (
         <div className="space-y-6">
-            <h1 className="text-4xl font-bold text-dark-text">{t('reports.title')}</h1>
+            <div className="flex justify-between items-center flex-wrap gap-4">
+                <h1 className="text-4xl font-bold text-dark-text">{t('reports.title')}</h1>
+                <div className="flex items-center space-x-3">
+                    <div className="flex items-center space-x-2">
+                        <label htmlFor="month-select" className="text-sm font-medium text-gray-700">Bulan:</label>
+                        <select
+                            id="month-select"
+                            value={selectedMonth}
+                            onChange={(e) => setSelectedMonth(e.target.value)}
+                            className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary bg-white shadow-sm"
+                        >
+                            {Array.from({ length: 12 }, (_, i) => (
+                                <option key={i + 1} value={i + 1}>{new Date(0, i).toLocaleString('id-ID', { month: 'long' })}</option>
+                            ))}
+                        </select>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                        <label htmlFor="year-select" className="text-sm font-medium text-gray-700">Tahun:</label>
+                        <input
+                            type="number"
+                            id="year-select"
+                            value={selectedYear}
+                            onChange={(e) => setSelectedYear(e.target.value)}
+                            className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary bg-white shadow-sm"
+                        />
+                    </div>
+                </div>
+            </div>
             <p className="text-lg text-medium-text">{t('reports.description')}</p>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {reports.map(report => (

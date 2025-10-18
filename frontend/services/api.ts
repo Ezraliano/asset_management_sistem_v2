@@ -1274,6 +1274,8 @@ export const getFullAssetReport = async (filters?: ReportFilters): Promise<any> 
   if (filters?.category) queryParams.append('category', filters.category);
   if (filters?.status) queryParams.append('status', filters.status);
   if (filters?.search) queryParams.append('search', filters.search);
+  if (filters?.month) queryParams.append('month', filters.month);
+  if (filters?.year) queryParams.append('year', filters.year);
 
   const queryString = queryParams.toString();
   const endpoint = queryString ? `/reports/full-asset?${queryString}` : '/reports/full-asset';

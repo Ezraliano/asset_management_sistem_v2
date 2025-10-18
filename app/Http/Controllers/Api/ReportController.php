@@ -60,6 +60,12 @@ class ReportController extends Controller
                       ->orWhere('asset_tag', 'like', '%' . $request->search . '%');
                 });
             }
+            if ($request->has('month') && $request->month) {
+                $query->whereMonth('purchase_date', $request->month);
+            }
+            if ($request->has('year') && $request->year) {
+                $query->whereYear('purchase_date', $request->year);
+            }
 
             $assets = $query->get();
             Log::info('Assets retrieved', ['count' => $assets->count()]);
