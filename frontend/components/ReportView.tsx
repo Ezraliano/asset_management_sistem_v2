@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import ComprehensiveReport from './ComprehensiveReport'; // Import komponen baru
 import { DownloadIcon } from './icons';
 import { useTranslation } from '../hooks/useTranslation';
 import {
@@ -15,7 +16,7 @@ import { exportToCsv, exportToPdf } from '../utils/exportUtils';
 interface ReportCardProps {
     title: string;
     description: string;
-    isLoading: boolean;
+    isLoading?: boolean;
     onExport: (format: 'CSV' | 'PDF') => void;
 }
 
@@ -151,6 +152,11 @@ const ReportView: React.FC = () => {
             key: 'loss',
             title: t('reports.cards.loss.title'),
             description: t('reports.cards.loss.description'),
+        },
+        {
+            key: 'comprehensive',
+            title: t('reports.cards.comprehensive.title'),
+            description: t('reports.cards.comprehensive.description'),
         },
     ];
 
@@ -420,6 +426,11 @@ const ReportView: React.FC = () => {
         }
     };
 
+    // State untuk menampilkan laporan komprehensif
+    const [showComprehensive, setShowComprehensive] = useState(false);
+
+    if (showComprehensive) return <ComprehensiveReport />;
+
     return (
         <div className="space-y-6">
             <div className="flex justify-between items-center flex-wrap gap-4">
@@ -453,13 +464,27 @@ const ReportView: React.FC = () => {
             <p className="text-lg text-medium-text">{t('reports.description')}</p>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {reports.map(report => (
-                    <ReportCard 
-                        key={report.key}
-                        title={report.title} 
-                        description={report.description}
-                        isLoading={loadingReport === report.key}
-                        onExport={(format) => handleExport(report.key, format)} 
-                    />
+                    report.key === 'comprehensive' ? (
+                        <div key={report.key} className="bg-white p-6 rounded-xl shadow-md flex flex-col justify-between cursor-pointer hover:shadow-lg transition-shadow" onClick={() => setShowComprehensive(true)}>
+                             <div>
+                                <h3 className="text-xl font-bold text-dark-text">{report.title}</h3>
+                                <p className="text-medium-text mt-2">{report.description}</p>
+                            </div>
+                            <div className="mt-6">
+                                <button className="w-full bg-primary text-white px-4 py-2 rounded-lg shadow hover:bg-primary-dark transition-colors">
+                                    Buka Laporan
+                                </button>
+                            </div>
+                        </div>
+                    ) : (
+                        <ReportCard 
+                            key={report.key}
+                            title={report.title} 
+                            description={report.description}
+                            isLoading={loadingReport === report.key}
+                            onExport={(format) => handleExport(report.key, format)} 
+                        />
+                    )
                 ))}
             </div>
         </div>

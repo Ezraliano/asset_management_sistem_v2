@@ -33,6 +33,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
     
     // Group for Laporan & Reports (All authenticated users with role-based filtering in controller)
     Route::middleware(['auth:sanctum'])->group(function () {
+        Route::get('/reports/all', [ReportController::class, 'getAllReports']);
         Route::get('/reports/full-asset', [ReportController::class, 'getFullAssetReport']);
         Route::get('/reports/maintenance', [ReportController::class, 'getMaintenanceReport']);
         Route::get('/reports/repair', [ReportController::class, 'getRepairReport']);

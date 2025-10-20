@@ -86,7 +86,6 @@ class ReportController extends Controller
                     'asset_tag' => $asset->asset_tag,
                     'name' => $asset->name,
                     'category' => $asset->category,
-                    'location' => $asset->location,
                     'unit_name' => $asset->unit ? $asset->unit->name : 'N/A',
                     'value' => (float) $asset->value,
                     'purchase_date' => $asset->purchase_date,

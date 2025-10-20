@@ -1408,3 +1408,40 @@ export const getLossReport = async (filters?: ReportFilters): Promise<any> => {
     return { success: false, message: error.message, data: [], summary: {} };
   }
 };
+
+// Get all reports (comprehensive report)
+export const getAllReports = async (filters?: ReportFilters): Promise<any> => {
+  try {
+    // Fetch all reports in parallel
+    const [assets, maintenance, repair, loan, damage, sale, loss] = await Promise.all([
+      getFullAssetReport(filters),
+      getMaintenanceReport(filters),
+      getRepairReport(filters),
+      getLoanReport(filters),
+      getDamageReport(filters),
+      getSaleReport(filters),
+      getLossReport(filters),
+    ]);
+
+    return {
+      success: true,
+      message: 'All reports retrieved successfully',
+      data: {
+        assets,
+        maintenance,
+        repair,
+        loan,
+        damage,
+        sale,
+        loss,
+      },
+    };
+  } catch (error: any) {
+    console.error('Error in getAllReports:', error);
+    return {
+      success: false,
+      message: error.message || 'Failed to retrieve all reports',
+      data: null,
+    };
+  }
+};

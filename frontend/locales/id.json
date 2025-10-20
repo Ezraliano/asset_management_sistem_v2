@@ -252,6 +252,10 @@
       "loss": {
         "title": "Laporan Kehilangan Asset",
         "description": "Laporan aset yang hilang dengan nilai kerugian."
+      },
+      "comprehensive": {
+        "title": "Laporan Aset Lengkap",
+        "description": "Satu laporan terpadu yang mencakup semua aktivitas aset."
       }
     }
   },
