@@ -176,11 +176,20 @@ export enum AssetRequestStatus {
   REJECTED = 'REJECTED'
 }
 
+export enum AssetRequestLoanStatus {
+  NOT_STARTED = 'NOT_STARTED',
+  ACTIVE = 'ACTIVE',
+  PENDING_RETURN = 'PENDING_RETURN',
+  RETURNED = 'RETURNED',
+  OVERDUE = 'OVERDUE'
+}
+
 export interface AssetRequest {
   id: number;
   requester_unit_id: number;
   requester_id: number;
   asset_name: string;
+  asset_id: number | null;
   request_date: string;
   needed_date: string;
   expected_return_date: string;
@@ -193,11 +202,23 @@ export interface AssetRequest {
   review_date: string | null;
   rejection_reason: string | null;
   approval_notes: string | null;
+  loan_photo_path: string | null;
+  // Loan tracking fields
+  loan_status: AssetRequestLoanStatus | null;
+  actual_loan_date: string | null;
+  actual_return_date: string | null;
+  return_notes: string | null;
+  return_proof_photo_path: string | null;
+  return_confirmed_by: number | null;
+  return_confirmation_date: string | null;
+  return_rejection_reason: string | null;
   created_at: string;
   updated_at: string;
   requester_unit: Unit;
   requester: User;
   reviewer: User | null;
+  return_confirmer?: User | null;
+  asset?: Asset | null;
 }
 
 // TAMBAHKAN INTERFACE UNTUK CHART DATA

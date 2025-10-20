@@ -19,6 +19,7 @@ class AssetRequest extends Model
         'requester_unit_id',
         'requester_id',
         'asset_name',
+        'asset_id',
         'request_date',
         'needed_date',
         'expected_return_date',
@@ -31,6 +32,16 @@ class AssetRequest extends Model
         'review_date',
         'rejection_reason',
         'approval_notes',
+        'loan_photo_path',
+        // Loan tracking fields
+        'loan_status',
+        'actual_loan_date',
+        'actual_return_date',
+        'return_notes',
+        'return_proof_photo_path',
+        'return_confirmed_by',
+        'return_confirmation_date',
+        'return_rejection_reason',
     ];
 
     /**
@@ -55,5 +66,21 @@ class AssetRequest extends Model
     public function reviewer(): BelongsTo
     {
         return $this->belongsTo(User::class, 'reviewed_by');
+    }
+
+    /**
+     * Get the user who confirmed the return.
+     */
+    public function returnConfirmer(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'return_confirmed_by');
+    }
+
+    /**
+     * Get the asset that was assigned/loaned.
+     */
+    public function asset(): BelongsTo
+    {
+        return $this->belongsTo(Asset::class, 'asset_id');
     }
 }

@@ -28,7 +28,9 @@ class AssetRequestController extends Controller
             $query = AssetRequest::with([
                 'requesterUnit',
                 'requester',
-                'reviewer'
+                'reviewer',
+                'asset',
+                'asset.unit'
             ]);
 
             // Filter by role
@@ -147,6 +149,8 @@ class AssetRequestController extends Controller
         try {
             $request->validate([
                 'approval_notes' => 'nullable|string|max:500',
+                'asset_id' => 'nullable|exists:assets,id',
+                'loan_photo' => 'nullable|image|mimes:jpeg,png,jpg|max:5120', // 5MB max
             ]);
 
             $user = Auth::user();
@@ -169,13 +173,34 @@ class AssetRequestController extends Controller
                 ], Response::HTTP_UNPROCESSABLE_ENTITY);
             }
 
+            // Handle photo upload
+            $photoPath = null;
+            if ($request->hasFile('loan_photo')) {
+                $file = $request->file('loan_photo');
+                $filename = 'loan_' . time() . '_' . uniqid() . '.' . $file->getClientOriginalExtension();
+                $photoPath = $file->storeAs('asset_loans', $filename, 'public');
+            }
+
             // Update request status
             $assetRequest->update([
                 'status' => 'APPROVED',
                 'reviewed_by' => $user->id,
                 'review_date' => Carbon::now(),
                 'approval_notes' => $request->approval_notes,
+                'asset_id' => $request->asset_id,
+                'loan_photo_path' => $photoPath,
+                'loan_status' => 'ACTIVE',
+                'actual_loan_date' => Carbon::now(),
             ]);
+
+            // Update asset status to 'Terpinjam' if asset is selected
+            if ($request->asset_id) {
+                $asset = Asset::find($request->asset_id);
+                if ($asset) {
+                    $asset->update(['status' => 'Terpinjam']);
+                    Log::info("Asset {$asset->asset_tag} status updated to Terpinjam");
+                }
+            }
 
             DB::commit();
 
@@ -184,8 +209,17 @@ class AssetRequestController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'Request berhasil disetujui',
-                'data' => $assetRequest->fresh()->load(['reviewer', 'requester', 'requesterUnit'])
+                'data' => $assetRequest->fresh()->load(['reviewer', 'requester', 'requesterUnit', 'asset'])
             ]);
+
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            DB::rollBack();
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation failed',
+                'errors' => $e->errors()
+            ], Response::HTTP_BAD_REQUEST);
 
         } catch (\Exception $e) {
             DB::rollBack();
@@ -273,7 +307,9 @@ class AssetRequestController extends Controller
             $assetRequest = AssetRequest::with([
                 'requesterUnit',
                 'requester',
-                'reviewer'
+                'reviewer',
+                'asset',
+                'asset.unit'
             ])->findOrFail($id);
 
             // Authorization: Admin Unit can only see their own unit's requests
@@ -297,6 +333,336 @@ class AssetRequestController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to fetch asset request'
+            ], Response::HTTP_INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    /**
+     * Return asset back to holding
+     * Only the requester unit (Admin Unit) can submit return
+     */
+    public function returnAsset(Request $request, $id)
+    {
+        DB::beginTransaction();
+
+        try {
+            $request->validate([
+                'return_notes' => 'nullable|string|max:1000',
+                'return_proof_photo' => 'nullable|image|mimes:jpeg,png,jpg|max:5120', // 5MB max
+            ]);
+
+            $user = Auth::user();
+
+            $assetRequest = AssetRequest::with(['requesterUnit', 'requester'])
+                ->findOrFail($id);
+
+            // Authorization: Only Admin Unit from requester unit can return
+            if ($user->role === 'Admin Unit') {
+                if (!$user->unit_id || $assetRequest->requester_unit_id !== $user->unit_id) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Unauthorized to return this asset'
+                    ], Response::HTTP_FORBIDDEN);
+                }
+            } else if (!in_array($user->role, ['Super Admin', 'Admin Holding'])) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Unauthorized to return this asset'
+                ], Response::HTTP_FORBIDDEN);
+            }
+
+            // Validate loan status
+            if ($assetRequest->loan_status !== 'ACTIVE') {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Asset tidak dalam status peminjaman aktif'
+                ], Response::HTTP_UNPROCESSABLE_ENTITY);
+            }
+
+            // Handle photo upload
+            $photoPath = null;
+            if ($request->hasFile('return_proof_photo')) {
+                $file = $request->file('return_proof_photo');
+                $filename = 'return_proof_' . time() . '_' . uniqid() . '.' . $file->getClientOriginalExtension();
+                $photoPath = $file->storeAs('asset_returns', $filename, 'public');
+            }
+
+            // Update to PENDING_RETURN status
+            $assetRequest->update([
+                'loan_status' => 'PENDING_RETURN',
+                'return_notes' => $request->return_notes,
+                'return_proof_photo_path' => $photoPath,
+            ]);
+
+            DB::commit();
+
+            Log::info("✅ Asset return submitted: Request ID {$id} by {$user->name}");
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Pengembalian asset berhasil diajukan, menunggu konfirmasi dari holding',
+                'data' => $assetRequest->fresh()->load(['requesterUnit', 'requester', 'reviewer'])
+            ]);
+
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            DB::rollBack();
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation failed',
+                'errors' => $e->errors()
+            ], Response::HTTP_BAD_REQUEST);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+
+            Log::error('Error submitting asset return: ' . $e->getMessage());
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to submit return: ' . $e->getMessage()
+            ], Response::HTTP_INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    /**
+     * Confirm asset return by Holding
+     * Only Super Admin and Admin Holding can confirm
+     */
+    public function confirmReturn(Request $request, $id)
+    {
+        DB::beginTransaction();
+
+        try {
+            $request->validate([
+                'confirmation_notes' => 'nullable|string|max:500',
+            ]);
+
+            $user = Auth::user();
+
+            // Authorization check
+            if (!in_array($user->role, ['Super Admin', 'Admin Holding'])) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Unauthorized to confirm asset return'
+                ], Response::HTTP_FORBIDDEN);
+            }
+
+            $assetRequest = AssetRequest::with(['requesterUnit', 'requester'])
+                ->findOrFail($id);
+
+            if ($assetRequest->loan_status !== 'PENDING_RETURN') {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Request tidak dalam status menunggu konfirmasi pengembalian'
+                ], Response::HTTP_UNPROCESSABLE_ENTITY);
+            }
+
+            // Confirm return
+            $assetRequest->update([
+                'loan_status' => 'RETURNED',
+                'actual_return_date' => Carbon::now(),
+                'return_confirmed_by' => $user->id,
+                'return_confirmation_date' => Carbon::now(),
+            ]);
+
+            DB::commit();
+
+            Log::info("✅ Asset return confirmed: Request ID {$id} by {$user->name}");
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Pengembalian asset berhasil dikonfirmasi',
+                'data' => $assetRequest->fresh()->load(['requesterUnit', 'requester', 'reviewer', 'returnConfirmer'])
+            ]);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+
+            Log::error('Error confirming asset return: ' . $e->getMessage());
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to confirm return: ' . $e->getMessage()
+            ], Response::HTTP_INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    /**
+     * Reject asset return by Holding
+     * Only Super Admin and Admin Holding can reject
+     */
+    public function rejectReturn(Request $request, $id)
+    {
+        DB::beginTransaction();
+
+        try {
+            $request->validate([
+                'return_rejection_reason' => 'required|string|max:500',
+            ]);
+
+            $user = Auth::user();
+
+            // Authorization check
+            if (!in_array($user->role, ['Super Admin', 'Admin Holding'])) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Unauthorized to reject asset return'
+                ], Response::HTTP_FORBIDDEN);
+            }
+
+            $assetRequest = AssetRequest::with(['requesterUnit', 'requester'])
+                ->findOrFail($id);
+
+            if ($assetRequest->loan_status !== 'PENDING_RETURN') {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Request tidak dalam status menunggu konfirmasi pengembalian'
+                ], Response::HTTP_UNPROCESSABLE_ENTITY);
+            }
+
+            // Reject return - revert to ACTIVE status
+            $assetRequest->update([
+                'loan_status' => 'ACTIVE',
+                'return_rejection_reason' => $request->return_rejection_reason,
+                'return_notes' => null,
+                'return_proof_photo_path' => null,
+            ]);
+
+            DB::commit();
+
+            Log::info("⚠️ Asset return rejected: Request ID {$id} by {$user->name}");
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Pengembalian asset ditolak, unit harus mengajukan pengembalian ulang',
+                'data' => $assetRequest->fresh()->load(['requesterUnit', 'requester', 'reviewer'])
+            ]);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+
+            Log::error('Error rejecting asset return: ' . $e->getMessage());
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to reject return: ' . $e->getMessage()
+            ], Response::HTTP_INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    /**
+     * Get pending returns for holding to review
+     * Only Super Admin and Admin Holding can access
+     */
+    public function getPendingReturns(Request $request)
+    {
+        try {
+            $user = Auth::user();
+
+            // Authorization check
+            if (!in_array($user->role, ['Super Admin', 'Admin Holding'])) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Unauthorized to view pending returns'
+                ], Response::HTTP_FORBIDDEN);
+            }
+
+            $pendingReturns = AssetRequest::with([
+                'requesterUnit',
+                'requester',
+                'reviewer'
+            ])
+            ->where('loan_status', 'PENDING_RETURN')
+            ->orderBy('updated_at', 'desc')
+            ->get();
+
+            return response()->json([
+                'success' => true,
+                'data' => $pendingReturns
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Error fetching pending returns: ' . $e->getMessage());
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to fetch pending returns'
+            ], Response::HTTP_INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    /**
+     * Get active loans (requests that are currently borrowed)
+     */
+    public function getActiveLoans(Request $request)
+    {
+        try {
+            $user = Auth::user();
+
+            $query = AssetRequest::with([
+                'requesterUnit',
+                'requester',
+                'reviewer'
+            ])
+            ->where('loan_status', 'ACTIVE');
+
+            // Filter by role
+            if ($user->role === 'Admin Unit' && $user->unit_id) {
+                $query->where('requester_unit_id', $user->unit_id);
+            }
+
+            $activeLoans = $query->orderBy('actual_loan_date', 'desc')->get();
+
+            return response()->json([
+                'success' => true,
+                'data' => $activeLoans
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Error fetching active loans: ' . $e->getMessage());
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to fetch active loans'
+            ], Response::HTTP_INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    /**
+     * Get available assets for lending
+     * Only Super Admin and Admin Holding can access
+     */
+    public function getAvailableAssets(Request $request)
+    {
+        try {
+            $user = Auth::user();
+
+            // Authorization check
+            if (!in_array($user->role, ['Super Admin', 'Admin Holding'])) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Unauthorized to view available assets'
+                ], Response::HTTP_FORBIDDEN);
+            }
+
+            // Get assets that are available (status = Available)
+            $assets = Asset::with(['unit'])
+                ->where('status', 'Available')
+                ->orderBy('name', 'asc')
+                ->get();
+
+            return response()->json([
+                'success' => true,
+                'data' => $assets
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Error fetching available assets: ' . $e->getMessage());
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to fetch available assets'
             ], Response::HTTP_INTERNAL_SERVER_ERROR);
         }
     }

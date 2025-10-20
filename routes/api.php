@@ -136,6 +136,20 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::middleware('role:Super Admin,Admin Holding')->group(function () {
         Route::post('/asset-requests/{id}/approve', [AssetRequestController::class, 'approve']);
         Route::post('/asset-requests/{id}/reject', [AssetRequestController::class, 'reject']);
+
+        // Asset Request Return Confirmation - Holding confirms return
+        Route::post('/asset-requests/{id}/confirm-return', [AssetRequestController::class, 'confirmReturn']);
+        Route::post('/asset-requests/{id}/reject-return', [AssetRequestController::class, 'rejectReturn']);
+        Route::get('/asset-requests-pending-returns', [AssetRequestController::class, 'getPendingReturns']);
+
+        // Get available assets for lending
+        Route::get('/asset-requests-available-assets', [AssetRequestController::class, 'getAvailableAssets']);
+    });
+
+    // Asset Request Return Routes - Admin Unit can submit return
+    Route::middleware('role:Super Admin,Admin Holding,Admin Unit')->group(function () {
+        Route::post('/asset-requests/{id}/return', [AssetRequestController::class, 'returnAsset']);
+        Route::get('/asset-requests-active-loans', [AssetRequestController::class, 'getActiveLoans']);
     });
 
     // ✅ Asset return - accessible by users (for their own loans)
