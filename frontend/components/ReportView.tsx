@@ -175,11 +175,11 @@ const ReportView: React.FC = () => {
                     
                     headers = [
                         'ID',
-                        'Asset Tag',
+                        'Tag Aset',
                         t('reports.headers.name'),
                         t('reports.headers.category'),
                         'Unit',
-                        'Nilai Asset Awal',
+                        'Nilai Aset Awal',
                         t('reports.headers.purchase_date'),
                         t('reports.headers.useful_life'),
                         t('reports.headers.status'),
@@ -204,21 +204,21 @@ const ReportView: React.FC = () => {
                     break;
                 }
                 case 'maintenance': {
-                    response = await getMaintenanceReport();
+                    response = await getMaintenanceReport({ month: selectedMonth, year: selectedYear });
                     const reportData = getDataFromResponse(response);
                     console.log('Maintenance Data:', reportData); // Debug log
                     
                     headers = [
                         'ID',
-                        'Asset Tag',
+                        'Tag Aset',
                         t('reports.headers.asset_name'),
                         'Unit',
                         t('reports.headers.date'),
                         t('reports.headers.description'),
-                        'Party Type',
+                        'Tipe Pihak',
                         'Instansi',
                         t('reports.headers.status'),
-                        'Validation Status'
+                        'Status Validasi'
                     ];
                     data = reportData.map((m: any) => [
                         m.id || 'N/A',
@@ -235,21 +235,21 @@ const ReportView: React.FC = () => {
                     break;
                 }
                 case 'repair': {
-                    response = await getRepairReport();
+                    response = await getRepairReport({ month: selectedMonth, year: selectedYear });
                     const reportData = getDataFromResponse(response);
                     console.log('Repair Data:', reportData); // Debug log
                     
                     headers = [
                         'ID',
-                        'Asset Tag',
+                        'Tag Aset',
                         t('reports.headers.asset_name'),
                         'Unit',
                         t('reports.headers.date'),
                         t('reports.headers.description'),
-                        'Party Type',
+                        'Tipe Pihak',
                         'Instansi',
                         t('reports.headers.status'),
-                        'Validation Status'
+                        'Status Validasi'
                     ];
                     data = reportData.map((r: any) => [
                         r.id || 'N/A',
@@ -266,20 +266,20 @@ const ReportView: React.FC = () => {
                     break;
                 }
                 case 'loan': {
-                    response = await getLoanReport();
+                    response = await getLoanReport({ month: selectedMonth, year: selectedYear });
                     const reportData = getDataFromResponse(response);
                     console.log('Loan Data:', reportData); // Debug log
                     
                     headers = [
                         'ID',
-                        'Asset Tag',
+                        'Tag Aset',
                         t('reports.headers.asset_name'),
                         'Unit',
-                        'Borrower',
-                        'Request Date',
-                        'Loan Date',
-                        'Expected Return',
-                        'Actual Return',
+                        'Peminjam',
+                        'Tanggal Permintaan',
+                        'Tanggal Pinjam',
+                        'Jadwal Kembali',
+                        'Tanggal Kembali',
                         t('reports.headers.purpose'),
                         t('reports.headers.status')
                     ];
@@ -299,20 +299,20 @@ const ReportView: React.FC = () => {
                     break;
                 }
                 case 'damage': {
-                    response = await getDamageReport();
+                    response = await getDamageReport({ month: selectedMonth, year: selectedYear });
                     const reportData = getDataFromResponse(response);
                     console.log('Damage Data:', reportData); // Debug log
                     
                     headers = [
                         'ID',
-                        'Asset Tag',
+                        'Tag Aset',
                         t('reports.headers.asset_name'),
                         'Unit',
-                        'Reporter',
+                        'Pelapor',
                         t('reports.headers.date'),
                         t('reports.headers.description'),
                         t('reports.headers.status'),
-                        'Responsible Party'
+                        'Pihak Bertanggung Jawab'
                     ];
                     data = reportData.map((d: any) => [
                         d.id || 'N/A',
@@ -328,21 +328,21 @@ const ReportView: React.FC = () => {
                     break;
                 }
                 case 'sale': {
-                    response = await getSaleReport();
+                    response = await getSaleReport({ month: selectedMonth, year: selectedYear });
                     const reportData = getDataFromResponse(response);
                     console.log('Sale Data:', reportData); // Debug log
                     
                     headers = [
                         'ID',
-                        'Asset Tag',
+                        'Tag Aset',
                         t('reports.headers.asset_name'),
                         'Unit',
-                        'Original Value',
-                        'Book Value',
-                        'Sale Price',
-                        'Profit/Loss',
-                        'Sale Date',
-                        'Buyer Name'
+                        'Nilai Asli',
+                        'Nilai Buku',
+                        'Harga Jual',
+                        'Laba/Rugi',
+                        'Tanggal Jual',
+                        'Nama Pembeli'
                     ];
                     data = reportData.map((s: any) => [
                         s.id || 'N/A',
@@ -359,22 +359,22 @@ const ReportView: React.FC = () => {
                     break;
                 }
                 case 'loss': {
-                    response = await getLossReport();
+                    response = await getLossReport({ month: selectedMonth, year: selectedYear });
                     const reportData = getDataFromResponse(response);
                     console.log('Loss Data:', reportData); // Debug log
                     
                     headers = [
                         'ID',
-                        'Asset Tag',
+                        'Tag Aset',
                         t('reports.headers.asset_name'),
                         'Unit',
-                        'Original Value',
-                        'Value at Loss',
-                        'Reporter',
+                        'Nilai Asli',
+                        'Nilai saat Hilang',
+                        'Pelapor',
                         t('reports.headers.date'),
                         t('reports.headers.description'),
                         t('reports.headers.status'),
-                        'Responsible Party'
+                        'Pihak Bertanggung Jawab'
                     ];
                     data = reportData.map((l: any) => [
                         l.id || 'N/A',

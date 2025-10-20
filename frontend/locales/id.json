@@ -226,8 +226,8 @@
     },
     "cards": {
       "full_asset": {
-        "title": "Laporan Asset Lengkap",
-        "description": "Daftar lengkap semua aset dengan status, lokasi, nilai, dan penyusutan."
+        "title": "Laporan List Asset",
+        "description": "Daftar lengkap semua aset dengan status, unit, nilai, dan penyusutan."
       },
       "maintenance": {
         "title": "Laporan Pemeliharaan Asset",

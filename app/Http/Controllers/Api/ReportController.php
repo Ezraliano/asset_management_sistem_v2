@@ -179,7 +179,14 @@ class ReportController extends Controller
                 $query->where('date', '<=', $request->end_date);
             }
 
-            // Only type Pemeliharaan
+            // Filter by month and year
+            if ($request->has('month') && $request->month) {
+                $query->whereMonth('date', $request->month);
+            }
+            if ($request->has('year') && $request->year) {
+                $query->whereYear('date', $request->year);
+            }
+
             $query->where('type', 'Pemeliharaan');
 
             $maintenances = $query->orderBy('date', 'desc')->get();
@@ -276,6 +283,14 @@ class ReportController extends Controller
                 $query->where('date', '<=', $request->end_date);
             }
 
+            // Filter by month and year
+            if ($request->has('month') && $request->month) {
+                $query->whereMonth('date', $request->month);
+            }
+            if ($request->has('year') && $request->year) {
+                $query->whereYear('date', $request->year);
+            }
+
             // Only type Perbaikan
             $query->where('type', 'Perbaikan');
 
@@ -370,6 +385,14 @@ class ReportController extends Controller
             }
             if ($request->has('end_date') && $request->end_date) {
                 $query->where('request_date', '<=', $request->end_date);
+            }
+
+            // Filter by month and year
+            if ($request->has('month') && $request->month) {
+                $query->whereMonth('request_date', $request->month);
+            }
+            if ($request->has('year') && $request->year) {
+                $query->whereYear('request_date', $request->year);
             }
 
             $loans = $query->orderBy('request_date', 'desc')->get();
@@ -475,6 +498,14 @@ class ReportController extends Controller
                 $query->where('date', '<=', $request->end_date);
             }
 
+            // Filter by month and year
+            if ($request->has('month') && $request->month) {
+                $query->whereMonth('date', $request->month);
+            }
+            if ($request->has('year') && $request->year) {
+                $query->whereYear('date', $request->year);
+            }
+
             $damages = $query->orderBy('date', 'desc')->get();
 
             $reportData = $damages->map(function ($damage) {
@@ -560,6 +591,14 @@ class ReportController extends Controller
             }
             if ($request->has('end_date') && $request->end_date) {
                 $query->where('sale_date', '<=', $request->end_date);
+            }
+
+            // Filter by month and year
+            if ($request->has('month') && $request->month) {
+                $query->whereMonth('sale_date', $request->month);
+            }
+            if ($request->has('year') && $request->year) {
+                $query->whereYear('sale_date', $request->year);
             }
 
             $sales = $query->orderBy('sale_date', 'desc')->get();
@@ -662,6 +701,14 @@ class ReportController extends Controller
             }
             if ($request->has('end_date') && $request->end_date) {
                 $query->where('date', '<=', $request->end_date);
+            }
+
+            // Filter by month and year
+            if ($request->has('month') && $request->month) {
+                $query->whereMonth('date', $request->month);
+            }
+            if ($request->has('year') && $request->year) {
+                $query->whereYear('date', $request->year);
             }
 
             $losses = $query->orderBy('date', 'desc')->get();
