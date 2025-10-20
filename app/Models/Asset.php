@@ -133,6 +133,21 @@ class Asset extends Model
         return $this->sales()->latest()->first();
     }
 
+    /**
+     * Hitung bulan yang telah berlalu dengan mempertimbangkan waktu eksekusi scheduler
+     *
+     * Logika:
+     * - Jika hari ini < purchase day: belum 1 bulan
+     * - Jika hari ini = purchase day: cek waktu eksekusi scheduler
+     * - Jika waktu sekarang < waktu eksekusi scheduler: belum waktunya depresiasi
+     *
+     * Contoh:
+     * - Purchase: 20 Jan 2025
+     * - Scheduler: Setiap hari jam 13:15
+     * - Tanggal 20 Feb 2025 jam 10:00 -> Elapsed = 0 (belum jam 13:15)
+     * - Tanggal 20 Feb 2025 jam 13:15 -> Elapsed = 1 (sudah waktunya)
+     * - Tanggal 20 Feb 2025 jam 15:00 -> Elapsed = 1 (sudah lewat)
+     */
     public function getElapsedMonths(): int
     {
         $purchaseDate = Carbon::parse($this->purchase_date);
@@ -142,16 +157,33 @@ class Asset extends Model
             return 0;
         }
 
+        // Dapatkan waktu eksekusi dari schedule settings
+        $scheduleSetting = \App\Models\DepreciationScheduleSetting::getActiveSchedule();
+        $executionTime = $scheduleSetting ? Carbon::parse($scheduleSetting->execution_time) : null;
+
         $yearDiff = $currentDate->year - $purchaseDate->year;
         $monthDiff = $currentDate->month - $purchaseDate->month;
         $elapsedMonths = $yearDiff * 12 + $monthDiff;
 
         $dayCorrection = 0;
+
+        // Jika hari ini < hari purchase date
         if ($currentDate->day < $purchaseDate->day) {
             $dayCorrection = 1;
-        } elseif ($currentDate->day == $purchaseDate->day) {
-            if ($currentDate->format('H:i:s') < $purchaseDate->format('H:i:s')) {
-                $dayCorrection = 1;
+        }
+        // Jika hari ini = hari purchase date
+        elseif ($currentDate->day == $purchaseDate->day) {
+            // Jika ada setting scheduler, bandingkan dengan execution time
+            if ($executionTime) {
+                // Jika waktu sekarang < waktu eksekusi scheduler, bulan ini belum dihitung
+                if ($currentDate->format('H:i:s') < $executionTime->format('H:i:s')) {
+                    $dayCorrection = 1;
+                }
+            } else {
+                // Fallback: bandingkan dengan waktu purchase
+                if ($currentDate->format('H:i:s') < $purchaseDate->format('H:i:s')) {
+                    $dayCorrection = 1;
+                }
             }
         }
 

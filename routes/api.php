@@ -14,6 +14,7 @@ use App\Http\Controllers\Api\UnitController;
 use App\Http\Controllers\Api\AssetSaleController;
 use App\Http\Controllers\Api\AssetRequestController;
 use App\Http\Controllers\Api\ReportController;
+use App\Http\Controllers\Api\DepreciationScheduleController;
 
 /*
 |--------------------------------------------------------------------------
@@ -56,6 +57,16 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::post('/depreciation/generate-all', [AssetDepreciationController::class, 'generateAll']);
         Route::post('/assets/{id}/generate-until-zero', [AssetDepreciationController::class, 'generateUntilZero']);
         Route::post('/assets/{id}/generate-pending-depreciation', [AssetDepreciationController::class, 'generatePendingForAsset']);
+
+        // Depreciation Schedule Routes
+        Route::get('/depreciation/schedule', [DepreciationScheduleController::class, 'index']);
+        Route::put('/depreciation/schedule', [DepreciationScheduleController::class, 'update']);
+        Route::post('/depreciation/schedule/toggle', [DepreciationScheduleController::class, 'toggleActive']);
+        Route::post('/depreciation/schedule/trigger', [DepreciationScheduleController::class, 'trigger']);
+        Route::get('/depreciation/schedule/status', [DepreciationScheduleController::class, 'status']);
+        Route::get('/depreciation/schedule/frequencies', [DepreciationScheduleController::class, 'frequencies']);
+        Route::get('/depreciation/schedule/timezones', [DepreciationScheduleController::class, 'timezones']);
+
         Route::apiResource('maintenances', MaintenanceController::class);
         Route::get('/assets/{assetId}/maintenances', [MaintenanceController::class, 'getAssetMaintenances']);
         Route::post('/maintenances/{id}/validate', [MaintenanceController::class, 'validate']);

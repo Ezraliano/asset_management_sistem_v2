@@ -11,12 +11,31 @@ class UnitController extends Controller
 {
     /**
      * Display a listing of units.
+     *
+     * Rules:
+     * - Super Admin & Admin Holding: See all units
+     * - Admin Unit: Only see their own unit
+     * - User: Only see their own unit
      */
     public function index()
     {
-        $units = Unit::withCount(['users', 'assets'])
-            ->where('is_active', true)
-            ->get();
+        $user = Auth::user();
+        $query = Unit::withCount(['users', 'assets'])
+            ->where('is_active', true);
+
+        // ✅ Filter based on user role
+        if (in_array($user->role, ['Admin Unit', 'User'])) {
+            // Admin Unit & User hanya bisa lihat unit mereka sendiri
+            if ($user->unit_id) {
+                $query->where('id', $user->unit_id);
+            } else {
+                // User tanpa unit_id akan melihat empty list
+                $query->whereRaw('1 = 0'); // Force empty result
+            }
+        }
+        // Super Admin & Admin Holding bisa lihat semua unit (no filter)
+
+        $units = $query->get();
 
         return response()->json([
             'success' => true,

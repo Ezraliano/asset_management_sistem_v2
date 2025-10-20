@@ -218,6 +218,12 @@ class RoleMiddleware
             return \App\Models\Unit::find($request->route('id'));
         }
 
+        // ✅ PERBAIKAN: Skip unit_id validation untuk POST /assets
+        // Controller akan handle unit_id assignment untuk Admin Unit
+        if ($request->is('api/assets') && $request->isMethod('post')) {
+            return null; // Let controller handle it
+        }
+
         if ($request->has('unit_id')) {
             return \App\Models\Unit::find($request->unit_id);
         }

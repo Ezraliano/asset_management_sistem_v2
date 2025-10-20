@@ -12,9 +12,15 @@ class Kernel extends ConsoleKernel
      */
     protected function schedule(Schedule $schedule): void
     {
-        $schedule->command('depreciation:generate-auto')
-                 ->dailyAt('13:15')
-                 ->timezone('Asia/Jakarta');
+        // Dynamic depreciation schedule based on database settings
+        $schedule->call(function () {
+            $scheduleSetting = \App\Models\DepreciationScheduleSetting::getActiveSchedule();
+
+            if ($scheduleSetting && $scheduleSetting->shouldRunNow()) {
+                \Log::info('Scheduler triggering depreciation event');
+                event(new \App\Events\DepreciationScheduleExecuted('scheduler'));
+            }
+        })->everyMinute()->name('depreciation-scheduler-check');
     }
 
     /**

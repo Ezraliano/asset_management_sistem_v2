@@ -5,6 +5,8 @@ namespace App\Services;
 
 use App\Models\Asset;
 use App\Models\AssetDepreciation;
+use App\Models\DepreciationScheduleSetting;
+use App\Events\DepreciationScheduleExecuted;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
