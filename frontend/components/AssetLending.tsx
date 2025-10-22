@@ -427,16 +427,16 @@ const AssetLending: React.FC = () => {
   return (
     <div className="space-y-6">
       {/* Header Section */}
-      <div className="bg-white p-6 rounded-xl shadow-md">
-        <div className="flex flex-col md:flex-row md:justify-between md:items-center mb-2 gap-4">
-          <h1 className="text-2xl font-bold text-gray-800">Peminjaman & Permintaan Aset</h1>
+      <div className="bg-white p-4 sm:p-6 rounded-xl shadow-md">
+        <div className="flex flex-col gap-3 mb-2">
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-800">Peminjaman & Permintaan Aset</h1>
 
           {/* View Mode Toggle - Show for Admins */}
           {['Super Admin', 'Admin Holding', 'Admin Unit'].includes(currentUser?.role || '') && (
-            <div className="flex gap-2 self-start md:self-center">
+            <div className="flex gap-2 flex-wrap">
               <button
                 onClick={() => setViewMode('LOANS')}
-                className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
+                className={`flex-1 sm:flex-none px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium rounded-md transition-colors ${
                   viewMode === 'LOANS'
                     ? 'bg-blue-600 text-white'
                     : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
@@ -446,13 +446,13 @@ const AssetLending: React.FC = () => {
               </button>
               <button
                 onClick={() => setViewMode('REQUESTS')}
-                className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
+                className={`flex-1 sm:flex-none px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium rounded-md transition-colors whitespace-nowrap ${
                   viewMode === 'REQUESTS'
                     ? 'bg-blue-600 text-white'
                     : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
                 }`}
               >
-                Peminjaman Asset Antar Unit
+                Antar Unit
               </button>
             </div>
           )}
@@ -502,25 +502,25 @@ const AssetLending: React.FC = () => {
         <>
           {/* ✅ PERBAIKAN: Section 1: Request New Loan (for ALL Roles) */}
           {canSeeAvailableAssets && (
-        <div className="bg-white p-6 rounded-xl shadow-md">
-          <div className="flex justify-between items-center mb-4">
-            <h2 className="text-lg md:text-xl font-semibold text-gray-800">
+        <div className="bg-white p-4 sm:p-6 rounded-xl shadow-md">
+          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-4 gap-3">
+            <h2 className="text-base sm:text-lg md:text-xl font-semibold text-gray-800">
               {canBorrowAssets ? 'Ajukan Peminjaman Baru' : 'Aset yang Tersedia'}
             </h2>
-            <div className="relative">
+            <div className="relative w-full sm:w-auto">
               <SearchIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
               <input
                 type="text"
                 placeholder="Cari aset..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full md:w-64"
+                className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full sm:w-64"
               />
             </div>
           </div>
 
           {filteredAssets.length > 0 ? (
-            <div className="overflow-hidden border border-gray-200 rounded-lg">
+            <div className="overflow-x-auto border border-gray-200 rounded-lg">
               <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50 hidden md:table-header-group">
                   <tr>
@@ -594,12 +594,12 @@ const AssetLending: React.FC = () => {
 
       {/* Section 2: Pending Loan Requests (for Admins) */}
       {canManageLoans && pendingLoans.length > 0 && (
-        <div className="bg-white p-6 rounded-xl shadow-md">
-          <h2 className="text-lg md:text-xl font-semibold text-gray-800 mb-4">
+        <div className="bg-white p-4 sm:p-6 rounded-xl shadow-md">
+          <h2 className="text-base sm:text-lg md:text-xl font-semibold text-gray-800 mb-4">
             Permintaan Peminjaman Menunggu Persetujuan
             {currentUser?.role === 'Admin Unit' && ' - Unit Anda'}
           </h2>
-          <div className="overflow-hidden border border-gray-200 rounded-lg">
+          <div className="overflow-x-auto border border-gray-200 rounded-lg">
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50 hidden md:table-header-group">
                 <tr>
@@ -660,9 +660,9 @@ const AssetLending: React.FC = () => {
       )}
 
       {/* Section 3: Loan History */}
-      <div className="bg-white p-6 rounded-xl shadow-md">
-        <div className="flex flex-col md:flex-row md:justify-between md:items-center mb-6 gap-4">
-          <h2 className="text-lg md:text-xl font-semibold text-gray-800">
+      <div className="bg-white p-4 sm:p-6 rounded-xl shadow-md">
+        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-4 sm:mb-6 gap-3 sm:gap-4">
+          <h2 className="text-base sm:text-lg md:text-xl font-semibold text-gray-800">
             {currentUser?.role === 'User' ? 'Riwayat Peminjaman Saya' : 'Riwayat Peminjaman'}
           </h2>
           
@@ -700,7 +700,7 @@ const AssetLending: React.FC = () => {
         </div>
 
         {filteredLoans.length > 0 ? (
-          <div className="border border-gray-200 rounded-lg">
+          <div className="overflow-x-auto border border-gray-200 rounded-lg">
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50 hidden md:table-header-group">
                 <tr>
