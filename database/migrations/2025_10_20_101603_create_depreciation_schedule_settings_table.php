@@ -34,7 +34,7 @@ return new class extends Migration
             'name' => 'auto_depreciation',
             'is_active' => true,
             'frequency' => 'daily',
-            'execution_time' => '13:15:00',
+            'execution_time' => '00:05:00',
             'timezone' => 'Asia/Jakarta',
             'description' => 'Automatic depreciation generation schedule',
             'created_at' => now(),

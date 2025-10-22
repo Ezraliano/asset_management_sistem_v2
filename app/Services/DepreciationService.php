@@ -16,6 +16,9 @@ class DepreciationService
     /**
      * ✅ METHOD UTAMA: Generate depresiasi otomatis berdasarkan waktu presisi
      * Ini adalah satu-satunya metode yang harus dipanggil oleh scheduler.
+     *
+     * PENTING: Scheduler hanya men-generate MAKSIMAL 1 BULAN per asset setiap kali jalan.
+     * Jika ada banyak bulan pending, akan di-generate secara bertahap setiap scheduler jalan.
      */
     public function generateAutoDepreciation(): array
     {
@@ -23,7 +26,7 @@ class DepreciationService
         $assets = Asset::whereNotIn('status', ['Disposed', 'Lost'])
             ->where('purchase_date', '<=', $now->toDateTimeString())
             ->get();
-        
+
         $results = [
             'total_assets' => $assets->count(),
             'total_processed' => 0,
@@ -32,27 +35,31 @@ class DepreciationService
             'timestamp' => $now->format('Y-m-d H:i:s'),
             'timezone' => 'Asia/Jakarta'
         ];
-        
+
         Log::info("🔄 Starting PRECISE AUTO depreciation at {$now->format('Y-m-d H:i:s')} for {$assets->count()} assets");
-        
+
         foreach ($assets as $asset) {
             try {
                 $pendingMonths = $asset->getPendingDepreciationMonths();
-                
+
                 if ($pendingMonths > 0) {
-                    $processed = $this->generatePendingDepreciation($asset);
-                    
+                    // ✅ PERBAIKAN: Hanya generate 1 bulan saja, bukan semua pending months
+                    $success = $this->generateNextDepreciation($asset);
+
+                    $processed = $success ? 1 : 0;
+
                     $results['details'][] = [
                         'asset_id' => $asset->id,
                         'asset_tag' => $asset->asset_tag,
-                        'pending_months' => $pendingMonths,
+                        'pending_months_before' => $pendingMonths,
                         'processed_months' => $processed,
+                        'remaining_pending' => max(0, $pendingMonths - $processed),
                     ];
-                    
+
                     if ($processed > 0) {
                         $results['assets_processed']++;
                         $results['total_processed'] += $processed;
-                        Log::info("✅ Auto processed: {$processed}/{$pendingMonths} months for asset {$asset->asset_tag}");
+                        Log::info("✅ Auto processed: 1 month for asset {$asset->asset_tag} (remaining pending: " . max(0, $pendingMonths - 1) . ")");
                     }
                 }
             } catch (\Exception $e) {
@@ -64,7 +71,7 @@ class DepreciationService
                 ];
             }
         }
-        
+
         Log::info("🏁 Precise auto depreciation completed. Total processed: {$results['total_processed']} months across {$results['assets_processed']} assets");
         cache()->put('last_auto_depreciation_run', $results['timestamp'], 86400);
         return $results;

@@ -4,6 +4,38 @@
 
 Sistem ini menggunakan **Event-Driven Scheduler** yang mempertimbangkan **waktu eksekusi** yang Anda tentukan. Depresiasi hanya akan terjadi **SETELAH** waktu eksekusi yang ditentukan tercapai.
 
+### ⚠️ PENTING: Depresiasi Bertahap (1 Bulan per Eksekusi)
+
+**Scheduler hanya men-generate MAKSIMAL 1 BULAN depresiasi per asset setiap kali berjalan.**
+
+**Contoh Kasus:**
+- Asset Innova dibeli 21 Januari 2025 jam 14:15
+- Masa manfaat: 12 bulan
+- Scheduler diatur jam 14:15 setiap hari
+- Sekarang: 21 Oktober 2025 jam 14:15
+
+**Yang Terjadi:**
+- Sistem mendeteksi ada 9 bulan pending (Februari - Oktober)
+- **TAPI** scheduler hanya generate **1 bulan saja** (bulan berikutnya yang pending)
+- Scheduler **TIDAK** langsung generate semua 9 bulan sekaligus
+- Bulan-bulan lainnya akan di-generate saat scheduler berikutnya jalan
+
+**Kenapa Dirancang Seperti Ini?**
+1. **Menghindari Load Berat**: Jika banyak asset, generate semua bulan sekaligus bisa membebani server
+2. **Konsistensi Data**: Setiap eksekusi scheduler hanya melakukan 1 aksi per asset
+3. **Audit Trail**: Lebih mudah tracking kapan depresiasi di-generate
+4. **Predictability**: Scheduler berjalan cepat dan konsisten
+
+**Solusi Jika Butuh Generate Semua Pending:**
+Gunakan endpoint manual:
+```bash
+POST /api/assets/{id}/generate-pending-depreciation
+```
+Atau:
+```bash
+POST /api/depreciation/generate-batch-pending  # Untuk semua asset
+```
+
 ---
 
 ## Contoh Skenario Ferrari

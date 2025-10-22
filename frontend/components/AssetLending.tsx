@@ -428,12 +428,12 @@ const AssetLending: React.FC = () => {
     <div className="space-y-6">
       {/* Header Section */}
       <div className="bg-white p-6 rounded-xl shadow-md">
-        <div className="flex justify-between items-center mb-2">
-          <h1 className="text-2xl font-bold text-gray-800">Peminjaman Aset</h1>
+        <div className="flex flex-col md:flex-row md:justify-between md:items-center mb-2 gap-4">
+          <h1 className="text-2xl font-bold text-gray-800">Peminjaman & Permintaan Aset</h1>
 
           {/* View Mode Toggle - Show for Admins */}
           {['Super Admin', 'Admin Holding', 'Admin Unit'].includes(currentUser?.role || '') && (
-            <div className="flex gap-2">
+            <div className="flex gap-2 self-start md:self-center">
               <button
                 onClick={() => setViewMode('LOANS')}
                 className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
@@ -452,7 +452,7 @@ const AssetLending: React.FC = () => {
                     : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
                 }`}
               >
-                Asset Requests
+                Peminjaman Asset Antar Unit
               </button>
             </div>
           )}
@@ -504,7 +504,7 @@ const AssetLending: React.FC = () => {
           {canSeeAvailableAssets && (
         <div className="bg-white p-6 rounded-xl shadow-md">
           <div className="flex justify-between items-center mb-4">
-            <h2 className="text-xl font-semibold text-gray-800">
+            <h2 className="text-lg md:text-xl font-semibold text-gray-800">
               {canBorrowAssets ? 'Ajukan Peminjaman Baru' : 'Aset yang Tersedia'}
             </h2>
             <div className="relative">
@@ -514,7 +514,7 @@ const AssetLending: React.FC = () => {
                 placeholder="Cari aset..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-64"
+                className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full md:w-64"
               />
             </div>
           </div>
@@ -522,7 +522,7 @@ const AssetLending: React.FC = () => {
           {filteredAssets.length > 0 ? (
             <div className="overflow-hidden border border-gray-200 rounded-lg">
               <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
+                <thead className="bg-gray-50 hidden md:table-header-group">
                   <tr>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Nama Aset
@@ -544,33 +544,29 @@ const AssetLending: React.FC = () => {
                     )}
                   </tr>
                 </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
+                <tbody className="bg-white divide-y divide-gray-200 md:divide-y-0">
                   {filteredAssets.map(asset => (
-                    <tr key={asset.id} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm font-medium text-gray-900">{asset.name}</div>
+                    <tr key={asset.id} className="block md:table-row border-b md:border-none p-4 md:p-0">
+                      <td className="block md:table-cell md:px-6 md:py-4 md:whitespace-nowrap">
+                        <span className="font-bold md:hidden">Aset: </span>
+                        <div className="text-sm font-medium text-gray-900 inline md:block">{asset.name}</div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-500 font-mono">{asset.asset_tag}</div>
+                      <td className="block md:table-cell md:px-6 md:py-4 md:whitespace-nowrap">
+                        <span className="font-bold md:hidden">Kode: </span>
+                        <div className="text-sm text-gray-500 font-mono inline md:block">{asset.asset_tag}</div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-gray-100 text-gray-800">
-                          {asset.category}
-                        </span>
+                      <td className="block md:table-cell md:px-6 md:py-4 md:whitespace-nowrap">
+                        <span className="font-bold md:hidden">Kategori: </span>
+                        <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-gray-100 text-gray-800">{asset.category}</span>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-500">{asset.unit?.name || 'N/A'}</div>
+                      <td className="block md:table-cell md:px-6 md:py-4 md:whitespace-nowrap">
+                        <span className="font-bold md:hidden">Unit: </span>
+                        <div className="text-sm text-gray-500 inline md:block">{asset.unit?.name || 'N/A'}</div>
                       </td>
-                      {/* ✅ PERBAIKAN: Show borrow button for all roles that can borrow */}
                       {canBorrowAssets && (
-                        <td className="px-6 py-4 whitespace-nowrap text-center">
-                          <button
-                            onClick={() => handleBorrowClick(asset)}
-                            disabled={actionLoading}
-                            className="inline-flex items-center justify-center text-sm font-medium bg-blue-50 text-blue-700 px-4 py-2 rounded-lg hover:bg-blue-100 border border-blue-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                          >
-                            <BorrowIcon className="w-4 h-4 mr-2" />
-                            Pinjam
+                        <td className="block md:table-cell md:px-6 md:py-4 md:whitespace-nowrap md:text-center mt-4 md:mt-0">
+                          <button onClick={() => handleBorrowClick(asset)} disabled={actionLoading} className="w-full md:w-auto inline-flex items-center justify-center text-sm font-medium bg-blue-50 text-blue-700 px-4 py-2 rounded-lg hover:bg-blue-100 border border-blue-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                            <BorrowIcon className="w-4 h-4 mr-2" /> Pinjam
                           </button>
                         </td>
                       )}
@@ -599,13 +595,13 @@ const AssetLending: React.FC = () => {
       {/* Section 2: Pending Loan Requests (for Admins) */}
       {canManageLoans && pendingLoans.length > 0 && (
         <div className="bg-white p-6 rounded-xl shadow-md">
-          <h2 className="text-xl font-semibold text-gray-800 mb-4">
+          <h2 className="text-lg md:text-xl font-semibold text-gray-800 mb-4">
             Permintaan Peminjaman Menunggu Persetujuan
             {currentUser?.role === 'Admin Unit' && ' - Unit Anda'}
           </h2>
           <div className="overflow-hidden border border-gray-200 rounded-lg">
             <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
+              <thead className="bg-gray-50 hidden md:table-header-group">
                 <tr>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Aset
@@ -627,32 +623,33 @@ const AssetLending: React.FC = () => {
                   </th>
                 </tr>
               </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
+              <tbody className="bg-white divide-y divide-gray-200 md:divide-y-0">
                 {pendingLoans.map(loan => (
-                  <tr key={loan.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-medium text-gray-900">{loan.asset.name}</div>
-                      <div className="text-sm text-gray-500 font-mono">{loan.asset.asset_tag}</div>
+                  <tr key={loan.id} className="block md:table-row border-b md:border-none p-4 md:p-0">
+                    <td className="block md:table-cell md:px-6 md:py-4 md:whitespace-nowrap">
+                      <span className="font-bold md:hidden">Aset: </span>
+                      <div className="text-sm font-medium text-gray-900 inline md:block">{loan.asset.name}</div>
+                      <div className="text-sm text-gray-500 font-mono inline md:block md:mt-1">{loan.asset.asset_tag}</div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">{loan.borrower.name}</div>
-                      <div className="text-sm text-gray-500">{loan.borrower.email}</div>
+                    <td className="block md:table-cell md:px-6 md:py-4 md:whitespace-nowrap">
+                      <span className="font-bold md:hidden">Peminjam: </span>
+                      <div className="text-sm text-gray-900 inline md:block">{loan.borrower.name}</div>
+                      <div className="text-sm text-gray-500 inline md:block md:mt-1">{loan.borrower.email}</div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-500">{loan.asset.unit?.name || 'N/A'}</div>
+                    <td className="block md:table-cell md:px-6 md:py-4 md:whitespace-nowrap">
+                      <span className="font-bold md:hidden">Unit Aset: </span>
+                      <div className="text-sm text-gray-500 inline md:block">{loan.asset.unit?.name || 'N/A'}</div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">
-                        {new Date(loan.request_date).toLocaleDateString('id-ID')}
-                      </div>
+                    <td className="block md:table-cell md:px-6 md:py-4 md:whitespace-nowrap">
+                      <span className="font-bold md:hidden">Tgl Pengajuan: </span>
+                      <div className="text-sm text-gray-900 inline md:block">{new Date(loan.request_date).toLocaleDateString('id-ID')}</div>
                     </td>
-                    <td className="px-6 py-4">
-                      <div className="text-sm text-gray-500 max-w-xs truncate" title={loan.purpose}>
-                        {loan.purpose}
-                      </div>
+                    <td className="block md:table-cell md:px-6 md:py-4">
+                      <span className="font-bold md:hidden">Tujuan: </span>
+                      <div className="text-sm text-gray-500 max-w-xs truncate inline md:block" title={loan.purpose}>{loan.purpose}</div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-center">
-                      {getActionButtons(loan)}
+                    <td className="block md:table-cell md:px-6 md-py-4 md:whitespace-nowrap md:text-center mt-4 md:mt-0">
+                      <div className="w-full">{getActionButtons(loan)}</div>
                     </td>
                   </tr>
                 ))}
@@ -664,18 +661,18 @@ const AssetLending: React.FC = () => {
 
       {/* Section 3: Loan History */}
       <div className="bg-white p-6 rounded-xl shadow-md">
-        <div className="flex justify-between items-center mb-6">
-          <h2 className="text-xl font-semibold text-gray-800">
+        <div className="flex flex-col md:flex-row md:justify-between md:items-center mb-6 gap-4">
+          <h2 className="text-lg md:text-xl font-semibold text-gray-800">
             {currentUser?.role === 'User' ? 'Riwayat Peminjaman Saya' : 'Riwayat Peminjaman'}
           </h2>
           
-          <div className="flex space-x-4">
+          <div className="flex flex-col sm:flex-row gap-4 w-full md:w-auto">
             {/* Unit Filter (for Admins) */}
             {availableUnits.length > 0 && (
               <select
                 value={unitFilter}
                 onChange={(e) => setUnitFilter(e.target.value)}
-                className="px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                className="w-full md:w-auto px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               >
                 <option value="ALL">Semua Unit</option>
                 {availableUnits.map(unit => (
@@ -690,7 +687,7 @@ const AssetLending: React.FC = () => {
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value as AssetLoanStatus | 'ALL')}
-              className="px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className="w-full md:w-auto px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             >
               <option value="ALL">Semua Status</option>
               <option value={AssetLoanStatus.PENDING}>Pending</option>
@@ -703,9 +700,9 @@ const AssetLending: React.FC = () => {
         </div>
 
         {filteredLoans.length > 0 ? (
-          <div className="overflow-x-auto border border-gray-200 rounded-lg">
+          <div className="border border-gray-200 rounded-lg">
             <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
+              <thead className="bg-gray-50 hidden md:table-header-group">
                 <tr>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Aset
@@ -738,40 +735,39 @@ const AssetLending: React.FC = () => {
                   </th>
                 </tr>
               </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
+              <tbody className="bg-white divide-y divide-gray-200 md:divide-y-0">
                 {filteredLoans.map(loan => {
                   const actionButtons = getActionButtons(loan);
                   return (
-                    <tr key={loan.id} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm font-medium text-gray-900">{loan.asset.name}</div>
-                        <div className="text-sm text-gray-500 font-mono">{loan.asset.asset_tag}</div>
+                    <tr key={loan.id} className="block md:table-row border-b md:border-none p-4 md:p-0">
+                      <td className="block md:table-cell md:px-6 md:py-4 md:whitespace-nowrap">
+                        <span className="font-bold md:hidden">Aset: </span>
+                        <div className="text-sm font-medium text-gray-900 inline md:block">{loan.asset.name}</div>
+                        <div className="text-sm text-gray-500 font-mono inline md:block md:mt-1">{loan.asset.asset_tag}</div>
                       </td>
                       {currentUser?.role !== 'User' && (
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm text-gray-900">{loan.borrower.name}</div>
-                          <div className="text-sm text-gray-500">{loan.borrower.email}</div>
+                        <td className="block md:table-cell md:px-6 md:py-4 md:whitespace-nowrap">
+                          <span className="font-bold md:hidden">Peminjam: </span>
+                          <div className="text-sm text-gray-900 inline md:block">{loan.borrower.name}</div>
+                          <div className="text-sm text-gray-500 inline md:block md:mt-1">{loan.borrower.email}</div>
                         </td>
                       )}
                       {['Super Admin', 'Admin Holding'].includes(currentUser?.role || '') && (
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm text-gray-500">{loan.asset.unit?.name || 'N/A'}</div>
+                        <td className="block md:table-cell md:px-6 md:py-4 md:whitespace-nowrap">
+                          <span className="font-bold md:hidden">Unit: </span>
+                          <div className="text-sm text-gray-500 inline md:block">{loan.asset.unit?.name || 'N/A'}</div>
                         </td>
                       )}
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900">
-                          {new Date(loan.request_date).toLocaleDateString('id-ID')}
-                        </div>
+                      <td className="block md:table-cell md:px-6 mdpy-4 md:whitespace-nowrap">
+                        <span className="font-bold md:hidden">Tgl Pengajuan: </span>
+                        <div className="text-sm text-gray-900 inline md:block">{new Date(loan.request_date).toLocaleDateString('id-ID')}</div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-500">
-                          {loan.approval_date
-                            ? new Date(loan.approval_date).toLocaleDateString('id-ID')
-                            : '-'
-                          }
-                        </div>
+                      <td className="block md:table-cell md:px-6 md:py-4 md:whitespace-nowrap">
+                        <span className="font-bold md:hidden">Tgl Verifikasi: </span>
+                        <div className="text-sm text-gray-500 inline md:block">{loan.approval_date ? new Date(loan.approval_date).toLocaleDateString('id-ID') : '-'}</div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
+                      <td className="block md:table-cell md:px-6 md:py-4 md:whitespace-nowrap">
+                        <span className="font-bold md:hidden">Status: </span>
                         <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusBadge(loan.status)}`}>
                           {loan.status === AssetLoanStatus.PENDING && 'Menunggu'}
                           {loan.status === AssetLoanStatus.APPROVED && 'Disetujui'}
@@ -780,18 +776,18 @@ const AssetLending: React.FC = () => {
                           {loan.status === AssetLoanStatus.RETURNED && 'Dikembalikan'}
                         </span>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
+                      <td className="block md:table-cell md:px-6 md:py-4 md:whitespace-nowrap">
+                        <span className="font-bold md:hidden">Alasan: </span>
                         {loan.status === AssetLoanStatus.REJECTED && loan.rejection_reason ? (
-                          <div className="text-xs text-gray-600" title={loan.rejection_reason}>
+                          <div className="text-xs text-gray-600 inline md:block" title={loan.rejection_reason}>
                             {loan.rejection_reason}
                           </div>
                         ) : (
                           <span className="text-gray-400">-</span>
                         )}
                       </td>
-                      {/* ✅ PERBAIKAN: Show action buttons for both admins and users */}
-                      <td className="px-6 py-4 whitespace-nowrap text-center">
-                        {actionButtons || <span className="text-gray-400 text-xs">-</span>}
+                      <td className="block md:table-cell md:px-6 md:py-4 md:whitespace-nowrap md:text-center mt-4 md:mt-0">
+                        <div className="w-full">{actionButtons || <span className="text-gray-400 text-xs">-</span>}</div>
                       </td>
                     </tr>
                   );
