@@ -197,8 +197,15 @@ const ReportView: React.FC = () => {
                         year: selectedYear,
                         unit_id: selectedUnit !== 'all' ? selectedUnit : undefined
                     });
-                    const reportData = getDataFromResponse(response);
+                    let reportData = getDataFromResponse(response);
                     console.log('Full Asset Data:', reportData); // Debug log
+
+                    // Mengelompokkan (sort) data berdasarkan nama unit
+                    reportData.sort((a, b) => {
+                        const unitA = a.unit_name || '';
+                        const unitB = b.unit_name || '';
+                        return unitA.localeCompare(unitB);
+                    });
                     
                     headers = [
                         'ID',
@@ -236,8 +243,15 @@ const ReportView: React.FC = () => {
                         year: selectedYear,
                         unit_id: selectedUnit !== 'all' ? selectedUnit : undefined
                     });
-                    const reportData = getDataFromResponse(response);
+                    let reportData = getDataFromResponse(response);
                     console.log('Maintenance Data:', reportData); // Debug log
+
+                    // Mengelompokkan (sort) data berdasarkan nama unit
+                    reportData.sort((a, b) => {
+                        const unitA = a.unit_name || '';
+                        const unitB = b.unit_name || '';
+                        return unitA.localeCompare(unitB);
+                    });
                     
                     headers = [
                         'ID',
@@ -271,8 +285,15 @@ const ReportView: React.FC = () => {
                         year: selectedYear,
                         unit_id: selectedUnit !== 'all' ? selectedUnit : undefined
                     });
-                    const reportData = getDataFromResponse(response);
+                    let reportData = getDataFromResponse(response);
                     console.log('Repair Data:', reportData); // Debug log
+
+                    // Mengelompokkan (sort) data berdasarkan nama unit
+                    reportData.sort((a, b) => {
+                        const unitA = a.unit_name || '';
+                        const unitB = b.unit_name || '';
+                        return unitA.localeCompare(unitB);
+                    });
                     
                     headers = [
                         'ID',
@@ -306,8 +327,15 @@ const ReportView: React.FC = () => {
                         year: selectedYear,
                         unit_id: selectedUnit !== 'all' ? selectedUnit : undefined
                     });
-                    const reportData = getDataFromResponse(response);
+                    let reportData = getDataFromResponse(response);
                     console.log('Loan Data:', reportData); // Debug log
+
+                    // Mengelompokkan (sort) data berdasarkan nama unit
+                    reportData.sort((a, b) => {
+                        const unitA = a.unit_name || '';
+                        const unitB = b.unit_name || '';
+                        return unitA.localeCompare(unitB);
+                    });
                     
                     headers = [
                         'ID',
@@ -343,8 +371,15 @@ const ReportView: React.FC = () => {
                         year: selectedYear,
                         unit_id: selectedUnit !== 'all' ? selectedUnit : undefined
                     });
-                    const reportData = getDataFromResponse(response);
+                    let reportData = getDataFromResponse(response);
                     console.log('Damage Data:', reportData); // Debug log
+
+                    // Mengelompokkan (sort) data berdasarkan nama unit
+                    reportData.sort((a, b) => {
+                        const unitA = a.unit_name || '';
+                        const unitB = b.unit_name || '';
+                        return unitA.localeCompare(unitB);
+                    });
                     
                     headers = [
                         'ID',
@@ -376,8 +411,15 @@ const ReportView: React.FC = () => {
                         year: selectedYear,
                         unit_id: selectedUnit !== 'all' ? selectedUnit : undefined
                     });
-                    const reportData = getDataFromResponse(response);
+                    let reportData = getDataFromResponse(response);
                     console.log('Sale Data:', reportData); // Debug log
+
+                    // Mengelompokkan (sort) data berdasarkan nama unit
+                    reportData.sort((a, b) => {
+                        const unitA = a.unit_name || '';
+                        const unitB = b.unit_name || '';
+                        return unitA.localeCompare(unitB);
+                    });
                     
                     headers = [
                         'ID',
@@ -411,8 +453,15 @@ const ReportView: React.FC = () => {
                         year: selectedYear,
                         unit_id: selectedUnit !== 'all' ? selectedUnit : undefined
                     });
-                    const reportData = getDataFromResponse(response);
+                    let reportData = getDataFromResponse(response);
                     console.log('Loss Data:', reportData); // Debug log
+
+                    // Mengelompokkan (sort) data berdasarkan nama unit
+                    reportData.sort((a, b) => {
+                        const unitA = a.unit_name || '';
+                        const unitB = b.unit_name || '';
+                        return unitA.localeCompare(unitB);
+                    });
                     
                     headers = [
                         'ID',
