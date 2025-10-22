@@ -184,43 +184,43 @@ const Dashboard: React.FC<DashboardProps> = ({ navigateTo }) => {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center flex-wrap gap-4">
+      <div className="flex flex-col gap-4">
         <h1 className="text-3xl font-bold text-dark-text">{t('dashboard.title')}</h1>
 
-        <div className="flex items-center space-x-3 flex-wrap">
+        <div className="flex flex-col sm:flex-row sm:flex-wrap gap-3">
           {/* Date Filters */}
-          <div className="flex items-center space-x-2">
-            <label htmlFor="start-date" className="text-sm font-medium text-gray-700">Dari:</label>
+          <div className="flex flex-col sm:flex-row sm:items-center gap-2 w-full sm:w-auto">
+            <label htmlFor="start-date" className="text-sm font-medium text-gray-700 whitespace-nowrap">Dari:</label>
             <input
               type="date"
               id="start-date"
               value={startDate}
               onChange={(e) => setStartDate(e.target.value)}
-              className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary bg-white shadow-sm"
+              className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary bg-white shadow-sm w-full sm:w-auto"
             />
           </div>
-          <div className="flex items-center space-x-2">
-            <label htmlFor="end-date" className="text-sm font-medium text-gray-700">Sampai:</label>
+          <div className="flex flex-col sm:flex-row sm:items-center gap-2 w-full sm:w-auto">
+            <label htmlFor="end-date" className="text-sm font-medium text-gray-700 whitespace-nowrap">Sampai:</label>
             <input
               type="date"
               id="end-date"
               value={endDate}
               onChange={(e) => setEndDate(e.target.value)}
-              className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary bg-white shadow-sm"
+              className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary bg-white shadow-sm w-full sm:w-auto"
             />
           </div>
 
           {/* Unit Filter Dropdown */}
           {canFilterByUnit && (
-            <div className="flex items-center space-x-2">
-              <label htmlFor="unit-filter" className="text-sm font-medium text-gray-700">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-2 w-full sm:w-auto">
+              <label htmlFor="unit-filter" className="text-sm font-medium text-gray-700 whitespace-nowrap">
                 Unit:
               </label>
               <select
                 id="unit-filter"
                 value={selectedUnitId}
                 onChange={(e) => setSelectedUnitId(e.target.value)}
-                className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent bg-white shadow-sm"
+                className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent bg-white shadow-sm w-full sm:w-auto"
               >
                 <option value="all">Semua Unit</option>
                 {units.map((unit) => (

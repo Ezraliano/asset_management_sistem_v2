@@ -527,16 +527,16 @@ const ReportView: React.FC = () => {
 
     return (
         <div className="space-y-6">
-            <div className="flex justify-between items-center flex-wrap gap-4">
+            <div className="flex flex-col gap-4">
                 <h1 className="text-4xl font-bold text-dark-text">{t('reports.title')}</h1>
-                <div className="flex items-center space-x-3">
-                    <div className="flex items-center space-x-2">
-                        <label htmlFor="unit-select" className="text-sm font-medium text-gray-700">Unit:</label>
+                <div className="flex flex-col sm:flex-row sm:flex-wrap gap-3">
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-2 w-full sm:w-auto">
+                        <label htmlFor="unit-select" className="text-sm font-medium text-gray-700 whitespace-nowrap">Unit:</label>
                         <select
                             id="unit-select"
                             value={selectedUnit}
                             onChange={(e) => setSelectedUnit(e.target.value)}
-                            className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary bg-white shadow-sm"
+                            className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary bg-white shadow-sm w-full sm:w-auto"
                         >
                             <option value="all">Semua Unit</option>
                             {units.map((unit) => (
@@ -546,27 +546,27 @@ const ReportView: React.FC = () => {
                             ))}
                         </select>
                     </div>
-                    <div className="flex items-center space-x-2">
-                        <label htmlFor="month-select" className="text-sm font-medium text-gray-700">Bulan:</label>
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-2 w-full sm:w-auto">
+                        <label htmlFor="month-select" className="text-sm font-medium text-gray-700 whitespace-nowrap">Bulan:</label>
                         <select
                             id="month-select"
                             value={selectedMonth}
                             onChange={(e) => setSelectedMonth(e.target.value)}
-                            className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary bg-white shadow-sm"
+                            className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary bg-white shadow-sm w-full sm:w-auto"
                         >
                             {Array.from({ length: 12 }, (_, i) => (
                                 <option key={i + 1} value={i + 1}>{new Date(0, i).toLocaleString('id-ID', { month: 'long' })}</option>
                             ))}
                         </select>
                     </div>
-                    <div className="flex items-center space-x-2">
-                        <label htmlFor="year-select" className="text-sm font-medium text-gray-700">Tahun:</label>
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-2 w-full sm:w-auto">
+                        <label htmlFor="year-select" className="text-sm font-medium text-gray-700 whitespace-nowrap">Tahun:</label>
                         <input
                             type="number"
                             id="year-select"
                             value={selectedYear}
                             onChange={(e) => setSelectedYear(e.target.value)}
-                            className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary bg-white shadow-sm"
+                            className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary bg-white shadow-sm w-full sm:w-auto"
                         />
                     </div>
                 </div>

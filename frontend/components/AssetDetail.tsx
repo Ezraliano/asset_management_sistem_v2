@@ -831,8 +831,7 @@ const AssetDetail: React.FC<AssetDetailProps> = ({ assetId, navigateTo }) => {
                                             <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
                                                 maint.status === 'COMPLETED' ? 'bg-green-100 text-green-800' :
                                                 maint.status === 'IN_PROGRESS' ? 'bg-blue-100 text-blue-800' :
-                                                maint.status === 'PENDING' ? 'bg-purple-100 text-purple-800' :
-                                                maint.status === 'CANCELLED' ? 'bg-red-100 text-red-800' :
+                                                maint.status === 'SCHEDULED' ? 'bg-purple-100 text-purple-800' :
                                                 'bg-gray-100 text-gray-800'
                                             }`}>
                                                 {maint.status}
@@ -934,8 +933,8 @@ const AssetDetail: React.FC<AssetDetailProps> = ({ assetId, navigateTo }) => {
                                         <div>
                                             <span className="font-medium text-gray-900">Status:</span>
                                             <span className={`ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                                                String(report.status).toUpperCase() === 'RESOLVED' ? 'bg-green-100 text-green-800' :
-                                                (String(report.status).toUpperCase() === 'IN_PROGRESS' || String(report.status).toUpperCase() === 'UNDER_REVIEW') ? 'bg-blue-100 text-blue-800' :
+                                                report.status === 'Resolved' ? 'bg-green-100 text-green-800' :
+                                                report.status === 'In Progress' ? 'bg-blue-100 text-blue-800' :
                                                 'bg-red-100 text-red-800'
                                             }`}>
                                                 {report.status}
