@@ -82,11 +82,17 @@ class DepreciationService
      */
     private function shouldGenerateAutoDepreciation(Asset $asset): bool
     {
-        return $asset->canAutoDepreciate();
+        // Cek status asset
+        if (in_array($asset->status, ['Disposed', 'Lost'])) {
+            return false;
+        }
+
+        // Cek apakah ada pending months
+        return $asset->getPendingDepreciationMonths() > 0;
     }
 
     /**
-     * Cek apakah asset bisa didepresiasi MANUAL (tanpa cek tanggal)
+     * Cek apakah asset bisa didepresiasi MANUAL (dengan cek waktu)
      */
     public function canGenerateManualDepreciation(Asset $asset): bool
     {
@@ -98,7 +104,7 @@ class DepreciationService
 
         // Hitung sequence berikutnya dengan benar
         $nextSequence = $this->getNextSequenceNumber($asset);
-        
+
         // Cek apakah masih dalam masa useful life
         if ($nextSequence > $asset->useful_life) {
             Log::info("Asset {$asset->asset_tag} cannot generate manual - max useful life reached: {$asset->useful_life}");
@@ -107,14 +113,23 @@ class DepreciationService
 
         // Hitung nilai buku dengan benar
         $currentBookValue = $this->calculateCurrentBookValue($asset);
-        
+
         // Hanya stop jika nilai buku sudah 0
         if ($currentBookValue <= 0) {
             Log::info("Asset {$asset->asset_tag} cannot generate manual - zero book value: {$currentBookValue}");
             return false;
         }
 
-        Log::info("Asset {$asset->asset_tag} CAN generate manual - sequence: {$nextSequence}, book value: {$currentBookValue}");
+        // ✅ VALIDASI WAKTU: Cek apakah sudah waktunya untuk depresiasi berikutnya
+        $pendingMonths = $asset->getPendingDepreciationMonths();
+        if ($pendingMonths <= 0) {
+            $now = Carbon::now('Asia/Jakarta');
+            $nextDepreciationDate = $this->calculateDepreciationDate($asset, $nextSequence);
+            Log::info("Asset {$asset->asset_tag} cannot generate manual - not yet time. Next depreciation date: {$nextDepreciationDate->format('Y-m-d H:i:s')}, Current time: {$now->format('Y-m-d H:i:s')}");
+            return false;
+        }
+
+        Log::info("Asset {$asset->asset_tag} CAN generate manual - sequence: {$nextSequence}, book value: {$currentBookValue}, pending months: {$pendingMonths}");
         return true;
     }
 
@@ -143,11 +158,21 @@ class DepreciationService
 
             Log::info("🔄 Attempting to generate depreciation for asset {$asset->asset_tag}, sequence: {$nextSequence}");
 
+            // ✅ VALIDASI WAKTU: Cek apakah sudah waktunya untuk sequence ini
+            $depreciationDate = $this->calculateDepreciationDate($asset, $nextSequence);
+            $now = Carbon::now('Asia/Jakarta');
+
+            if ($depreciationDate->greaterThan($now)) {
+                Log::warning("⏸️ Cannot generate depreciation for asset {$asset->asset_tag}, sequence: {$nextSequence} - scheduled date {$depreciationDate->format('Y-m-d H:i:s')} has not arrived yet (current: {$now->format('Y-m-d H:i:s')})");
+                DB::rollBack();
+                return false;
+            }
+
             // Pastikan sequence belum ada untuk prevent duplicate
             $existingDepreciation = AssetDepreciation::where('asset_id', $asset->id)
                 ->where('month_sequence', $nextSequence)
                 ->first();
-                
+
             if ($existingDepreciation) {
                 Log::warning("❌ Depreciation record already exists for asset {$asset->asset_tag}, sequence: {$nextSequence}");
                 DB::rollBack();
@@ -161,25 +186,22 @@ class DepreciationService
 
             // Hitung depresiasi bulanan standar
             $standardMonthlyDepreciation = $asset->calculateMonthlyDepreciation();
-            
+
             // Hitung nilai buku saat ini
             $currentBookValue = $lastDepreciation ? $lastDepreciation->current_value : $asset->value;
-            
+
             Log::info("📊 Asset {$asset->asset_tag} - Current book value: {$currentBookValue}, Monthly depreciation: {$standardMonthlyDepreciation}");
 
             // Tentukan depresiasi aktual (bisa lebih kecil dari standar jika nilai tersisa < depresiasi standar)
             $actualDepreciation = min($standardMonthlyDepreciation, $currentBookValue);
-            
+
             // Hitung accumulated depreciation
-            $accumulatedDepreciation = $lastDepreciation 
+            $accumulatedDepreciation = $lastDepreciation
                 ? $lastDepreciation->accumulated_depreciation + $actualDepreciation
                 : $actualDepreciation;
 
             // Hitung nilai buku baru
             $newBookValue = max(0, $currentBookValue - $actualDepreciation);
-
-            // Tentukan tanggal depresiasi
-            $depreciationDate = $this->calculateDepreciationDate($asset, $nextSequence);
 
             // Buat record depresiasi
             AssetDepreciation::create([
@@ -189,13 +211,13 @@ class DepreciationService
                 'current_value' => $newBookValue,
                 'depreciation_date' => $depreciationDate,
                 'month_sequence' => $nextSequence,
-                'created_at' => $depreciationDate,
-                'updated_at' => $depreciationDate,
+                'created_at' => $now,  // ✅ Gunakan waktu sekarang, bukan depreciationDate
+                'updated_at' => $now,  // ✅ Gunakan waktu sekarang, bukan depreciationDate
             ]);
 
             DB::commit();
 
-            Log::info("✅ SUCCESS: Created depreciation record for asset {$asset->asset_tag}, sequence: {$nextSequence}, amount: {$actualDepreciation}, accumulated: {$accumulatedDepreciation}, current value: {$newBookValue}");
+            Log::info("✅ SUCCESS: Created depreciation record for asset {$asset->asset_tag}, sequence: {$nextSequence}, amount: {$actualDepreciation}, accumulated: {$accumulatedDepreciation}, current value: {$newBookValue}, date: {$depreciationDate->format('Y-m-d')}");
             return true;
 
         } catch (\Exception $e) {

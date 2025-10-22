@@ -86,6 +86,27 @@ class AssetDepreciationController extends Controller
                 ], Response::HTTP_BAD_REQUEST);
             }
 
+            // ✅ VALIDASI WAKTU: Cek apakah sudah waktunya untuk depresiasi
+            if (!$this->depreciationService->canGenerateManualDepreciation($asset)) {
+                $status = $this->depreciationService->getDepreciationStatus($asset);
+                $pendingMonths = $asset->getPendingDepreciationMonths();
+
+                Log::warning("⏸️ Asset {$assetId} cannot generate depreciation - pending months: {$pendingMonths}");
+
+                return response()->json([
+                    'success' => false,
+                    'message' => $pendingMonths <= 0
+                        ? "Cannot generate depreciation - next depreciation date has not arrived yet. Next date: {$status['status_details']['current_date']}"
+                        : "Cannot generate depreciation - asset may be fully depreciated or reached useful life limit",
+                    'data' => [
+                        'pending_months' => $pendingMonths,
+                        'next_depreciation_date' => $status['next_depreciation_date'] ?? null,
+                        'current_date' => Carbon::now('Asia/Jakarta')->format('Y-m-d H:i:s'),
+                        'can_generate' => false
+                    ]
+                ], Response::HTTP_BAD_REQUEST);
+            }
+
             // Generate hanya 1 bulan depresiasi setiap klik
             $count = $this->depreciationService->generateSingleDepreciation($asset);
             
@@ -103,26 +124,24 @@ class AssetDepreciationController extends Controller
                 ]);
             } else {
                 Log::info("ℹ️ No depreciation generated for asset: {$assetId}");
-                
+
                 // Dapatkan status detail untuk informasi lebih lengkap
                 $status = $this->depreciationService->getDepreciationStatus($asset);
-                
+
+                // ✅ PERBAIKAN: Return success=false karena tidak ada depresiasi yang dibuat
                 return response()->json([
-                    'success' => true,
-                    'message' => "No depreciation generated - " . 
-                               "Current sequence: {$status['next_sequence']}, " .
-                               "Can generate: " . ($status['can_generate_manual'] ? 'Yes' : 'No') . ", " .
-                               "Remaining months: {$status['remaining_months']}, " .
-                               "Book value: {$status['current_value']}",
+                    'success' => false,
+                    'message' => "Asset belum waktunya terdepresiasi",
                     'data' => $updatedSummary,
                     'debug_info' => [
                         'next_sequence' => $status['next_sequence'],
                         'can_generate_manual' => $status['can_generate_manual'],
                         'remaining_months' => $status['remaining_months'],
                         'current_value' => $status['current_value'],
-                        'is_fully_depreciated' => $this->depreciationService->isFullyDepreciated($asset)
+                        'is_fully_depreciated' => $this->depreciationService->isFullyDepreciated($asset),
+                        'pending_months' => $status['pending_depreciation_months'] ?? 0
                     ]
-                ]);
+                ], Response::HTTP_OK); // 200 OK tapi success=false
             }
             
         } catch (\Exception $e) {

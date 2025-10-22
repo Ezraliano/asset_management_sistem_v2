@@ -177,38 +177,54 @@ const AssetDetail: React.FC<AssetDetailProps> = ({ assetId, navigateTo }) => {
     
     try {
       const result = await generateAssetDepreciation(asset.id.toString());
-      
+
       // ✅ PERBAIKAN: Cek response success dengan format yang konsisten
       if (result && result.success) {
-        setSuccessMessage(result.message || 'Depreciation generated successfully!');
-        
+        setSuccessMessage(result.message || 'Depresiasi berhasil dibuat!');
+
         // Refresh data depresiasi
         await fetchDepreciationData();
-        
+
         // Auto-hide success message setelah 3 detik
         setTimeout(() => {
           setSuccessMessage('');
         }, 3000);
       } else {
-        setError(result?.message || 'Failed to generate depreciation');
+        // Backend mengembalikan success=false
+        setError(result?.message || 'Gagal melakukan depresiasi');
+
+        // Auto-hide error setelah 5 detik
+        setTimeout(() => {
+          setError('');
+        }, 5000);
       }
     } catch (error: any) {
       console.error('Depreciation generation error:', error);
-      
+
       // ✅ PERBAIKAN: Tampilkan error yang lebih spesifik
-      let errorMessage = 'Failed to generate depreciation';
-      
-      if (error.message?.includes('500')) {
-        errorMessage = 'Server error: Please check if depreciation record already exists or contact administrator';
+      let errorMessage = 'Gagal melakukan depresiasi';
+
+      if (error.message?.includes('next depreciation date has not arrived') || error.message?.includes('not yet time')) {
+        // Validasi waktu dari backend
+        errorMessage = 'Asset belum waktunya terdepresiasi';
+      } else if (error.message?.includes('fully depreciated')) {
+        errorMessage = 'Asset sudah selesai didepresiasi';
+      } else if (error.message?.includes('500')) {
+        errorMessage = 'Terjadi kesalahan server. Silakan coba lagi atau hubungi administrator';
       } else if (error.message?.includes('404')) {
-        errorMessage = 'Asset not found';
+        errorMessage = 'Asset tidak ditemukan';
       } else if (error.message?.includes('Network Error')) {
-        errorMessage = 'Network error: Please check your connection';
+        errorMessage = 'Koneksi jaringan bermasalah. Silakan periksa koneksi internet Anda';
       } else if (error.message) {
         errorMessage = error.message;
       }
-      
+
       setError(errorMessage);
+
+      // Auto-hide error setelah 5 detik
+      setTimeout(() => {
+        setError('');
+      }, 5000);
     } finally {
       setGeneratingDepreciation(false);
     }
@@ -320,10 +336,11 @@ const AssetDetail: React.FC<AssetDetailProps> = ({ assetId, navigateTo }) => {
     }
   };
 
-  // ✅ PERBAIKAN: Cek apakah bisa generate depreciation
+  // ✅ PERBAIKAN: Cek apakah bisa generate depreciation (dengan validasi waktu)
   const canGenerateDepreciation = useMemo(() => {
-    return isDepreciable && remainingMonths > 0 && currentValue > 0;
-  }, [isDepreciable, remainingMonths, currentValue]);
+    // Asset harus depreciable, masih ada remaining months, book value > 0, DAN ada pending months
+    return isDepreciable && remainingMonths > 0 && currentValue > 0 && pendingMonths > 0;
+  }, [isDepreciable, remainingMonths, currentValue, pendingMonths]);
 
   // Handler untuk membuka modal detail laporan kehilangan
   const handleViewLossReportDetail = (report: LossReport) => {
@@ -444,14 +461,14 @@ const AssetDetail: React.FC<AssetDetailProps> = ({ assetId, navigateTo }) => {
 
       {error && (
         <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-          <div className="flex items-center">
-            <div className="flex-shrink-0">
+          <div className="flex items-start">
+            <div className="flex-shrink-0 mt-0.5">
               <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
                 <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
               </svg>
             </div>
             <div className="ml-3">
-              <p className="text-sm font-medium text-red-800">{error}</p>
+              <p className="text-sm font-medium text-red-800 whitespace-pre-line">{error}</p>
             </div>
           </div>
         </div>
@@ -632,9 +649,27 @@ const AssetDetail: React.FC<AssetDetailProps> = ({ assetId, navigateTo }) => {
                             )}
                           </button>
                         ) : (
-                          <div className="text-orange-600 bg-orange-50 px-3 py-2 rounded-lg border border-orange-200">
-                            <span className="font-medium">Depreciation Complete</span>
-                            <p className="text-sm mt-1">All {asset.useful_life} months have been depreciated</p>
+                          <div className={`px-3 py-2 rounded-lg border ${
+                            remainingMonths <= 0
+                              ? 'text-green-600 bg-green-50 border-green-200'
+                              : 'text-orange-600 bg-orange-50 border-orange-200'
+                          }`}>
+                            {remainingMonths <= 0 ? (
+                              <>
+                                <span className="font-medium">Depreciation Complete</span>
+                                <p className="text-sm mt-1">All {asset.useful_life} months have been depreciated</p>
+                              </>
+                            ) : pendingMonths <= 0 ? (
+                              <>
+                                <span className="font-medium">Belum Waktunya Depresiasi</span>
+                                <p className="text-sm mt-1">Depresiasi berikutnya: {formatDate(nextDepreciationDate)}</p>
+                              </>
+                            ) : (
+                              <>
+                                <span className="font-medium">Cannot Generate</span>
+                                <p className="text-sm mt-1">Current value is 0 or asset is fully depreciated</p>
+                              </>
+                            )}
                           </div>
                         )}
                       </div>

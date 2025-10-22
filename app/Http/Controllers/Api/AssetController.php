@@ -78,12 +78,11 @@ class AssetController extends Controller
             $sortOrder = $request->query('sort_order', 'desc');
             $query->orderBy($sortBy, $sortOrder);
 
-            // Pagination
-            $perPage = $request->query('per_page', 15);
-            $assets = $query->paginate($perPage);
+            // Get all assets (let frontend handle pagination)
+            $assets = $query->get();
 
             // Tambahkan informasi depresiasi ke setiap asset
-            $assets->getCollection()->transform(function ($asset) {
+            $assets->transform(function ($asset) {
                 $latestDepreciation = $asset->depreciations->first();
                 
                 $asset->current_book_value = $latestDepreciation 
