@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import ComprehensiveReport from './ComprehensiveReport'; // Import komponen baru
 import { DownloadIcon } from './icons';
 import { useTranslation } from '../hooks/useTranslation';
@@ -9,9 +9,11 @@ import {
     getLoanReport,
     getDamageReport,
     getSaleReport,
-    getLossReport
+    getLossReport,
+    getUnits
 } from '../services/api';
 import { exportToCsv, exportToPdf } from '../utils/exportUtils';
+import { Unit } from '../types';
 
 interface ReportCardProps {
     title: string;
@@ -116,6 +118,21 @@ const ReportView: React.FC = () => {
     const [loadingReport, setLoadingReport] = useState<string | null>(null);
     const [selectedMonth, setSelectedMonth] = useState<string>(String(new Date().getMonth() + 1));
     const [selectedYear, setSelectedYear] = useState<string>(String(new Date().getFullYear()));
+    const [selectedUnit, setSelectedUnit] = useState<string>('all');
+    const [units, setUnits] = useState<Unit[]>([]);
+
+    // Fetch units on component mount
+    useEffect(() => {
+        const fetchUnits = async () => {
+            try {
+                const fetchedUnits = await getUnits();
+                setUnits(fetchedUnits);
+            } catch (error) {
+                console.error('Failed to fetch units:', error);
+            }
+        };
+        fetchUnits();
+    }, []);
 
     const reports = [
         {
@@ -175,7 +192,11 @@ const ReportView: React.FC = () => {
             let response;
             switch (reportKey) {
                 case 'full_asset': {
-                    response = await getFullAssetReport({ month: selectedMonth, year: selectedYear });
+                    response = await getFullAssetReport({
+                        month: selectedMonth,
+                        year: selectedYear,
+                        unit_id: selectedUnit !== 'all' ? selectedUnit : undefined
+                    });
                     const reportData = getDataFromResponse(response);
                     console.log('Full Asset Data:', reportData); // Debug log
                     
@@ -210,7 +231,11 @@ const ReportView: React.FC = () => {
                     break;
                 }
                 case 'maintenance': {
-                    response = await getMaintenanceReport({ month: selectedMonth, year: selectedYear });
+                    response = await getMaintenanceReport({
+                        month: selectedMonth,
+                        year: selectedYear,
+                        unit_id: selectedUnit !== 'all' ? selectedUnit : undefined
+                    });
                     const reportData = getDataFromResponse(response);
                     console.log('Maintenance Data:', reportData); // Debug log
                     
@@ -241,7 +266,11 @@ const ReportView: React.FC = () => {
                     break;
                 }
                 case 'repair': {
-                    response = await getRepairReport({ month: selectedMonth, year: selectedYear });
+                    response = await getRepairReport({
+                        month: selectedMonth,
+                        year: selectedYear,
+                        unit_id: selectedUnit !== 'all' ? selectedUnit : undefined
+                    });
                     const reportData = getDataFromResponse(response);
                     console.log('Repair Data:', reportData); // Debug log
                     
@@ -272,7 +301,11 @@ const ReportView: React.FC = () => {
                     break;
                 }
                 case 'loan': {
-                    response = await getLoanReport({ month: selectedMonth, year: selectedYear });
+                    response = await getLoanReport({
+                        month: selectedMonth,
+                        year: selectedYear,
+                        unit_id: selectedUnit !== 'all' ? selectedUnit : undefined
+                    });
                     const reportData = getDataFromResponse(response);
                     console.log('Loan Data:', reportData); // Debug log
                     
@@ -305,7 +338,11 @@ const ReportView: React.FC = () => {
                     break;
                 }
                 case 'damage': {
-                    response = await getDamageReport({ month: selectedMonth, year: selectedYear });
+                    response = await getDamageReport({
+                        month: selectedMonth,
+                        year: selectedYear,
+                        unit_id: selectedUnit !== 'all' ? selectedUnit : undefined
+                    });
                     const reportData = getDataFromResponse(response);
                     console.log('Damage Data:', reportData); // Debug log
                     
@@ -334,7 +371,11 @@ const ReportView: React.FC = () => {
                     break;
                 }
                 case 'sale': {
-                    response = await getSaleReport({ month: selectedMonth, year: selectedYear });
+                    response = await getSaleReport({
+                        month: selectedMonth,
+                        year: selectedYear,
+                        unit_id: selectedUnit !== 'all' ? selectedUnit : undefined
+                    });
                     const reportData = getDataFromResponse(response);
                     console.log('Sale Data:', reportData); // Debug log
                     
@@ -365,7 +406,11 @@ const ReportView: React.FC = () => {
                     break;
                 }
                 case 'loss': {
-                    response = await getLossReport({ month: selectedMonth, year: selectedYear });
+                    response = await getLossReport({
+                        month: selectedMonth,
+                        year: selectedYear,
+                        unit_id: selectedUnit !== 'all' ? selectedUnit : undefined
+                    });
                     const reportData = getDataFromResponse(response);
                     console.log('Loss Data:', reportData); // Debug log
                     
@@ -436,6 +481,22 @@ const ReportView: React.FC = () => {
             <div className="flex justify-between items-center flex-wrap gap-4">
                 <h1 className="text-4xl font-bold text-dark-text">{t('reports.title')}</h1>
                 <div className="flex items-center space-x-3">
+                    <div className="flex items-center space-x-2">
+                        <label htmlFor="unit-select" className="text-sm font-medium text-gray-700">Unit:</label>
+                        <select
+                            id="unit-select"
+                            value={selectedUnit}
+                            onChange={(e) => setSelectedUnit(e.target.value)}
+                            className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary bg-white shadow-sm"
+                        >
+                            <option value="all">Semua Unit</option>
+                            {units.map((unit) => (
+                                <option key={unit.id} value={unit.id}>
+                                    {unit.name}
+                                </option>
+                            ))}
+                        </select>
+                    </div>
                     <div className="flex items-center space-x-2">
                         <label htmlFor="month-select" className="text-sm font-medium text-gray-700">Bulan:</label>
                         <select
