@@ -466,14 +466,23 @@ class AssetRequestController extends Controller
                 'return_confirmation_date' => Carbon::now(),
             ]);
 
+            // ✅ FIX: Update asset status back to 'Available' when return is confirmed
+            if ($assetRequest->asset_id) {
+                $asset = Asset::find($assetRequest->asset_id);
+                if ($asset) {
+                    $asset->update(['status' => 'Available']);
+                    Log::info("✅ Asset {$asset->asset_tag} status updated to Available (returned)");
+                }
+            }
+
             DB::commit();
 
             Log::info("✅ Asset return confirmed: Request ID {$id} by {$user->name}");
 
             return response()->json([
                 'success' => true,
-                'message' => 'Pengembalian asset berhasil dikonfirmasi',
-                'data' => $assetRequest->fresh()->load(['requesterUnit', 'requester', 'reviewer', 'returnConfirmer'])
+                'message' => 'Pengembalian asset berhasil dikonfirmasi. Asset sekarang kembali tersedia.',
+                'data' => $assetRequest->fresh()->load(['requesterUnit', 'requester', 'reviewer', 'returnConfirmer', 'asset'])
             ]);
 
         } catch (\Exception $e) {

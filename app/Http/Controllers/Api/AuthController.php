@@ -61,6 +61,7 @@ class AuthController extends Controller
                 'username' => $request->user()->username,
                 'email' => $request->user()->email,
                 'role' => $request->user()->role,
+                'unit_id' => $request->user()->unit_id, // ✅ FIX: Tambahkan unit_id untuk validasi pengembalian asset
             ],
         ]);
     }

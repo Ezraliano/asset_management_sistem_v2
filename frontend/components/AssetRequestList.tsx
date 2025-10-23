@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { AssetRequest, AssetRequestStatus } from '../types';
 import Modal from './Modal';
 import AssetRequestValidationModal from './AssetRequestValidationModal';
+import AssetRequestReturnForm from './AssetRequestReturnForm';
 
 interface AssetRequestListProps {
   currentUser: any;
@@ -13,6 +14,8 @@ const AssetRequestList: React.FC<AssetRequestListProps> = ({ currentUser }) => {
   const [statusFilter, setStatusFilter] = useState<string>('ALL');
   const [selectedRequest, setSelectedRequest] = useState<AssetRequest | null>(null);
   const [isValidationModalOpen, setValidationModalOpen] = useState(false);
+  const [isReturnModalOpen, setReturnModalOpen] = useState(false);
+  const [returnLoading, setReturnLoading] = useState(false);
 
   useEffect(() => {
     fetchRequests();
@@ -63,6 +66,49 @@ const AssetRequestList: React.FC<AssetRequestListProps> = ({ currentUser }) => {
     setSelectedRequest(null);
   };
 
+  const handleReturnAsset = (request: AssetRequest) => {
+    setSelectedRequest(request);
+    setReturnModalOpen(true);
+  };
+
+  const handleSubmitReturn = async (formData: FormData) => {
+    if (!selectedRequest) return;
+
+    setReturnLoading(true);
+    try {
+      const token = localStorage.getItem('auth_token');
+      const response = await fetch(`http://localhost:8000/api/asset-requests/${selectedRequest.id}/return`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+        body: formData,
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to submit return');
+      }
+
+      const data = await response.json();
+      alert(data.message || 'Pengembalian asset berhasil diajukan');
+      setReturnModalOpen(false);
+      setSelectedRequest(null);
+      fetchRequests(); // Refresh list
+    } catch (error: any) {
+      console.error('Error submitting return:', error);
+      alert(`Gagal mengajukan pengembalian: ${error.message}`);
+      throw error; // Re-throw to let form handle it
+    } finally {
+      setReturnLoading(false);
+    }
+  };
+
+  const handleCloseReturnModal = () => {
+    setReturnModalOpen(false);
+    setSelectedRequest(null);
+  };
+
   const getStatusBadge = (status: AssetRequestStatus) => {
     switch (status) {
       case AssetRequestStatus.PENDING:
@@ -73,6 +119,25 @@ const AssetRequestList: React.FC<AssetRequestListProps> = ({ currentUser }) => {
         return <span className="px-2 py-1 bg-red-100 text-red-800 text-xs font-semibold rounded">REJECTED</span>;
       default:
         return <span className="px-2 py-1 bg-gray-100 text-gray-800 text-xs font-semibold rounded">{status}</span>;
+    }
+  };
+
+  const getLoanStatusBadge = (loanStatus: string | null) => {
+    if (!loanStatus) {
+      return <span className="px-2 py-1 bg-gray-100 text-gray-600 text-xs font-semibold rounded">-</span>;
+    }
+
+    switch (loanStatus) {
+      case 'ACTIVE':
+        return <span className="px-2 py-1 bg-blue-100 text-blue-800 text-xs font-semibold rounded">AKTIF</span>;
+      case 'PENDING_RETURN':
+        return <span className="px-2 py-1 bg-purple-100 text-purple-800 text-xs font-semibold rounded">MENUNGGU KONFIRMASI</span>;
+      case 'RETURNED':
+        return <span className="px-2 py-1 bg-green-100 text-green-800 text-xs font-semibold rounded">DIKEMBALIKAN</span>;
+      case 'OVERDUE':
+        return <span className="px-2 py-1 bg-red-100 text-red-800 text-xs font-semibold rounded">TERLAMBAT</span>;
+      default:
+        return <span className="px-2 py-1 bg-gray-100 text-gray-800 text-xs font-semibold rounded">{loanStatus}</span>;
     }
   };
 
@@ -162,7 +227,10 @@ const AssetRequestList: React.FC<AssetRequestListProps> = ({ currentUser }) => {
                   Waktu
                 </th>
                 <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">
-                  Status
+                  Status Request
+                </th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">
+                  Status Peminjaman
                 </th>
                 <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">
                   Aksi
@@ -205,14 +273,31 @@ const AssetRequestList: React.FC<AssetRequestListProps> = ({ currentUser }) => {
                     {getStatusBadge(request.status)}
                   </td>
                   <td className="px-4 py-3">
-                    <button
-                      onClick={() => handleViewRequest(request)}
-                      className="text-sm text-blue-600 hover:text-blue-800 font-medium"
-                    >
-                      {canValidate && request.status === AssetRequestStatus.PENDING
-                        ? 'Validasi'
-                        : 'Lihat Detail'}
-                    </button>
+                    {getLoanStatusBadge(request.loan_status)}
+                  </td>
+                  <td className="px-4 py-3">
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => handleViewRequest(request)}
+                        className="text-sm text-blue-600 hover:text-blue-800 font-medium"
+                      >
+                        {canValidate && request.status === AssetRequestStatus.PENDING
+                          ? 'Validasi'
+                          : 'Lihat Detail'}
+                      </button>
+
+                      {/* Show Return button for ACTIVE loans */}
+                      {request.loan_status === 'ACTIVE' &&
+                       currentUser?.role === 'Admin Unit' &&
+                       request.requester_unit_id === currentUser?.unit_id && (
+                        <button
+                          onClick={() => handleReturnAsset(request)}
+                          className="text-sm text-green-600 hover:text-green-800 font-medium"
+                        >
+                          Kembalikan
+                        </button>
+                      )}
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -229,6 +314,18 @@ const AssetRequestList: React.FC<AssetRequestListProps> = ({ currentUser }) => {
             currentUser={currentUser}
             onSuccess={handleValidationSuccess}
             onCancel={handleCloseModal}
+          />
+        </Modal>
+      )}
+
+      {/* Return Asset Modal */}
+      {isReturnModalOpen && selectedRequest && (
+        <Modal isOpen={isReturnModalOpen} onClose={handleCloseReturnModal}>
+          <AssetRequestReturnForm
+            request={selectedRequest}
+            onSubmit={handleSubmitReturn}
+            onCancel={handleCloseReturnModal}
+            loading={returnLoading}
           />
         </Modal>
       )}

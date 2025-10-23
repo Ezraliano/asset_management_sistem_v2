@@ -265,6 +265,17 @@ const AssetRequestValidationModal: React.FC<AssetRequestValidationModalProps> = 
     request.loan_status === 'ACTIVE' &&
     request.requester_unit_id === currentUser?.unit_id;
 
+  // // Debug logging untuk troubleshooting
+  // console.log('🔍 DEBUG canReturn:', {
+  //   canReturn,
+  //   userRole: currentUser?.role,
+  //   requestStatus: request.status,
+  //   loanStatus: request.loan_status,
+  //   requesterUnitId: request.requester_unit_id,
+  //   currentUserUnitId: currentUser?.unit_id,
+  //   match: request.requester_unit_id === currentUser?.unit_id
+  // });
+
   const canConfirmReturn =
     (currentUser?.role === 'Super Admin' || currentUser?.role === 'Admin Holding') &&
     request.loan_status === 'PENDING_RETURN';
@@ -739,7 +750,10 @@ const AssetRequestValidationModal: React.FC<AssetRequestValidationModalProps> = 
           </button>
           <button
             type="button"
-            onClick={() => setShowReturnForm(true)}
+            onClick={() => {
+              console.log('🔵 Tombol Kembalikan Asset diklik');
+              setShowReturnForm(true);
+            }}
             className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
             disabled={isProcessing}
           >
@@ -747,6 +761,27 @@ const AssetRequestValidationModal: React.FC<AssetRequestValidationModalProps> = 
           </button>
         </div>
       )}
+
+      {/* Debug Info - Hanya untuk development
+      {currentUser?.role === 'Admin Unit' && !canReturn && request.status === 'APPROVED' && (
+        <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+          <p className="text-sm text-yellow-800 font-medium">
+            ℹ️ Informasi: Tombol pengembalian tidak muncul
+          </p>
+          <ul className="text-xs text-yellow-700 mt-2 space-y-1 ml-4">
+            <li>• Status Request: {request.status}</li>
+            <li>• Status Peminjaman: {request.loan_status || 'Tidak ada'}</li>
+            <li>• Unit Pemohon ID: {request.requester_unit_id}</li>
+            <li>• Unit Anda ID: {currentUser?.unit_id}</li>
+            <li>• Role Anda: {currentUser?.role}</li>
+          </ul>
+          <p className="text-xs text-yellow-700 mt-2">
+            Untuk dapat mengembalikan asset, pastikan:
+            <br />1. Status peminjaman adalah "ACTIVE"
+            <br />2. Unit Anda adalah unit yang meminjam
+          </p>
+        </div>
+      )} */}
 
       {/* Confirm Return Buttons - For Holding */}
       {canConfirmReturn && !showConfirmReturnForm && !showRejectReturnForm && (
