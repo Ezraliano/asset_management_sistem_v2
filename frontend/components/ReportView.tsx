@@ -10,6 +10,7 @@ import {
     getDamageReport,
     getSaleReport,
     getLossReport,
+    getAuditReport,
     getUnits
 } from '../services/api';
 import { exportToCsv, exportToPdf } from '../utils/exportUtils';
@@ -169,6 +170,11 @@ const ReportView: React.FC = () => {
             key: 'loss',
             title: t('reports.cards.loss.title'),
             description: t('reports.cards.loss.description'),
+        },
+        {
+            key: 'audit',
+            title: 'Laporan Audit Inventaris',
+            description: 'Laporan hasil audit inventaris per unit dengan detail asset yang ditemukan, hilang, dan salah tempat',
         },
         {
             key: 'comprehensive',
@@ -488,6 +494,56 @@ const ReportView: React.FC = () => {
                         truncateText(l.description, 40),
                         l.status || 'N/A',
                         l.responsible_party || 'N/A'
+                    ]);
+                    break;
+                }
+                case 'audit': {
+                    response = await getAuditReport({
+                        start_date: undefined,
+                        end_date: undefined,
+                        unit_id: selectedUnit !== 'all' ? selectedUnit : undefined
+                    });
+                    let reportData = getDataFromResponse(response);
+                    console.log('Audit Data:', reportData);
+
+                    // Sort data berdasarkan tanggal
+                    reportData.sort((a, b) => {
+                        const dateA = new Date(a.created_at || '').getTime();
+                        const dateB = new Date(b.created_at || '').getTime();
+                        return dateB - dateA;
+                    });
+
+                    headers = [
+                        'Kode Audit',
+                        'Unit',
+                        'Auditor',
+                        'Mode Scan',
+                        'Status',
+                        'Total Asset',
+                        'Ditemukan',
+                        'Hilang',
+                        'Salah Tempat',
+                        'Persentase',
+                        'Dimulai',
+                        'Selesai',
+                        'Durasi',
+                        'Catatan'
+                    ];
+                    data = reportData.map((a: any) => [
+                        a.audit_code || 'N/A',
+                        truncateText(a.unit_name, 20),
+                        truncateText(a.auditor_name, 20),
+                        a.scan_mode || 'N/A',
+                        a.status || 'N/A',
+                        a.expected_count || 0,
+                        a.found_count || 0,
+                        a.missing_count || 0,
+                        a.misplaced_count || 0,
+                        a.completion_percentage || '0%',
+                        a.started_at || 'N/A',
+                        a.completed_at || 'N/A',
+                        a.duration || 'N/A',
+                        truncateText(a.notes || '-', 40)
                     ]);
                     break;
                 }

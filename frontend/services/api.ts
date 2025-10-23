@@ -1533,6 +1533,26 @@ export const getAllReports = async (filters?: ReportFilters): Promise<any> => {
   }
 };
 
+export const getAuditReport = async (filters?: ReportFilters): Promise<any> => {
+  const queryParams = new URLSearchParams();
+  if (filters?.unit_id && filters.unit_id !== 'all') queryParams.append('unit_id', filters.unit_id.toString());
+  if (filters?.status) queryParams.append('status', filters.status);
+  if (filters?.start_date) queryParams.append('start_date', filters.start_date);
+  if (filters?.end_date) queryParams.append('end_date', filters.end_date);
+
+  const queryString = queryParams.toString();
+  const endpoint = queryString ? `/reports/audit?${queryString}` : '/reports/audit';
+
+  try {
+    // Return the full response object
+    return await apiRequest(endpoint);
+  } catch (error: any) {
+    console.error('Error in getAuditReport:', error);
+    // Return a consistent error object
+    return { success: false, message: error.message, data: [], summary: {} };
+  }
+};
+
 
 // ==================== INVENTORY AUDIT API ====================
 

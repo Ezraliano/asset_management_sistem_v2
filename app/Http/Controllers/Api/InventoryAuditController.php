@@ -155,7 +155,7 @@ class InventoryAuditController extends Controller
                     return [
                         'id' => $asset->id,
                         'name' => $asset->name,
-                        'asset_code' => $asset->asset_code,
+                        'asset_tag' => $asset->asset_tag,
                         'category' => $asset->category,
                     ];
                 });
@@ -267,7 +267,7 @@ class InventoryAuditController extends Controller
                 $misplacedAsset = [
                     'id' => $asset->id,
                     'name' => $asset->name,
-                    'asset_code' => $asset->asset_tag,
+                    'asset_tag' => $asset->asset_tag,
                     'current_unit_id' => $asset->unit_id,
                     'current_unit_name' => $asset->unit->name ?? 'Unknown',
                     'scanned_at' => now()->toDateTimeString(),

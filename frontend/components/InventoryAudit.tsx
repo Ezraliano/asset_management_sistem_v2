@@ -232,7 +232,7 @@ const InventoryAudit: React.FC<InventoryAuditProps> = ({ unitName, auditId, mode
                     {misplacedAssets.map((asset, idx) => (
                         <li key={idx} className="py-3">
                             <p className="font-medium">{asset.name}</p>
-                            <p className="text-sm text-gray-500">ID: {asset.id} | Tag: {asset.asset_code}</p>
+                            <p className="text-sm text-gray-500">ID: {asset.id} | Tag: {asset.asset_tag}</p>
                             <p className="text-sm text-yellow-600">Should be in: {asset.current_unit_name}</p>
                         </li>
                     ))}

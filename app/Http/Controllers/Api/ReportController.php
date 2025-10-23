@@ -10,6 +10,7 @@ use App\Models\AssetLoan;
 use App\Models\AssetSale;
 use App\Models\User;
 use App\Models\Unit;
+use App\Models\InventoryAudit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
@@ -811,6 +812,143 @@ class ReportController extends Controller
                 'success' => false,
                 'message' => 'Gagal mengambil semua laporan: ' . $e->getMessage(),
                 'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Get laporan audit inventaris
+     */
+    public function getAuditReport(Request $request)
+    {
+        try {
+            Log::info('Starting getAuditReport', ['user_id' => Auth::id()]);
+
+            $user = Auth::user();
+            if (!$user) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'User tidak terautentikasi',
+                    'data' => []
+                ], 401);
+            }
+
+            // Query builder untuk inventory audits
+            $query = InventoryAudit::with(['unit', 'auditor']);
+
+            // Filter berdasarkan role
+            if ($user->role === 'Admin Unit') {
+                $query->where('unit_id', $user->unit_id);
+                Log::info('Admin Unit filter applied', ['unit_id' => $user->unit_id]);
+            } elseif ($request->has('unit_id') && $request->unit_id !== 'all') {
+                $query->where('unit_id', $request->unit_id);
+                Log::info('Unit filter applied', ['unit_id' => $request->unit_id]);
+            }
+
+            // Filter berdasarkan status
+            if ($request->has('status') && $request->status !== 'all') {
+                $query->where('status', $request->status);
+                Log::info('Status filter applied', ['status' => $request->status]);
+            }
+
+            // Filter berdasarkan tanggal
+            if ($request->has('start_date') && $request->start_date) {
+                $query->whereDate('created_at', '>=', $request->start_date);
+                Log::info('Start date filter applied', ['start_date' => $request->start_date]);
+            }
+
+            if ($request->has('end_date') && $request->end_date) {
+                $query->whereDate('created_at', '<=', $request->end_date);
+                Log::info('End date filter applied', ['end_date' => $request->end_date]);
+            }
+
+            // Get audits
+            $audits = $query->orderBy('created_at', 'desc')->get();
+
+            Log::info('Audits retrieved', ['count' => $audits->count()]);
+
+            // Map data untuk laporan
+            $reportData = $audits->map(function ($audit) {
+                $expectedCount = count($audit->expected_asset_ids ?? []);
+                $foundCount = count($audit->found_asset_ids ?? []);
+                $missingCount = $expectedCount - $foundCount;
+                $misplacedCount = count($audit->misplaced_assets ?? []);
+                $completionPercentage = $expectedCount > 0 ? round(($foundCount / $expectedCount) * 100, 2) : 0;
+
+                return [
+                    'audit_code' => $audit->audit_code,
+                    'unit_name' => $audit->unit->name ?? 'N/A',
+                    'auditor_name' => $audit->auditor->name ?? 'N/A',
+                    'scan_mode' => ucfirst($audit->scan_mode),
+                    'status' => ucfirst(str_replace('_', ' ', $audit->status)),
+                    'expected_count' => $expectedCount,
+                    'found_count' => $foundCount,
+                    'missing_count' => $missingCount,
+                    'misplaced_count' => $misplacedCount,
+                    'completion_percentage' => $completionPercentage . '%',
+                    'started_at' => $audit->started_at ? $audit->started_at->format('d/m/Y H:i') : 'N/A',
+                    'completed_at' => $audit->completed_at ? $audit->completed_at->format('d/m/Y H:i') : 'N/A',
+                    'duration' => $audit->started_at && $audit->completed_at
+                        ? $audit->started_at->diffForHumans($audit->completed_at, true)
+                        : 'N/A',
+                    'notes' => $audit->notes ?? '-',
+                    'created_at' => $audit->created_at->format('d/m/Y H:i'),
+                ];
+            });
+
+            // Summary statistics
+            $summary = [
+                'total_audits' => $audits->count(),
+                'completed_audits' => $audits->where('status', 'completed')->count(),
+                'in_progress_audits' => $audits->where('status', 'in_progress')->count(),
+                'cancelled_audits' => $audits->where('status', 'cancelled')->count(),
+                'total_expected_assets' => $audits->sum(function ($audit) {
+                    return count($audit->expected_asset_ids ?? []);
+                }),
+                'total_found_assets' => $audits->sum(function ($audit) {
+                    return count($audit->found_asset_ids ?? []);
+                }),
+                'total_missing_assets' => $audits->sum(function ($audit) {
+                    $expected = count($audit->expected_asset_ids ?? []);
+                    $found = count($audit->found_asset_ids ?? []);
+                    return $expected - $found;
+                }),
+                'total_misplaced_assets' => $audits->sum(function ($audit) {
+                    return count($audit->misplaced_assets ?? []);
+                }),
+                'average_completion' => $audits->where('status', 'completed')->count() > 0
+                    ? round($audits->where('status', 'completed')->avg(function ($audit) {
+                        $expected = count($audit->expected_asset_ids ?? []);
+                        $found = count($audit->found_asset_ids ?? []);
+                        return $expected > 0 ? ($found / $expected) * 100 : 0;
+                    }), 2) . '%'
+                    : '0%',
+            ];
+
+            Log::info('Audit report generated successfully', [
+                'total_records' => $reportData->count(),
+                'summary' => $summary
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Laporan audit inventaris berhasil diambil',
+                'data' => $reportData,
+                'summary' => $summary
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Error in getAuditReport', [
+                'message' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal mengambil laporan audit: ' . $e->getMessage(),
+                'error' => $e->getMessage(),
+                'data' => []
             ], 500);
         }
     }

@@ -43,6 +43,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::get('/reports/damage', [ReportController::class, 'getDamageReport']);
         Route::get('/reports/sale', [ReportController::class, 'getSaleReport']);
         Route::get('/reports/loss', [ReportController::class, 'getLossReport']);
+        Route::get('/reports/audit', [ReportController::class, 'getAuditReport']);
     });
 
     // Group for Aset menu (Admin Holding, Admin Unit)
