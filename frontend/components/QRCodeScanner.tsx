@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { View } from '../types';
-import { getAssetById } from '../services/api';
+import { getAssetByTag } from '../services/api';
 import { QRIcon, CameraIcon } from './icons';
 import { useTranslation } from '../hooks/useTranslation';
 
@@ -19,16 +19,18 @@ const QRCodeScanner: React.FC<QRCodeScannerProps> = ({ navigateTo }) => {
   const [loading, setLoading] = useState(false);
   const [isScanning, setIsScanning] = useState(false);
 
-  const handleSearch = useCallback(async (scannedId: string) => {
-    if (!scannedId) {
+  const handleSearch = useCallback(async (scannedTag: string) => {
+    if (!scannedTag) {
       setError(t('qr_scanner.errors.required'));
       return;
     }
     setLoading(true);
     setError('');
-    const asset = await getAssetById(scannedId.trim());
+    // ✅ FIX: Use getAssetByTag instead of getAssetById
+    // QR code contains asset_tag (e.g., AST-00001), not numeric ID
+    const asset = await getAssetByTag(scannedTag.trim());
     if (asset) {
-      navigateTo({ type: 'ASSET_DETAIL', assetId: asset.id });
+      navigateTo({ type: 'ASSET_DETAIL', assetId: asset.id.toString() });
     } else {
       setError(t('qr_scanner.errors.not_found'));
     }

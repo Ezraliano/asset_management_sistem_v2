@@ -954,7 +954,7 @@ class AssetController extends Controller
     {
         try {
             $user = Auth::user();
-            
+
             // Validasi akses unit
             if ($user && in_array($user->role, ['Admin Unit', 'User']) && $user->unit_id != $unitId) {
                 return response()->json([
@@ -974,10 +974,84 @@ class AssetController extends Controller
 
         } catch (\Exception $e) {
             Log::error("Error fetching assets for unit {$unitId}: " . $e->getMessage());
-            
+
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to fetch assets for unit',
+                'error' => $e->getMessage()
+            ], Response::HTTP_INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    /**
+     * ✅ METHOD BARU: Get asset by asset_tag (untuk QR Scanner)
+     */
+    public function getByAssetTag($assetTag)
+    {
+        try {
+            Log::info("Fetching asset by asset_tag: {$assetTag}");
+
+            // Include depresiasi data dengan informasi lengkap
+            $asset = Asset::where('asset_tag', $assetTag)
+                ->with(['depreciations' => function($query) {
+                    $query->orderBy('month_sequence', 'asc');
+                }, 'unit'])
+                ->first();
+
+            if (!$asset) {
+                Log::warning("Asset not found with asset_tag: {$assetTag}");
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Asset not found'
+                ], Response::HTTP_NOT_FOUND);
+            }
+
+            // Check unit authorization
+            $user = Auth::user();
+            if ($user && in_array($user->role, ['Admin Unit', 'User'])) {
+                if ($asset->unit_id != $user->unit_id) {
+                    Log::warning("Unauthorized access attempt to asset {$assetTag} by user {$user->id}");
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Unauthorized to access this asset'
+                    ], Response::HTTP_FORBIDDEN);
+                }
+            }
+
+            // Add depreciation info
+            $latestDepreciation = $asset->depreciations->last();
+
+            $asset->current_book_value = $latestDepreciation
+                ? $latestDepreciation->current_value
+                : $asset->value;
+
+            $asset->accumulated_depreciation = $latestDepreciation
+                ? $latestDepreciation->accumulated_depreciation
+                : 0;
+
+            $asset->depreciated_months = $latestDepreciation
+                ? $latestDepreciation->month_sequence
+                : 0;
+
+            $asset->pending_depreciation_months = $asset->getPendingDepreciationMonths();
+            $asset->elapsed_months_since_purchase = $asset->getElapsedMonths();
+            $asset->expected_depreciated_months = $asset->getExpectedDepreciationMonths();
+            $asset->is_up_to_date = $asset->getPendingDepreciationMonths() === 0;
+            $asset->monthly_depreciation = $asset->calculateMonthlyDepreciation();
+
+            Log::info("✅ Asset retrieved successfully by asset_tag: {$assetTag}");
+
+            return response()->json([
+                'success' => true,
+                'data' => $asset
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error("Error fetching asset by asset_tag {$assetTag}: " . $e->getMessage());
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to fetch asset',
                 'error' => $e->getMessage()
             ], Response::HTTP_INTERNAL_SERVER_ERROR);
         }

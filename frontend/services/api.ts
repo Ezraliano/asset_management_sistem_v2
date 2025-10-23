@@ -441,20 +441,43 @@ export const getAssetById = async (id: string): Promise<Asset | null> => {
   try {
     const data = await apiRequest(`/assets/${id}`);
     const asset = handleApiResponse<Asset>(data);
-    
+
     if (!asset || typeof asset !== 'object') {
       console.warn('Invalid asset data:', asset);
       return null;
     }
-    
+
     return asset;
   } catch (error: any) {
     console.error('Get asset by ID error:', error);
-    
+
     if (error.message.includes('404') || error.message.includes('not found')) {
       return null;
     }
-    
+
+    return null;
+  }
+};
+
+// ✅ NEW FUNCTION: Get asset by asset_tag (untuk QR Scanner)
+export const getAssetByTag = async (assetTag: string): Promise<Asset | null> => {
+  try {
+    const data = await apiRequest(`/assets/tag/${assetTag}`);
+    const asset = handleApiResponse<Asset>(data);
+
+    if (!asset || typeof asset !== 'object') {
+      console.warn('Invalid asset data:', asset);
+      return null;
+    }
+
+    return asset;
+  } catch (error: any) {
+    console.error('Get asset by tag error:', error);
+
+    if (error.message.includes('404') || error.message.includes('not found')) {
+      return null;
+    }
+
     return null;
   }
 };
