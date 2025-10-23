@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { View, Asset } from '../types';
 import { getInventoryAuditById, scanAssetInAudit, completeInventoryAudit } from '../services/api';
 import { useTranslation } from '../hooks/useTranslation';
@@ -29,6 +29,7 @@ const InventoryAudit: React.FC<InventoryAuditProps> = ({ unitName, auditId, mode
   const [scanResult, setScanResult] = useState<{ type: 'success' | 'info' | 'error', message: string } | null>(null);
   const [activeTab, setActiveTab] = useState<Tab>('missing');
   const [reportingAsset, setReportingAsset] = useState<Asset | null>(null);
+  const qrScannerRef = useRef<any>(null);
 
   useEffect(() => {
     const fetchAuditData = async () => {
@@ -90,28 +91,49 @@ const InventoryAudit: React.FC<InventoryAuditProps> = ({ unitName, auditId, mode
       setManualInput('');
   };
 
+  // Initialize and manage QR scanner with continuous scanning
   useEffect(() => {
     if (mode !== 'camera' || loading) return;
 
     const qrScanner = new Html5Qrcode("audit-qr-reader");
+    qrScannerRef.current = qrScanner;
+
     const config = { fps: 10, qrbox: { width: 250, height: 250 } };
 
     const successCallback = (decodedText: string) => {
-        qrScanner.stop().then(() => {
-            processScannedId(decodedText.trim());
-        }).catch(err => console.error("Error stopping scanner after success:", err));
+      // Process the scanned code WITHOUT stopping the scanner
+      // This allows continuous scanning
+      processScannedId(decodedText.trim());
+
+      // Auto-clear the scan result message after 2 seconds
+      setTimeout(() => {
+        setScanResult(null);
+      }, 2000);
     };
 
-    qrScanner.start({ facingMode: "environment" }, config, successCallback, undefined)
+    const errorCallback = () => {
+      // Silent error callback - just continue scanning
+      // Don't show error for every frame that doesn't detect a QR code
+    };
+
+    // Start the scanner with continuous scanning enabled
+    qrScanner.start({ facingMode: "environment" }, config, successCallback, errorCallback)
+      .then(() => {
+        console.log("QR Scanner started successfully - continuous scanning enabled");
+      })
       .catch((err: unknown) => {
         console.error("QR Scanner Error:", err);
         setScanResult({ type: 'error', message: t('inventory_audit.camera_error') });
       });
 
+    // Cleanup on unmount
     return () => {
-      // Check if scanner is still active before trying to stop
-      if (qrScanner && qrScanner.getState() === 2) { // 2 is SCANNING state
-        qrScanner.stop().catch((err: unknown) => console.error("Failed to stop QR scanner on cleanup", err));
+      if (qrScanner) {
+        qrScanner.stop()
+          .then(() => {
+            console.log("QR Scanner stopped");
+          })
+          .catch((err: unknown) => console.error("Failed to stop QR scanner on cleanup", err));
       }
     };
   }, [mode, loading, processScannedId, t]);
