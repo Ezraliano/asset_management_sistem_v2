@@ -104,8 +104,10 @@ const AppContent: React.FC = () => {
       case 'INVENTORY_AUDIT_SESSION':
           return (
             <InventoryAudit
-              location={view.location}
-              mode={view.mode === 'camera' ? 'camera' : 'manual'}
+              unitId={view.unitId}
+              unitName={view.unitName}
+              auditId={view.auditId}
+              mode={view.mode}
               navigateTo={navigateTo}
             />
           );

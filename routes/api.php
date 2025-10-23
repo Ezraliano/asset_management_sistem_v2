@@ -15,6 +15,7 @@ use App\Http\Controllers\Api\AssetSaleController;
 use App\Http\Controllers\Api\AssetRequestController;
 use App\Http\Controllers\Api\ReportController;
 use App\Http\Controllers\Api\DepreciationScheduleController;
+use App\Http\Controllers\Api\InventoryAuditController;
 
 /*
 |--------------------------------------------------------------------------
@@ -127,6 +128,19 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::get('/units/{unit}', [UnitController::class, 'show']);
         Route::get('/units/{unit}/assets', [UnitController::class, 'assets']);
         Route::get('/units/{unit}/users', [UnitController::class, 'users']);
+
+        // Inventory Audit Routes - accessible by all authenticated users (role-based filtering in controller)
+        Route::get('/inventory-audits', [InventoryAuditController::class, 'index']);
+        Route::post('/inventory-audits', [InventoryAuditController::class, 'store']);
+        Route::get('/inventory-audits/{id}', [InventoryAuditController::class, 'show']);
+        Route::post('/inventory-audits/{id}/scan', [InventoryAuditController::class, 'scanAsset']);
+        Route::post('/inventory-audits/{id}/complete', [InventoryAuditController::class, 'complete']);
+        Route::post('/inventory-audits/{id}/cancel', [InventoryAuditController::class, 'cancel']);
+
+        // Delete audit - Only Super Admin & Admin Holding
+        Route::middleware('role:Super Admin,Admin Holding')->group(function () {
+            Route::delete('/inventory-audits/{id}', [InventoryAuditController::class, 'destroy']);
+        });
     });
 
     // Asset Loan Management Routes (Super Admin/Admin Holding/Admin Unit Access)

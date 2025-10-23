@@ -230,6 +230,47 @@ export interface AssetRequest {
   asset?: Asset | null;
 }
 
+export enum InventoryAuditStatus {
+  IN_PROGRESS = 'in_progress',
+  COMPLETED = 'completed',
+  CANCELLED = 'cancelled'
+}
+
+export interface InventoryAudit {
+  id: number;
+  unit_id: number;
+  auditor_id: number;
+  audit_code: string;
+  scan_mode: 'camera' | 'manual';
+  status: InventoryAuditStatus;
+  started_at: string | null;
+  completed_at: string | null;
+  expected_asset_ids: number[];
+  found_asset_ids: number[];
+  misplaced_assets: MisplacedAsset[];
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+  unit?: Unit;
+  auditor?: User;
+  expected_assets?: Asset[];
+  found_assets?: Asset[];
+  missing_assets?: Asset[];
+  found_count?: number;
+  missing_count?: number;
+  misplaced_count?: number;
+  completion_percentage?: number;
+}
+
+export interface MisplacedAsset {
+  id: number;
+  name: string;
+  asset_code: string;
+  current_unit_id: number;
+  current_unit_name: string;
+  scanned_at: string;
+}
+
 // TAMBAHKAN INTERFACE UNTUK CHART DATA
 export interface ChartData {
   name: string;
@@ -264,4 +305,4 @@ export type View =
   | { type: 'BULK_TRANSACTION' }
   | { type: 'REPORTS' }
   | { type: 'INVENTORY_AUDIT_SETUP' }
-  | { type: 'INVENTORY_AUDIT_SESSION', location: string, mode: 'camera' | 'manual' };
+  | { type: 'INVENTORY_AUDIT_SESSION', unitId: number, unitName: string, auditId: number, mode: 'camera' | 'manual' };

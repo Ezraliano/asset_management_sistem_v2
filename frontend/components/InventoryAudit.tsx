@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { View, Asset } from '../types';
-import { getAssets, getAssetById } from '../services/api';
+import { getInventoryAuditById, scanAssetInAudit, completeInventoryAudit } from '../services/api';
 import { useTranslation } from '../hooks/useTranslation';
 import { BackIcon, DamageIcon } from './icons';
 import Modal from './Modal';
@@ -10,18 +10,20 @@ import ReportIssueForm from './ReportIssueForm';
 declare const Html5Qrcode: any;
 
 interface InventoryAuditProps {
-  location: string;
+  unitId: number;
+  unitName: string;
+  auditId: number;
   mode: 'camera' | 'manual';
   navigateTo: (view: View) => void;
 }
 
 type Tab = 'missing' | 'found' | 'misplaced';
 
-const InventoryAudit: React.FC<InventoryAuditProps> = ({ location, mode, navigateTo }) => {
+const InventoryAudit: React.FC<InventoryAuditProps> = ({ unitName, auditId, mode, navigateTo }) => {
   const { t } = useTranslation();
   const [expectedAssets, setExpectedAssets] = useState<Asset[]>([]);
-  const [foundAssetIds, setFoundAssetIds] = useState<Set<string>>(new Set());
-  const [misplacedAssets, setMisplacedAssets] = useState<Asset[]>([]);
+  const [foundAssetIds, setFoundAssetIds] = useState<Set<number>>(new Set());
+  const [misplacedAssets, setMisplacedAssets] = useState<any[]>([]);
   const [manualInput, setManualInput] = useState('');
   const [loading, setLoading] = useState(true);
   const [scanResult, setScanResult] = useState<{ type: 'success' | 'info' | 'error', message: string } | null>(null);
@@ -29,39 +31,59 @@ const InventoryAudit: React.FC<InventoryAuditProps> = ({ location, mode, navigat
   const [reportingAsset, setReportingAsset] = useState<Asset | null>(null);
 
   useEffect(() => {
-    const fetchExpectedAssets = async () => {
+    const fetchAuditData = async () => {
       setLoading(true);
-      const assetsInLocation = await getAssets({ location });
-      setExpectedAssets(assetsInLocation);
-      setLoading(false);
+      try {
+        const audit = await getInventoryAuditById(auditId);
+        if (audit) {
+          setExpectedAssets(audit.expected_assets || []);
+          setFoundAssetIds(new Set(audit.found_asset_ids || []));
+          setMisplacedAssets(audit.misplaced_assets || []);
+        }
+      } catch (error) {
+        console.error('Failed to fetch audit data:', error);
+      } finally {
+        setLoading(false);
+      }
     };
-    fetchExpectedAssets();
-  }, [location]);
+    fetchAuditData();
+  }, [auditId]);
 
   const processScannedId = useCallback(async (scannedId: string) => {
     setScanResult(null);
     if (!scannedId) return;
 
-    // Check if it's an expected asset
-    const isExpected = expectedAssets.some(a => a.id === scannedId);
-    if (isExpected) {
-      setFoundAssetIds(prev => new Set(prev).add(scannedId));
-      setScanResult({ type: 'success', message: t('inventory_audit.asset_found_msg', { id: scannedId }) });
-      return;
-    }
-    
-    // Check if it's a misplaced asset
-    const asset = await getAssetById(scannedId);
-    if (asset) {
-      if (!misplacedAssets.some(a => a.id === asset.id) && !foundAssetIds.has(asset.id)) {
-        setMisplacedAssets(prev => [...prev, asset]);
+    try {
+      const response = await scanAssetInAudit(auditId, scannedId);
+
+      if (response.type === 'success') {
+        // Asset found in correct unit - use the asset ID from response
+        const assetId = response.asset?.id;
+        if (assetId) {
+          setFoundAssetIds(prev => {
+            const newSet = new Set(prev);
+            newSet.add(assetId);
+            return newSet;
+          });
+        }
+        setScanResult({ type: 'success', message: response.message });
+      } else if (response.type === 'info') {
+        // Asset is misplaced - refresh misplaced assets list
+        const audit = await getInventoryAuditById(auditId);
+        if (audit) {
+          setMisplacedAssets(audit.misplaced_assets || []);
+        }
+        setScanResult({ type: 'info', message: response.message });
       }
-      setScanResult({ type: 'info', message: t('inventory_audit.asset_misplaced_msg', { id: asset.id, location: asset.location }) });
-    } else {
-      setScanResult({ type: 'error', message: t('inventory_audit.asset_unknown_msg', { id: scannedId }) });
+    } catch (error: any) {
+      if (error.message.includes('404')) {
+        setScanResult({ type: 'error', message: `Asset ${scannedId} not found in system` });
+      } else {
+        setScanResult({ type: 'error', message: error.message || 'Failed to scan asset' });
+      }
     }
-  }, [expectedAssets, misplacedAssets, t, foundAssetIds]);
-  
+  }, [auditId]);
+
   const handleManualSubmit = (e: React.FormEvent) => {
       e.preventDefault();
       processScannedId(manualInput.trim());
@@ -81,32 +103,44 @@ const InventoryAudit: React.FC<InventoryAuditProps> = ({ location, mode, navigat
     };
 
     qrScanner.start({ facingMode: "environment" }, config, successCallback, undefined)
-      .catch((err: any) => {
+      .catch((err: unknown) => {
         console.error("QR Scanner Error:", err);
         setScanResult({ type: 'error', message: t('inventory_audit.camera_error') });
       });
-      
+
     return () => {
       // Check if scanner is still active before trying to stop
       if (qrScanner && qrScanner.getState() === 2) { // 2 is SCANNING state
-        qrScanner.stop().catch(err => console.error("Failed to stop QR scanner on cleanup", err));
+        qrScanner.stop().catch((err: unknown) => console.error("Failed to stop QR scanner on cleanup", err));
       }
     };
   }, [mode, loading, processScannedId, t]);
 
   const missingAssets = useMemo(() => expectedAssets.filter(a => !foundAssetIds.has(a.id)), [expectedAssets, foundAssetIds]);
   const foundAssets = useMemo(() => expectedAssets.filter(a => foundAssetIds.has(a.id)), [expectedAssets, foundAssetIds]);
-  
+
   const scanResultColor = {
       success: 'bg-green-100 text-green-800',
       info: 'bg-blue-100 text-blue-800',
       error: 'bg-red-100 text-red-800'
   }[scanResult?.type || 'success'];
 
+  const handleFinishAudit = async () => {
+    if (window.confirm('Are you sure you want to finish this audit?')) {
+      try {
+        await completeInventoryAudit(auditId);
+        alert('Audit completed successfully!');
+        navigateTo({ type: 'DASHBOARD' });
+      } catch (error: any) {
+        alert('Failed to complete audit: ' + error.message);
+      }
+    }
+  };
+
   if (loading) return <p>Loading audit session...</p>;
-  
+
   const TabButton:React.FC<{tabName: Tab, label: string, count: number}> = ({tabName, label, count}) => (
-      <button 
+      <button
           onClick={() => setActiveTab(tabName)}
           className={`flex-shrink-0 flex items-center px-4 py-2 text-sm font-medium rounded-t-lg transition-colors ${activeTab === tabName ? 'border-b-2 border-primary text-primary bg-blue-50' : 'text-gray-500 hover:text-primary'}`}
       >
@@ -122,19 +156,20 @@ const InventoryAudit: React.FC<InventoryAuditProps> = ({ location, mode, navigat
             <BackIcon />
             <span className="ml-2">Back to Setup</span>
           </button>
-          <h1 className="text-3xl font-bold text-dark-text">{t('inventory_audit.auditing_location', { location })}</h1>
+          <h1 className="text-3xl font-bold text-dark-text">Auditing Unit: {unitName}</h1>
+          <p className="text-sm text-gray-600 mt-1">Audit ID: #{auditId}</p>
         </div>
-        <button onClick={() => navigateTo({type: 'DASHBOARD'})} className="bg-primary text-white px-4 py-2 rounded-lg shadow hover:bg-primary-dark transition-colors">
-          {t('inventory_audit.finish_audit')}
+        <button onClick={handleFinishAudit} className="bg-primary text-white px-4 py-2 rounded-lg shadow hover:bg-primary-dark transition-colors">
+          Finish Audit
         </button>
       </div>
-      
+
       <div className="bg-white p-6 rounded-xl shadow-md">
         {mode === 'camera' ? (
           <div>
             <div id="audit-qr-reader" className="w-full max-w-sm mx-auto border-2 border-dashed border-gray-300 rounded-lg overflow-hidden"></div>
             {scanResult && <p className={`mt-4 p-3 rounded-md text-center ${scanResultColor}`}>{scanResult.message}</p>}
-            <p className="text-center text-medium-text mt-4">{t('inventory_audit.scan_prompt')}</p>
+            <p className="text-center text-medium-text mt-4">Scan asset QR code to mark as found</p>
           </div>
         ) : (
           <form onSubmit={handleManualSubmit}>
@@ -142,7 +177,7 @@ const InventoryAudit: React.FC<InventoryAuditProps> = ({ location, mode, navigat
               type="text"
               value={manualInput}
               onChange={(e) => setManualInput(e.target.value)}
-              placeholder={t('inventory_audit.manual_input_placeholder')}
+              placeholder="Enter Asset ID manually"
               className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-center text-lg"
               autoFocus
             />
@@ -154,9 +189,9 @@ const InventoryAudit: React.FC<InventoryAuditProps> = ({ location, mode, navigat
       <div className="bg-white rounded-xl shadow-md">
          <div className="border-b border-gray-200">
             <nav className="flex -mb-px space-x-2 px-4 overflow-x-auto">
-                <TabButton tabName="missing" label={t('inventory_audit.missing')} count={missingAssets.length} />
-                <TabButton tabName="found" label={t('inventory_audit.found')} count={foundAssets.length} />
-                <TabButton tabName="misplaced" label={t('inventory_audit.misplaced')} count={misplacedAssets.length} />
+                <TabButton tabName="missing" label="Missing" count={missingAssets.length} />
+                <TabButton tabName="found" label="Found" count={foundAssets.length} />
+                <TabButton tabName="misplaced" label="Misplaced" count={misplacedAssets.length} />
             </nav>
         </div>
         <div className="p-4">
@@ -166,14 +201,17 @@ const InventoryAudit: React.FC<InventoryAuditProps> = ({ location, mode, navigat
                         <li key={asset.id} className="py-3 flex justify-between items-center">
                             <div>
                                 <p className="font-medium">{asset.name}</p>
-                                <p className="text-sm text-gray-500">{asset.id}</p>
+                                <p className="text-sm text-gray-500">ID: {asset.id} | Tag: {asset.asset_tag}</p>
                             </div>
                             <button onClick={() => setReportingAsset(asset)} className="flex items-center text-sm text-red-600 hover:text-red-800">
                                 <DamageIcon />
-                                <span className="ml-1">{t('inventory_audit.report_loss')}</span>
+                                <span className="ml-1">Report Loss</span>
                             </button>
                         </li>
                     ))}
+                    {missingAssets.length === 0 && (
+                        <p className="text-center text-gray-500 py-4">All assets have been found!</p>
+                    )}
                 </ul>
             )}
              {activeTab === 'found' && (
@@ -181,27 +219,33 @@ const InventoryAudit: React.FC<InventoryAuditProps> = ({ location, mode, navigat
                     {foundAssets.map(asset => (
                         <li key={asset.id} className="py-3">
                             <p className="font-medium">{asset.name}</p>
-                            <p className="text-sm text-gray-500">{asset.id}</p>
+                            <p className="text-sm text-gray-500">ID: {asset.id} | Tag: {asset.asset_tag}</p>
                         </li>
                     ))}
+                    {foundAssets.length === 0 && (
+                        <p className="text-center text-gray-500 py-4">No assets found yet</p>
+                    )}
                 </ul>
             )}
              {activeTab === 'misplaced' && (
                 <ul className="divide-y divide-gray-200">
-                    {misplacedAssets.map(asset => (
-                        <li key={asset.id} className="py-3">
+                    {misplacedAssets.map((asset, idx) => (
+                        <li key={idx} className="py-3">
                             <p className="font-medium">{asset.name}</p>
-                            <p className="text-sm text-gray-500">{asset.id}</p>
-                            <p className="text-sm text-yellow-600">{t('inventory_audit.should_be_at', { location: asset.location })}</p>
+                            <p className="text-sm text-gray-500">ID: {asset.id} | Tag: {asset.asset_code}</p>
+                            <p className="text-sm text-yellow-600">Should be in: {asset.current_unit_name}</p>
                         </li>
                     ))}
+                    {misplacedAssets.length === 0 && (
+                        <p className="text-center text-gray-500 py-4">No misplaced assets detected</p>
+                    )}
                 </ul>
             )}
         </div>
       </div>
       <Modal isOpen={!!reportingAsset} onClose={() => setReportingAsset(null)}>
-        {reportingAsset && <ReportIssueForm 
-            asset={reportingAsset} 
+        {reportingAsset && <ReportIssueForm
+            asset={reportingAsset}
             onClose={() => setReportingAsset(null)}
             onSuccess={() => {
                 alert('Report submitted.');

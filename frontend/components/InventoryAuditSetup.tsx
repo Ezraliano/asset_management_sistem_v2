@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
-import { getAssets } from '../services/api';
-import { View } from '../types';
+import { getUnits, startInventoryAudit } from '../services/api';
+import { View, Unit } from '../types';
 import { useTranslation } from '../hooks/useTranslation';
 import { AuditIcon, CameraIcon, QRIcon } from './icons';
 
@@ -11,28 +11,62 @@ interface InventoryAuditSetupProps {
 
 const InventoryAuditSetup: React.FC<InventoryAuditSetupProps> = ({ navigateTo }) => {
   const { t } = useTranslation();
-  const [locations, setLocations] = useState<string[]>([]);
-  const [selectedLocation, setSelectedLocation] = useState('');
+  const [units, setUnits] = useState<Unit[]>([]);
+  const [selectedUnitId, setSelectedUnitId] = useState<number | null>(null);
   const [scanMode, setScanMode] = useState<'camera' | 'manual' | null>(null);
   const [loading, setLoading] = useState(true);
+  const [starting, setStarting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const fetchLocations = async () => {
+    const fetchUnits = async () => {
       setLoading(true);
-      const allAssets = await getAssets();
-      const uniqueLocations = [...new Set(allAssets.map(a => a.location))].sort();
-      setLocations(uniqueLocations);
-      if (uniqueLocations.length > 0) {
-        setSelectedLocation(uniqueLocations[0]);
+      try {
+        const fetchedUnits = await getUnits();
+        const activeUnits = fetchedUnits.filter(u => u.is_active);
+        setUnits(activeUnits);
+        if (activeUnits.length > 0) {
+          setSelectedUnitId(activeUnits[0].id);
+        }
+      } catch (err: any) {
+        setError(err.message || 'Failed to load units');
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
     };
-    fetchLocations();
+    fetchUnits();
   }, []);
 
-  const handleStartAudit = () => {
-    if (selectedLocation && scanMode) {
-      navigateTo({ type: 'INVENTORY_AUDIT_SESSION', location: selectedLocation, mode: scanMode });
+  const handleStartAudit = async () => {
+    if (!selectedUnitId || !scanMode) return;
+
+    setStarting(true);
+    setError(null);
+
+    try {
+      const selectedUnit = units.find(u => u.id === selectedUnitId);
+      if (!selectedUnit) {
+        throw new Error('Selected unit not found');
+      }
+
+      // Create audit session
+      const audit = await startInventoryAudit({
+        unit_id: selectedUnitId,
+        scan_mode: scanMode,
+      });
+
+      // Navigate to audit session
+      navigateTo({
+        type: 'INVENTORY_AUDIT_SESSION',
+        unitId: selectedUnitId,
+        unitName: selectedUnit.name,
+        auditId: audit.id,
+        mode: scanMode
+      });
+    } catch (err: any) {
+      setError(err.message || 'Failed to start audit');
+    } finally {
+      setStarting(false);
     }
   };
 
@@ -61,23 +95,31 @@ const InventoryAuditSetup: React.FC<InventoryAuditSetupProps> = ({ navigateTo })
           <AuditIcon />
         </div>
         <h1 className="text-3xl font-bold text-dark-text mb-6">{t('inventory_audit.setup_title')}</h1>
-        
+
+        {error && (
+          <div className="mb-4 p-3 bg-red-100 text-red-700 rounded-lg">
+            {error}
+          </div>
+        )}
+
         {loading ? (
-          <p>{t('inventory_audit.loading_locations')}</p>
-        ) : locations.length > 0 ? (
+          <p>Loading units...</p>
+        ) : units.length > 0 ? (
           <div className="space-y-6">
             <div>
-              <label htmlFor="location-select" className="block text-lg text-medium-text mb-2">
-                {t('inventory_audit.select_location')}
+              <label htmlFor="unit-select" className="block text-lg text-medium-text mb-2">
+                Select Unit to Audit
               </label>
               <select
-                id="location-select"
-                value={selectedLocation}
-                onChange={(e) => setSelectedLocation(e.target.value)}
+                id="unit-select"
+                value={selectedUnitId || ''}
+                onChange={(e) => setSelectedUnitId(Number(e.target.value))}
                 className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-lg"
               >
-                {locations.map(loc => (
-                  <option key={loc} value={loc}>{loc}</option>
+                {units.map(unit => (
+                  <option key={unit.id} value={unit.id}>
+                    {unit.name} ({unit.code})
+                  </option>
                 ))}
               </select>
             </div>
@@ -94,14 +136,14 @@ const InventoryAuditSetup: React.FC<InventoryAuditSetupProps> = ({ navigateTo })
 
             <button
               onClick={handleStartAudit}
-              disabled={!selectedLocation || !scanMode}
+              disabled={!selectedUnitId || !scanMode || starting}
               className="w-full bg-primary text-white font-bold py-3 px-4 rounded-lg mt-6 hover:bg-primary-dark transition-all duration-300 ease-in-out transform hover:scale-105 disabled:bg-gray-400 disabled:cursor-not-allowed disabled:scale-100"
             >
-              {t('inventory_audit.start_audit')}
+              {starting ? 'Starting Audit...' : t('inventory_audit.start_audit')}
             </button>
           </div>
         ) : (
-          <p className="text-medium-text">{t('inventory_audit.no_locations')}</p>
+          <p className="text-medium-text">No active units available for audit</p>
         )}
       </div>
     </div>

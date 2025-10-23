@@ -1,5 +1,5 @@
 // api.ts - PERBAIKAN RESPONSE HANDLING
-import { Asset, AssetMovement, Maintenance, User, DamageReport, LossReport, DashboardStats, AssetLoan, AssetLoanStatus, Unit, AssetSale, IncidentReport, AssetRequest } from '../types';
+import { Asset, AssetMovement, Maintenance, User, DamageReport, LossReport, DashboardStats, AssetLoan, AssetLoanStatus, Unit, AssetSale, IncidentReport, AssetRequest, InventoryAudit } from '../types';
 
 const API_BASE_URL = 'http://localhost:8000/api';
 
@@ -1530,5 +1530,99 @@ export const getAllReports = async (filters?: ReportFilters): Promise<any> => {
       message: error.message || 'Failed to retrieve all reports',
       data: null,
     };
+  }
+};
+
+
+// ==================== INVENTORY AUDIT API ====================
+
+export const getInventoryAudits = async (params?: { status?: string; unit_id?: number }): Promise<InventoryAudit[]> => {
+  const queryParams = new URLSearchParams();
+  if (params?.status) queryParams.append('status', params.status);
+  if (params?.unit_id) queryParams.append('unit_id', params.unit_id.toString());
+
+  const queryString = queryParams.toString();
+  const endpoint = queryString ? `/inventory-audits?${queryString}` : '/inventory-audits';
+
+  try {
+    const response = await apiRequest(endpoint);
+    const handledResponse = handleApiResponse<any>(response);
+
+    if (Array.isArray(handledResponse)) {
+      return handledResponse;
+    }
+
+    console.warn('Inventory audits response is not in a recognized format:', handledResponse);
+    return [];
+  } catch (error: any) {
+    console.error('Error in getInventoryAudits:', error);
+    return [];
+  }
+};
+
+export const startInventoryAudit = async (auditData: {
+  unit_id: number;
+  scan_mode: 'camera' | 'manual';
+  notes?: string;
+}): Promise<InventoryAudit> => {
+  const data = await apiRequest('/inventory-audits', {
+    method: 'POST',
+    body: JSON.stringify(auditData),
+  });
+  return handleApiResponse<any>(data).audit;
+};
+
+export const getInventoryAuditById = async (id: number): Promise<InventoryAudit | null> => {
+  try {
+    const data = await apiRequest(`/inventory-audits/${id}`);
+    return handleApiResponse<InventoryAudit>(data);
+  } catch (error) {
+    console.error('Get inventory audit by ID error:', error);
+    return null;
+  }
+};
+
+export const scanAssetInAudit = async (auditId: number, assetId: string): Promise<any> => {
+  try {
+    const data = await apiRequest(`/inventory-audits/${auditId}/scan`, {
+      method: 'POST',
+      body: JSON.stringify({ asset_id: assetId }),
+    });
+    return data;
+  } catch (error: any) {
+    console.error('Scan asset in audit error:', error);
+    throw error;
+  }
+};
+
+export const completeInventoryAudit = async (auditId: number, notes?: string): Promise<InventoryAudit> => {
+  const data = await apiRequest(`/inventory-audits/${auditId}/complete`, {
+    method: 'POST',
+    body: JSON.stringify({ notes }),
+  });
+  return handleApiResponse<any>(data).audit;
+};
+
+export const cancelInventoryAudit = async (auditId: number): Promise<boolean> => {
+  try {
+    await apiRequest(`/inventory-audits/${auditId}/cancel`, {
+      method: 'POST',
+    });
+    return true;
+  } catch (error) {
+    console.error('Cancel inventory audit error:', error);
+    return false;
+  }
+};
+
+export const deleteInventoryAudit = async (auditId: number): Promise<boolean> => {
+  try {
+    await apiRequest(`/inventory-audits/${auditId}`, {
+      method: 'DELETE',
+    });
+    return true;
+  } catch (error) {
+    console.error('Delete inventory audit error:', error);
+    throw error;
   }
 };
