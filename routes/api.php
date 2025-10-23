@@ -92,10 +92,20 @@ Route::middleware(['auth:sanctum'])->group(function () {
         });
     });
 
-    // Asset Loan Routes - Base routes for all authenticated users (role-based filtering in controller)
+    // Asset Movement Routes - Base routes for all authenticated users (role-based filtering in controller)
     Route::middleware(['auth:sanctum'])->group(function () {
-        Route::apiResource('asset-movements', AssetMovementController::class);
+        Route::get('/asset-movements', [AssetMovementController::class, 'index']);
+        Route::get('/asset-movements/{id}', [AssetMovementController::class, 'show']);
         Route::get('/assets/{assetId}/movements', [AssetMovementController::class, 'getAssetMovements']);
+        Route::delete('/asset-movements/{id}', [AssetMovementController::class, 'destroy']);
+    });
+
+    // Asset Movement Management Routes (Admin only - Super Admin/Admin Holding/Admin Unit)
+    Route::middleware('role:Super Admin,Admin Holding,Admin Unit')->group(function () {
+        Route::post('/asset-movements/request-transfer', [AssetMovementController::class, 'requestTransfer']);
+        Route::get('/asset-movements-pending', [AssetMovementController::class, 'getPendingMovements']);
+        Route::post('/asset-movements/{id}/approve', [AssetMovementController::class, 'approveTransfer']);
+        Route::post('/asset-movements/{id}/reject', [AssetMovementController::class, 'rejectTransfer']);
 
         // Asset Loan Routes - Role-based filtering handled in controller (NO ROLE MIDDLEWARE)
         Route::get('/asset-loans', [AssetLoanController::class, 'index']);

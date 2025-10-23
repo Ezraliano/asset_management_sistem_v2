@@ -3,6 +3,7 @@ import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { getAssets, deleteAsset, generateAllDepreciation } from '../services/api';
 import { Asset, AssetStatus, View } from '../types';
 import AssetForm from './AssetForm';
+import AssetTransferValidation from './AssetTransferValidation';
 import Modal from './Modal';
 import { EditIcon, DeleteIcon, PlusIcon, ViewIcon, FilterIcon, XIcon, AssetIcon, DownloadIcon } from './icons';
 import { useTranslation } from '../hooks/useTranslation';
@@ -19,12 +20,13 @@ const AssetList: React.FC<AssetListProps> = ({ navigateTo }) => {
   const [assets, setAssets] = useState<Asset[]>([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setModalOpen] = useState(false);
+  const [isTransferModalOpen, setTransferModalOpen] = useState(false);
   const [editingAsset, setEditingAsset] = useState<Asset | undefined>(undefined);
   const [filters, setFilters] = useState({ category: '', unit_id: '', status: '' });
   const [showFilters, setShowFilters] = useState(false);
   const [error, setError] = useState<string>('');
   const [totalAssets, setTotalAssets] = useState(0);
-  
+
   // State untuk checklist dan paginasi
   const [selectedAssets, setSelectedAssets] = useState<Set<number>>(new Set());
   const [currentPage, setCurrentPage] = useState(1);
@@ -289,6 +291,15 @@ const AssetList: React.FC<AssetListProps> = ({ navigateTo }) => {
             <span className="ml-2">Filters</span>
           </button>
           <button
+            onClick={() => setTransferModalOpen(true)}
+            className="flex items-center bg-orange-600 text-white px-4 py-2 rounded-lg shadow hover:bg-orange-700 transition-colors"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+              <path d="M8 5a1 1 0 100 2h5.586l-1.293 1.293a1 1 0 001.414 1.414l3-3a1 1 0 000-1.414l-3-3a1 1 0 10-1.414 1.414L13.586 5H8zM12 15a1 1 0 100-2H6.414l1.293-1.293a1 1 0 10-1.414-1.414l-3 3a1 1 0 000 1.414l3 3a1 1 0 001.414-1.414L6.414 15H12z" />
+            </svg>
+            <span className="ml-2">Validasi Perpindahan</span>
+          </button>
+          <button
             onClick={handleDepreciateAssets}
             disabled={loading}
             className="flex items-center bg-green-600 text-white px-4 py-2 rounded-lg shadow hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
@@ -506,10 +517,16 @@ const AssetList: React.FC<AssetListProps> = ({ navigateTo }) => {
       </div>
 
       <Modal isOpen={isModalOpen} onClose={() => setModalOpen(false)}>
-        <AssetForm 
-          asset={editingAsset} 
+        <AssetForm
+          asset={editingAsset}
           onSuccess={handleFormSuccess}
           onClose={() => setModalOpen(false)}
+        />
+      </Modal>
+
+      <Modal isOpen={isTransferModalOpen} onClose={() => setTransferModalOpen(false)}>
+        <AssetTransferValidation
+          onRefresh={fetchAssets}
         />
       </Modal>
     </div>

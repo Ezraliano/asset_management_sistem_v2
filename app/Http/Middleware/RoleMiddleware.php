@@ -93,6 +93,15 @@ class RoleMiddleware
             return $next($request);
         }
 
+        // ✅ EXCEPTION: Skip unit validation for asset-movements (perpindahan asset antar unit)
+        // Validasi untuk asset movements akan dilakukan di controller level
+        if ($request->is('api/asset-movements/*') ||
+            $request->is('api/asset-movements-pending') ||
+            $request->is('api/asset-movements/request-transfer')) {
+            // Let controller handle the authorization for cross-unit asset transfers
+            return $next($request);
+        }
+
         // ✅ EXCEPTION: Skip unit validation for return approval/rejection routes
         // Validasi untuk return approval akan dilakukan di controller level
         if ($request->is('api/asset-loans/*/approve-return') || $request->is('api/asset-loans/*/reject-return')) {

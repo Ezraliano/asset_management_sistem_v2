@@ -81,11 +81,20 @@ export interface Maintenance {
 export interface AssetMovement {
   id: number;
   asset_id: number;
-  moved_by_id: number;
-  location: string;
-  moved_at: string;
-  moved_by?: User;
+  from_unit_id: number;
+  to_unit_id: number;
+  requested_by_id: number;
+  validated_by_id?: number | null;
+  status: 'PENDING' | 'APPROVED' | 'REJECTED';
+  notes?: string | null;
+  rejection_reason?: string | null;
+  requested_at: string;
+  validated_at?: string | null;
   asset?: Asset;
+  fromUnit?: Unit;
+  toUnit?: Unit;
+  requestedBy?: User;
+  validatedBy?: User;
 }
 
 export interface IncidentReport {

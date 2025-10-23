@@ -550,17 +550,79 @@ export const getAvailableAssets = async (search?: string): Promise<Asset[]> => {
   }
 };
 
+// ==================== ASSET MOVEMENT API (WITH VALIDATION) ====================
+
 export const getAllMovements = async (): Promise<AssetMovement[]> => {
-  const data = await apiRequest('/asset-movements');
-  return handleApiResponse<AssetMovement[]>(data);
+  try {
+    const data = await apiRequest('/asset-movements');
+    const movements = handleApiResponse<AssetMovement[]>(data);
+    return Array.isArray(movements) ? movements : [];
+  } catch (error) {
+    console.error('Get all movements error:', error);
+    return [];
+  }
 };
 
-export const addAssetMovement = async (movementData: { assetId: string; location: string; movedBy: string }): Promise<AssetMovement> => {
-  const data = await apiRequest('/asset-movements', {
+export const requestAssetTransfer = async (transferData: {
+  asset_id: number;
+  to_unit_id: number;
+  notes?: string;
+}): Promise<any> => {
+  const data = await apiRequest('/asset-movements/request-transfer', {
     method: 'POST',
-    body: JSON.stringify(movementData),
+    body: JSON.stringify(transferData),
   });
-  return handleApiResponse<AssetMovement>(data);
+  return handleApiResponse<any>(data);
+};
+
+export const getPendingMovements = async (): Promise<AssetMovement[]> => {
+  try {
+    const data = await apiRequest('/asset-movements-pending');
+    const movements = handleApiResponse<AssetMovement[]>(data);
+    return Array.isArray(movements) ? movements : [];
+  } catch (error) {
+    console.error('Get pending movements error:', error);
+    return [];
+  }
+};
+
+export const approveAssetTransfer = async (movementId: number): Promise<any> => {
+  const data = await apiRequest(`/asset-movements/${movementId}/approve`, {
+    method: 'POST',
+  });
+  return handleApiResponse<any>(data);
+};
+
+export const rejectAssetTransfer = async (movementId: number, rejectionData: {
+  rejection_reason: string;
+}): Promise<any> => {
+  const data = await apiRequest(`/asset-movements/${movementId}/reject`, {
+    method: 'POST',
+    body: JSON.stringify(rejectionData),
+  });
+  return handleApiResponse<any>(data);
+};
+
+export const cancelAssetMovement = async (movementId: number): Promise<boolean> => {
+  try {
+    const data = await apiRequest(`/asset-movements/${movementId}`, {
+      method: 'DELETE',
+    });
+    return data.success || true;
+  } catch (error) {
+    console.error('Cancel asset movement error:', error);
+    return false;
+  }
+};
+
+export const getAssetMovementById = async (movementId: number): Promise<any | null> => {
+  try {
+    const data = await apiRequest(`/asset-movements/${movementId}`);
+    return handleApiResponse<any>(data);
+  } catch (error) {
+    console.error('Get asset movement by ID error:', error);
+    return null;
+  }
 };
 
 // Maintenance API
