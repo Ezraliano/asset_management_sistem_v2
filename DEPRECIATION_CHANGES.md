@@ -829,6 +829,219 @@ Jika ada pertanyaan atau issues:
 
 ---
 
-**Last Updated:** 22 Oktober 2025, 13:05 PM
-**Version:** 2.0
+**Last Updated:** 23 Oktober 2025, 10:30 AM
+**Version:** 2.1
+**Status:** ✅ Production Ready
+
+---
+
+## 🆕 Update Version 2.1 (23 Oktober 2025)
+
+### Perubahan Terbaru
+
+#### 1. Button "Depresiasi Asset" di Asset List
+**File:** `frontend/components/AssetList.tsx`
+
+**Penambahan:**
+- Button baru "Depresiasi Asset" di samping button "Filters" pada halaman Asset List
+- Button ini akan melakukan depresiasi untuk **semua asset yang sudah waktunya** secara otomatis
+- Asset yang belum waktunya depresiasi akan dilewati (tidak error)
+
+**Lokasi:** [AssetList.tsx:291-298](frontend/components/AssetList.tsx#L291-L298)
+
+**Code:**
+```tsx
+<button
+  onClick={handleDepreciateAssets}
+  disabled={loading}
+  className="flex items-center bg-green-600 text-white px-4 py-2 rounded-lg shadow hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+>
+  <AssetIcon />
+  <span className="ml-2">Depresiasi Asset</span>
+</button>
+```
+
+**Cara Kerja:**
+1. User klik button "Depresiasi Asset"
+2. Muncul konfirmasi: "Apakah Anda yakin ingin melakukan depresiasi untuk semua asset yang sudah waktunya?"
+3. Sistem akan:
+   - Loop semua asset yang aktif (status bukan 'Disposed' atau 'Lost')
+   - Cek `pendingMonths` untuk setiap asset
+   - Hanya generate depresiasi untuk asset dengan `pendingMonths > 0`
+   - Skip asset yang belum waktunya tanpa error
+4. Tampilkan hasil: "Depresiasi berhasil dilakukan untuk X asset"
+
+**Contoh Skenario (sesuai permintaan Anda):**
+```
+Tanggal sekarang: 23 Oktober 2025
+Asset 1: Dibeli 4 Januari 2025, useful_life 12 bulan
+  → Elapsed months: 9 bulan
+  → Pending months: Tergantung sudah terdepresiasi berapa kali
+  → Jika pending > 0: ✅ AKAN TERDEPRESIASI
+
+Asset 2: Dibeli 5 Januari 2025, useful_life 12 bulan
+  → Elapsed months: 9 bulan
+  → Pending months: Tergantung sudah terdepresiasi berapa kali
+  → Jika pending > 0: ✅ AKAN TERDEPRESIASI
+
+Asset 3: Dibeli 27 Januari 2025, useful_life 12 bulan
+  → Elapsed months: 8 bulan
+  → Pending months: Tergantung sudah terdepresiasi berapa kali
+  → Jika pending > 0: ✅ AKAN TERDEPRESIASI
+  → Jika pending = 0: ⏭️ DILEWATI (tidak error)
+```
+
+**CATATAN PENTING:**
+Perhitungan elapsed months mempertimbangkan:
+- Tanggal pembelian
+- Hari dalam bulan (jika hari sekarang < hari pembelian, bulan ini belum dihitung)
+- Execution time dari scheduler settings
+
+---
+
+#### 2. Dokumentasi untuk Testing
+**File:** `app/Services/DepreciationService.php`
+
+**Penambahan:**
+Komentar jelas di baris 124-127 untuk memudahkan testing:
+
+```php
+// 📝 CATATAN UNTUK TESTING:
+// Jika ingin test depresiasi tanpa menunggu waktu yang sebenarnya,
+// comment out baris 128-133 di bawah ini (tambahkan // di awal setiap baris)
+// Jangan lupa uncomment kembali setelah testing selesai!
+$pendingMonths = $asset->getPendingDepreciationMonths();
+if ($pendingMonths <= 0) {
+    $now = Carbon::now('Asia/Jakarta');
+    $nextDepreciationDate = $this->calculateDepreciationDate($asset, $nextSequence);
+    Log::info("Asset {$asset->asset_tag} cannot generate manual - not yet time...");
+    return false;
+}
+```
+
+**Cara Testing Tanpa Validasi Waktu:**
+
+1. **Buka file:** `app/Services/DepreciationService.php`
+2. **Temukan baris 128-133** (validasi waktu)
+3. **Comment out dengan menambahkan // di awal setiap baris:**
+   ```php
+   // $pendingMonths = $asset->getPendingDepreciationMonths();
+   // if ($pendingMonths <= 0) {
+   //     $now = Carbon::now('Asia/Jakarta');
+   //     $nextDepreciationDate = $this->calculateDepreciationDate($asset, $nextSequence);
+   //     Log::info("Asset {$asset->asset_tag} cannot generate manual - not yet time...");
+   //     return false;
+   // }
+   ```
+4. **Test depresiasi** - sekarang bisa depresiasi tanpa menunggu waktu
+5. **⚠️ PENTING: Uncomment kembali setelah testing!**
+
+---
+
+#### 3. Logika Depresiasi Otomatis yang Cerdas
+
+**File:** `app/Services/DepreciationService.php` → Method `generateAllPendingDepreciation()`
+
+Logika yang sudah ada di sistem ini **SUDAH BENAR** dan sesuai dengan kebutuhan Anda:
+
+```php
+public function generateAllPendingDepreciation(): int
+{
+    $assets = Asset::whereNotIn('status', ['Disposed', 'Lost'])->get();
+    $totalProcessed = 0;
+
+    foreach ($assets as $asset) {
+        $pendingMonths = $asset->getPendingDepreciationMonths();
+
+        // ✅ Hanya proses jika ada pending months (sudah waktunya)
+        for ($i = 0; $i < $pendingMonths; $i++) {
+            $success = $this->generateNextDepreciation($asset);
+            if ($success) {
+                $totalProcessed++;
+            } else {
+                break;  // Stop jika gagal (misal: nilai buku sudah 0)
+            }
+        }
+    }
+
+    return $totalProcessed;
+}
+```
+
+**Cara Kerja:**
+1. Ambil semua asset yang aktif
+2. Untuk setiap asset, hitung `pendingMonths`
+3. **Jika `pendingMonths = 0`** → Loop tidak jalan, asset ini dilewati ✅
+4. **Jika `pendingMonths > 0`** → Generate depresiasi sebanyak pending months ✅
+
+**Contoh dengan Data Anda (23 Oktober 2025):**
+
+| Asset | Tgl Beli | Useful Life | Elapsed Months | Sudah Depresiasi | Pending | Aksi |
+|-------|----------|-------------|----------------|------------------|---------|------|
+| Asset 1 | 4 Jan 2025 | 12 bulan | 9 bulan | 8 kali | 1 bulan | ✅ Depresiasi 1x |
+| Asset 2 | 5 Jan 2025 | 12 bulan | 9 bulan | 9 kali | 0 bulan | ⏭️ Dilewati |
+| Asset 3 | 27 Jan 2025 | 12 bulan | 8 bulan | 8 kali | 0 bulan | ⏭️ Dilewati |
+
+**Hasil:**
+```json
+{
+  "success": true,
+  "message": "Depreciation generated for 1 asset month(s)",
+  "data": {
+    "processed_count": 1
+  }
+}
+```
+
+---
+
+### Testing Version 2.1
+
+#### Test Case: Button Depresiasi Asset
+
+**Langkah Testing:**
+1. Login sebagai Super Admin
+2. Navigate ke halaman "Asset" (Asset List)
+3. Observasi button "Depresiasi Asset" di samping button "Filters"
+4. Klik button tersebut
+5. Konfirmasi dialog yang muncul
+6. Observasi hasil
+
+**Expected Result:**
+- Alert muncul: "Depresiasi berhasil dilakukan untuk X asset"
+- X = jumlah asset yang memiliki pending months > 0
+- Asset list di-refresh otomatis
+- Log tercatat di `storage/logs/laravel.log`
+
+**Test dengan Comment Out Validasi Waktu:**
+1. Comment out validasi waktu di `DepreciationService.php` (baris 128-133)
+2. Klik button "Depresiasi Asset"
+3. Sekarang **SEMUA** asset yang masih punya sisa useful life akan terdepresiasi
+4. Uncomment kembali setelah testing
+
+---
+
+### Catatan Penting Version 2.1
+
+1. **Button "Depresiasi Asset" menggunakan endpoint `/depreciation/generate-all`**
+   - Endpoint ini sudah ada sejak version 2.0
+   - Hanya ditambahkan UI button untuk memudahkan akses
+
+2. **Validasi waktu tetap aktif by default**
+   - Untuk production: validasi waktu HARUS aktif
+   - Untuk testing: bisa dicomment temporary
+
+3. **Pending months calculation tetap mempertimbangkan:**
+   - Elapsed months (dari purchase date)
+   - Depreciated months (jumlah record depresiasi yang sudah ada)
+   - Execution time dari scheduler settings
+
+4. **Asset yang belum waktunya tidak akan error, hanya dilewati**
+   - Ini sesuai dengan logika loop di `generateAllPendingDepreciation()`
+   - Jika `pendingMonths = 0`, loop `for ($i = 0; $i < 0; $i++)` tidak jalan
+
+---
+
+**Last Updated:** 23 Oktober 2025, 10:30 AM
+**Version:** 2.1
 **Status:** ✅ Production Ready

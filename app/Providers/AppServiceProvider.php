@@ -26,18 +26,21 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         // ==================== AUTO DEPRECIATION EVENT HANDLING ====================
-        
-        // Handle asset creation - trigger auto depreciation
-        \App\Models\Asset::created(function ($asset) {
-            $this->handleAutoDepreciation($asset, 'created');
-        });
+        // 📝 DISABLED: Auto depreciation on asset create/update
+        // Depreciation sekarang dilakukan secara manual melalui button "Depresiasi Asset"
+        // atau via scheduled command
 
-        // Handle asset updates - trigger auto depreciation jika field terkait berubah
-        \App\Models\Asset::updated(function ($asset) {
-            if ($asset->isDirty(['purchase_date', 'value', 'useful_life', 'status'])) {
-                $this->handleAutoDepreciation($asset, 'updated');
-            }
-        });
+        // ❌ COMMENTED OUT - Asset creation auto depreciation
+        // \App\Models\Asset::created(function ($asset) {
+        //     $this->handleAutoDepreciation($asset, 'created');
+        // });
+
+        // ❌ COMMENTED OUT - Asset update auto depreciation
+        // \App\Models\Asset::updated(function ($asset) {
+        //     if ($asset->isDirty(['purchase_date', 'value', 'useful_life', 'status'])) {
+        //         $this->handleAutoDepreciation($asset, 'updated');
+        //     }
+        // });
 
         // ==================== SCHEDULED COMMANDS ====================
         

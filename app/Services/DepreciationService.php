@@ -121,6 +121,10 @@ class DepreciationService
         }
 
         // ✅ VALIDASI WAKTU: Cek apakah sudah waktunya untuk depresiasi berikutnya
+        // 📝 CATATAN UNTUK TESTING:
+        // Jika ingin test depresiasi tanpa menunggu waktu yang sebenarnya,
+        // comment out baris 125-130 di bawah ini (tambahkan // di awal setiap baris)
+        // Jangan lupa uncomment kembali setelah testing selesai!
         $pendingMonths = $asset->getPendingDepreciationMonths();
         if ($pendingMonths <= 0) {
             $now = Carbon::now('Asia/Jakarta');
@@ -264,40 +268,48 @@ class DepreciationService
 
     /**
      * Generate semua depresiasi yang tertunda (auto) - VERSI DIPERBAIKI
+     * Returns array with detailed statistics
      */
-    public function generateAllPendingDepreciation(): int
+    public function generateAllPendingDepreciation(): array
     {
         $assets = Asset::whereNotIn('status', ['Disposed', 'Lost'])->get();
-        $totalProcessed = 0;
-        
+        $totalMonthsProcessed = 0;
+        $totalAssetsProcessed = 0;
+
         Log::info("Starting generation of ALL pending depreciation for {$assets->count()} assets");
-        
+
         foreach ($assets as $asset) {
             $pendingMonths = $asset->getPendingDepreciationMonths();
             $assetProcessed = 0;
-            
+
             Log::info("Asset {$asset->asset_tag} has {$pendingMonths} pending months");
-            
+
             // Generate semua bulan yang tertunda
             for ($i = 0; $i < $pendingMonths; $i++) {
                 $success = $this->generateNextDepreciation($asset);
                 if ($success) {
                     $assetProcessed++;
-                    $totalProcessed++;
+                    $totalMonthsProcessed++;
                     Log::info("Generated pending depreciation {$assetProcessed} for asset {$asset->asset_tag}");
                 } else {
                     Log::info("Stopping depreciation generation for asset {$asset->asset_tag} - generation failed");
                     break;
                 }
             }
-            
+
             if ($assetProcessed > 0) {
+                $totalAssetsProcessed++;
                 Log::info("Generated {$assetProcessed} pending depreciation records for asset {$asset->asset_tag}");
             }
         }
-        
-        Log::info("Completed generation of all pending depreciation. Total processed: {$totalProcessed}");
-        return $totalProcessed;
+
+        Log::info("Completed generation of all pending depreciation. Total months processed: {$totalMonthsProcessed} across {$totalAssetsProcessed} assets");
+
+        return [
+            'total_months_processed' => $totalMonthsProcessed,
+            'total_assets_processed' => $totalAssetsProcessed,
+            'total_assets_checked' => $assets->count()
+        ];
     }
 
     /**

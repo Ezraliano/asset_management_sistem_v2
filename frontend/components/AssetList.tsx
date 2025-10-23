@@ -1,6 +1,6 @@
 // AssetList.tsx - DENGAN CHECKLIST, PAGINASI, DAN UNDUH QR CODE
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { getAssets, deleteAsset } from '../services/api';
+import { getAssets, deleteAsset, generateAllDepreciation } from '../services/api';
 import { Asset, AssetStatus, View } from '../types';
 import AssetForm from './AssetForm';
 import Modal from './Modal';
@@ -168,6 +168,29 @@ const AssetList: React.FC<AssetListProps> = ({ navigateTo }) => {
     }
   };
 
+  const handleDepreciateAssets = async () => {
+    if (!window.confirm('Apakah Anda yakin ingin melakukan depresiasi untuk semua asset yang sudah waktunya? Asset yang belum waktunya tidak akan terdepresiasi.')) {
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const result = await generateAllDepreciation();
+
+      if (result.success) {
+        alert(`Depresiasi berhasil dilakukan untuk ${result.processed_count} asset.`);
+        fetchAssets(); // Refresh asset list
+      } else {
+        alert(`Depresiasi gagal: ${result.message}`);
+      }
+    } catch (error: any) {
+      console.error('Failed to depreciate assets:', error);
+      alert('Terjadi kesalahan saat melakukan depresiasi. Silakan coba lagi.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleEdit = (asset: Asset) => {
     setEditingAsset(asset);
     setModalOpen(true);
@@ -265,8 +288,16 @@ const AssetList: React.FC<AssetListProps> = ({ navigateTo }) => {
             <FilterIcon />
             <span className="ml-2">Filters</span>
           </button>
-          <button 
-            onClick={handleAdd} 
+          <button
+            onClick={handleDepreciateAssets}
+            disabled={loading}
+            className="flex items-center bg-green-600 text-white px-4 py-2 rounded-lg shadow hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <AssetIcon />
+            <span className="ml-2">Depresiasi Asset</span>
+          </button>
+          <button
+            onClick={handleAdd}
             className="flex items-center bg-primary text-white px-4 py-2 rounded-lg shadow hover:bg-primary-dark transition-colors"
           >
             <PlusIcon />

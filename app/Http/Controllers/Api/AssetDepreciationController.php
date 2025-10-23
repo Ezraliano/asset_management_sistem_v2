@@ -399,16 +399,18 @@ class AssetDepreciationController extends Controller
     {
         try {
             Log::info("🔄 Generating depreciation for all assets");
-            
-            $count = $this->depreciationService->generateAllPendingDepreciation();
 
-            Log::info("✅ Successfully generated depreciation for {$count} asset month(s)");
-            
+            $result = $this->depreciationService->generateAllPendingDepreciation();
+
+            Log::info("✅ Successfully generated depreciation for {$result['total_assets_processed']} asset(s) ({$result['total_months_processed']} months total)");
+
             return response()->json([
                 'success' => true,
-                'message' => "Depreciation generated for {$count} asset month(s)",
+                'message' => "Depreciation generated for {$result['total_assets_processed']} asset(s)",
                 'data' => [
-                    'processed_count' => $count,
+                    'processed_count' => $result['total_assets_processed'],
+                    'total_months_processed' => $result['total_months_processed'],
+                    'total_assets_checked' => $result['total_assets_checked'],
                     'timestamp' => now()->toDateTimeString()
                 ]
             ]);
@@ -416,7 +418,7 @@ class AssetDepreciationController extends Controller
         } catch (\Exception $e) {
             Log::error("❌ Error generating all depreciation: " . $e->getMessage());
             Log::error("📋 Stack trace: " . $e->getTraceAsString());
-            
+
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to generate depreciation: ' . $e->getMessage()
