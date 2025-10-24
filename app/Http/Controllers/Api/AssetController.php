@@ -138,7 +138,7 @@ class AssetController extends Controller
                 'value' => 'required|numeric|min:0',
                 'purchase_date' => 'required|date|before_or_equal:today',
                 'useful_life' => 'required|integer|min:1',
-                'status' => 'required|in:In Use,In Repair,Disposed,Lost,Available,Terpinjam',
+                'status' => 'required|in:Available,Terpinjam,Terjual,Lost,Dalam Perbaikan,Rusak,Dalam Pemeliharaan',
             ]);
 
             // ✅ Middleware sudah validasi role, kita hanya perlu handle business logic
@@ -280,7 +280,7 @@ class AssetController extends Controller
                 'value' => 'sometimes|required|numeric|min:0',
                 'purchase_date' => 'sometimes|required|date|before_or_equal:today',
                 'useful_life' => 'sometimes|required|integer|min:1',
-                'status' => 'sometimes|required|in:In Use,In Repair,Disposed,Lost,Available,Terpinjam',
+                'status' => 'sometimes|required|in:Available,Terpinjam,Terjual,Lost,Dalam Perbaikan,Rusak,Dalam Pemeliharaan',
             ]);
 
             // ✅ Middleware sudah validasi unit permission, langsung proses update
@@ -514,7 +514,7 @@ class AssetController extends Controller
                 'asset_ids.*' => 'exists:assets,id',
                 'updates' => 'required|array',
                 'updates.unit_id' => 'nullable|exists:units,id',
-                'updates.status' => 'sometimes|in:In Use,In Repair,Disposed,Lost',
+                'updates.status' => 'sometimes|in:Available,Terpinjam,Terjual,Lost,Dalam Perbaikan,Rusak,Dalam Pemeliharaan',
                 'updates.category' => 'sometimes|string|max:255',
             ]);
 

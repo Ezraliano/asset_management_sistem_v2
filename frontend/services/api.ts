@@ -861,7 +861,7 @@ export const getUsers = async (): Promise<User[]> => {
 };
 
 // Bulk Assets
-export const addBulkAssets = async (assetsData: Omit<Asset, 'id'>[]): Promise<Asset[]> => {
+export const addBulkAssets = async (assetsData: Omit<Asset, 'id' | 'asset_tag'>[]): Promise<Asset[]> => {
   const promises = assetsData.map(asset => addAsset(asset));
   return Promise.all(promises);
 };

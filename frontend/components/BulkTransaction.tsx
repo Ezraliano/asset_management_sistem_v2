@@ -26,7 +26,7 @@ const BulkTransaction: React.FC<BulkTransactionProps> = ({ navigateTo }) => {
     const lines = csvData.trim().split('\n');
     const header = lines.shift()?.trim().toLowerCase();
 
-    const expectedHeader = "name,category,location,value,purchasedate,usefullife,status";
+    const expectedHeader = "name,category,unit_id,value,purchasedate,usefullife,status";
     if (header !== expectedHeader) {
       setError(t('bulk_transaction.alerts.error'));
       console.error('Invalid CSV header. Expected:', expectedHeader, 'Got:', header);
@@ -34,7 +34,7 @@ const BulkTransaction: React.FC<BulkTransactionProps> = ({ navigateTo }) => {
       return;
     }
 
-    const newAssets: Omit<Asset, 'id' | 'qrCodeUrl'>[] = [];
+    const newAssets: Omit<Asset, 'id' | 'asset_tag'>[] = [];
     const errors: string[] = [];
     const assetStatuses = Object.values(AssetStatus);
 
@@ -49,11 +49,12 @@ const BulkTransaction: React.FC<BulkTransactionProps> = ({ navigateTo }) => {
             continue;
         }
 
-        const [name, category, location, valueStr, purchaseDate, usefulLifeStr, statusStr] = values.map(v => v.trim());
-        
+        const [name, category, unitIdStr, valueStr, purchaseDate, usefulLifeStr, statusStr] = values.map(v => v.trim());
+
         const value = parseFloat(valueStr);
         const usefulLife = parseInt(usefulLifeStr, 10);
-        
+        const unitId = unitIdStr ? parseInt(unitIdStr, 10) : null;
+
         if (isNaN(value) || value < 0) {
             errors.push(t('bulk_transaction.errors.invalid_value', { row: i + 2 }));
             continue;
@@ -61,6 +62,11 @@ const BulkTransaction: React.FC<BulkTransactionProps> = ({ navigateTo }) => {
 
         if (isNaN(usefulLife) || usefulLife < 0) {
             errors.push(t('bulk_transaction.errors.invalid_life', { row: i + 2 }));
+            continue;
+        }
+
+        if (unitIdStr && (isNaN(unitId!) || unitId! < 1)) {
+            errors.push(`Row ${i + 2}: Invalid unit_id. Must be a positive number or leave empty.`);
             continue;
         }
 
@@ -79,10 +85,10 @@ const BulkTransaction: React.FC<BulkTransactionProps> = ({ navigateTo }) => {
         newAssets.push({
             name,
             category,
-            location,
+            unit_id: unitId,
             value,
-            purchaseDate,
-            usefulLife,
+            purchase_date: purchaseDate,
+            useful_life: usefulLife,
             status: foundStatus,
         });
     }

@@ -263,9 +263,9 @@
     "title": "Impor Aset Massal",
     "description": "Tempel data CSV di bawah ini untuk mengimpor banyak aset sekaligus.",
     "csv_format_title": "Format CSV",
-    "csv_format": "name,category,location,value,purchaseDate,usefulLife,status",
-    "csv_format_note": "Catatan: `purchaseDate` harus dalam format YYYY-MM-DD. `usefulLife` dalam satuan bulan. `status` dapat berupa salah satu dari: In Use, In Repair, Disposed, Lost.",
-    "placeholder": "Tempel data CSV di sini...",
+    "csv_format": "name,category,unit_id,value,purchaseDate,usefulLife,status",
+    "csv_format_note": "Catatan: `unit_id` adalah ID unit (angka, boleh kosong). `purchaseDate` harus dalam format YYYY-MM-DD. `usefulLife` dalam satuan bulan. `status` dapat berupa: Available, Terpinjam, Terjual, Lost, Dalam Perbaikan, Rusak, Dalam Pemeliharaan.",
+    "placeholder": "Contoh:\nname,category,unit_id,value,purchaseDate,usefulLife,status\nLaptop Dell,Electronics,1,15000000,2024-01-15,36,Available\nMeja Kantor,Furniture,,2500000,2024-02-01,60,Available",
     "import_button": "Impor Aset",
     "importing_button": "Mengimpor...",
     "alerts": {
