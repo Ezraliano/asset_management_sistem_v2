@@ -16,6 +16,7 @@ use App\Http\Controllers\Api\AssetRequestController;
 use App\Http\Controllers\Api\ReportController;
 use App\Http\Controllers\Api\DepreciationScheduleController;
 use App\Http\Controllers\Api\InventoryAuditController;
+use App\Http\Controllers\Api\UserController;
 
 /*
 |--------------------------------------------------------------------------
@@ -31,7 +32,6 @@ Route::middleware(['auth:sanctum'])->group(function () {
     // Routes for ALL authenticated users
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::get('/user', [AuthController::class, 'user']);
-    Route::get('/users', [AuthController::class, 'index']);
     Route::get('/dashboard/stats', [DashboardController::class, 'stats']);
     
     // Group for Laporan & Reports (All authenticated users with role-based filtering in controller)
@@ -199,6 +199,16 @@ Route::middleware(['auth:sanctum'])->group(function () {
             Route::put('/asset-sales/{id}', [AssetSaleController::class, 'update']);
             Route::delete('/asset-sales/{id}', [AssetSaleController::class, 'destroy']);
         });
+    });
+
+    // User Management Routes - Only Super Admin & Admin Holding
+    Route::middleware('role:Super Admin,Admin Holding')->group(function () {
+        Route::get('/users', [UserController::class, 'index']);
+        Route::post('/users', [UserController::class, 'store']);
+        Route::get('/users/{id}', [UserController::class, 'show']);
+        Route::put('/users/{id}', [UserController::class, 'update']);
+        Route::delete('/users/{id}', [UserController::class, 'destroy']);
+        Route::get('/available-units', [UserController::class, 'getAvailableUnits']);
     });
 });
 

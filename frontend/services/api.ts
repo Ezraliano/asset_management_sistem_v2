@@ -866,6 +866,78 @@ export const getUsers = async (): Promise<User[]> => {
   }
 };
 
+export const getUserById = async (id: number): Promise<User | null> => {
+  try {
+    const data = await apiRequest(`/users/${id}`);
+    return handleApiResponse<User>(data);
+  } catch (error) {
+    console.error('Get user by id error:', error);
+    return null;
+  }
+};
+
+export const createUser = async (userData: {
+  name: string;
+  username: string;
+  email: string;
+  password: string;
+  role: 'Admin Unit' | 'User';
+  unit_id: number;
+}): Promise<User | null> => {
+  try {
+    const data = await apiRequest('/users', {
+      method: 'POST',
+      body: JSON.stringify(userData),
+    });
+    return handleApiResponse<User>(data);
+  } catch (error: any) {
+    console.error('Create user error:', error);
+    throw new Error(error.message || 'Failed to create user');
+  }
+};
+
+export const updateUser = async (id: number, userData: {
+  name?: string;
+  username?: string;
+  email?: string;
+  password?: string;
+  role?: 'Admin Unit' | 'User';
+  unit_id?: number;
+}): Promise<User | null> => {
+  try {
+    const data = await apiRequest(`/users/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(userData),
+    });
+    return handleApiResponse<User>(data);
+  } catch (error: any) {
+    console.error('Update user error:', error);
+    throw new Error(error.message || 'Failed to update user');
+  }
+};
+
+export const deleteUser = async (id: number): Promise<boolean> => {
+  try {
+    const data = await apiRequest(`/users/${id}`, {
+      method: 'DELETE',
+    });
+    return data.success === true;
+  } catch (error: any) {
+    console.error('Delete user error:', error);
+    throw new Error(error.message || 'Failed to delete user');
+  }
+};
+
+export const getAvailableUnits = async (): Promise<Unit[]> => {
+  try {
+    const data = await apiRequest('/available-units');
+    return handleApiResponse<Unit[]>(data);
+  } catch (error) {
+    console.error('Get available units error:', error);
+    return [];
+  }
+};
+
 // Bulk Assets
 export const addBulkAssets = async (assetsData: Omit<Asset, 'id' | 'asset_tag'>[]): Promise<Asset[]> => {
   const promises = assetsData.map(asset => addAsset(asset));
