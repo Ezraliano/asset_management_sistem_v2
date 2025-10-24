@@ -3,9 +3,11 @@ import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { View, Asset } from '../types';
 import { getInventoryAuditById, scanAssetInAudit, completeInventoryAudit } from '../services/api';
 import { useTranslation } from '../hooks/useTranslation';
-import { BackIcon, DamageIcon } from './icons';
+import { BackIcon, DamageIcon, DownloadIcon } from './icons';
 import Modal from './Modal';
 import ReportIssueForm from './ReportIssueForm';
+import jsPDF from 'jspdf';
+import 'jspdf-autotable';
 
 declare const Html5Qrcode: any;
 
@@ -159,6 +161,177 @@ const InventoryAudit: React.FC<InventoryAuditProps> = ({ unitName, auditId, mode
     }
   };
 
+  const handleDownloadReport = () => {
+    try {
+      // Create PDF document
+      const doc = new jsPDF({
+        orientation: 'portrait',
+        unit: 'pt',
+        format: 'a4'
+      });
+
+      const pageWidth = doc.internal.pageSize.getWidth();
+      const pageHeight = doc.internal.pageSize.getHeight();
+      const margin = { left: 40, right: 40, top: 50, bottom: 40 };
+
+      // Title
+      doc.setFontSize(20);
+      doc.setTextColor(40, 40, 40);
+      doc.text('Laporan Audit Inventaris', margin.left, margin.top);
+
+      // Audit Info
+      doc.setFontSize(12);
+      doc.setTextColor(100, 100, 100);
+      doc.text(`Unit: ${unitName}`, margin.left, margin.top + 25);
+      doc.text(`Audit ID: #${auditId}`, margin.left, margin.top + 40);
+      doc.text(`Tanggal: ${new Date().toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' })}`, margin.left, margin.top + 55);
+
+      // Summary Statistics
+      doc.setFontSize(14);
+      doc.setTextColor(40, 40, 40);
+      doc.text('Ringkasan Audit', margin.left, margin.top + 85);
+
+      doc.setFontSize(11);
+      doc.setTextColor(60, 60, 60);
+      const stats = [
+        `Total Asset yang Diharapkan: ${expectedAssets.length}`,
+        `Asset Ditemukan: ${foundAssets.length}`,
+        `Asset Hilang: ${missingAssets.length}`,
+        `Asset Salah Tempat: ${misplacedAssets.length}`,
+        `Persentase Kelengkapan: ${expectedAssets.length > 0 ? Math.round((foundAssets.length / expectedAssets.length) * 100) : 0}%`
+      ];
+
+      let yPos = margin.top + 105;
+      stats.forEach(stat => {
+        doc.text(stat, margin.left + 10, yPos);
+        yPos += 18;
+      });
+
+      // Found Assets Table
+      yPos += 20;
+      doc.setFontSize(14);
+      doc.setTextColor(40, 40, 40);
+      doc.text('Asset yang Ditemukan', margin.left, yPos);
+      yPos += 10;
+
+      if (foundAssets.length > 0) {
+        (doc as any).autoTable({
+          startY: yPos,
+          head: [['No', 'Nama Asset', 'Tag Asset', 'ID']],
+          body: foundAssets.map((asset, idx) => [
+            idx + 1,
+            asset.name.length > 40 ? asset.name.substring(0, 37) + '...' : asset.name,
+            asset.asset_tag,
+            asset.id
+          ]),
+          styles: { fontSize: 9, cellPadding: 5 },
+          headStyles: { fillColor: [34, 197, 94], textColor: 255, fontStyle: 'bold' },
+          alternateRowStyles: { fillColor: [240, 253, 244] },
+          margin: { left: margin.left, right: margin.right },
+          theme: 'grid'
+        });
+        yPos = (doc as any).lastAutoTable.finalY + 20;
+      } else {
+        doc.setFontSize(10);
+        doc.setTextColor(150, 150, 150);
+        doc.text('Tidak ada asset yang ditemukan', margin.left + 10, yPos + 15);
+        yPos += 35;
+      }
+
+      // Check if we need a new page
+      if (yPos > pageHeight - 150) {
+        doc.addPage();
+        yPos = margin.top;
+      }
+
+      // Missing Assets Table
+      doc.setFontSize(14);
+      doc.setTextColor(40, 40, 40);
+      doc.text('Asset yang Hilang', margin.left, yPos);
+      yPos += 10;
+
+      if (missingAssets.length > 0) {
+        (doc as any).autoTable({
+          startY: yPos,
+          head: [['No', 'Nama Asset', 'Tag Asset', 'ID']],
+          body: missingAssets.map((asset, idx) => [
+            idx + 1,
+            asset.name.length > 40 ? asset.name.substring(0, 37) + '...' : asset.name,
+            asset.asset_tag,
+            asset.id
+          ]),
+          styles: { fontSize: 9, cellPadding: 5 },
+          headStyles: { fillColor: [239, 68, 68], textColor: 255, fontStyle: 'bold' },
+          alternateRowStyles: { fillColor: [254, 242, 242] },
+          margin: { left: margin.left, right: margin.right },
+          theme: 'grid'
+        });
+        yPos = (doc as any).lastAutoTable.finalY + 20;
+      } else {
+        doc.setFontSize(10);
+        doc.setTextColor(150, 150, 150);
+        doc.text('Tidak ada asset yang hilang', margin.left + 10, yPos + 15);
+        yPos += 35;
+      }
+
+      // Check if we need a new page
+      if (yPos > pageHeight - 150) {
+        doc.addPage();
+        yPos = margin.top;
+      }
+
+      // Misplaced Assets Table
+      doc.setFontSize(14);
+      doc.setTextColor(40, 40, 40);
+      doc.text('Asset yang Salah Tempat', margin.left, yPos);
+      yPos += 10;
+
+      if (misplacedAssets.length > 0) {
+        (doc as any).autoTable({
+          startY: yPos,
+          head: [['No', 'Nama Asset', 'Tag Asset', 'ID', 'Lokasi Seharusnya']],
+          body: misplacedAssets.map((asset, idx) => [
+            idx + 1,
+            asset.name.length > 30 ? asset.name.substring(0, 27) + '...' : asset.name,
+            asset.asset_tag || asset.asset_code || 'N/A',
+            asset.id,
+            asset.current_unit_name.length > 25 ? asset.current_unit_name.substring(0, 22) + '...' : asset.current_unit_name
+          ]),
+          styles: { fontSize: 9, cellPadding: 5 },
+          headStyles: { fillColor: [59, 130, 246], textColor: 255, fontStyle: 'bold' },
+          alternateRowStyles: { fillColor: [239, 246, 255] },
+          margin: { left: margin.left, right: margin.right },
+          theme: 'grid'
+        });
+      } else {
+        doc.setFontSize(10);
+        doc.setTextColor(150, 150, 150);
+        doc.text('Tidak ada asset yang salah tempat', margin.left + 10, yPos + 15);
+      }
+
+      // Add footer to all pages
+      const pageCount = (doc as any).internal.getNumberOfPages();
+      for (let i = 1; i <= pageCount; i++) {
+        doc.setPage(i);
+        doc.setFontSize(8);
+        doc.setTextColor(150, 150, 150);
+        doc.text(
+          `Halaman ${i} dari ${pageCount}`,
+          pageWidth / 2,
+          pageHeight - 20,
+          { align: 'center' }
+        );
+      }
+
+      // Download PDF
+      const filename = `Laporan_Audit_${unitName.replace(/\s+/g, '_')}_${auditId}_${new Date().toISOString().split('T')[0]}.pdf`;
+      doc.save(filename);
+    } catch (error) {
+      console.error('Failed to generate PDF:', error);
+      alert('Gagal membuat laporan PDF. Silakan coba lagi.');
+    }
+  };
+
   if (loading) return <p>Loading audit session...</p>;
 
   const TabButton:React.FC<{tabName: Tab, label: string, count: number}> = ({tabName, label, count}) => (
@@ -181,9 +354,15 @@ const InventoryAudit: React.FC<InventoryAuditProps> = ({ unitName, auditId, mode
           <h1 className="text-3xl font-bold text-dark-text">Auditing Unit: {unitName}</h1>
           <p className="text-sm text-gray-600 mt-1">Audit ID: #{auditId}</p>
         </div>
-        <button onClick={handleFinishAudit} className="bg-primary text-white px-4 py-2 rounded-lg shadow hover:bg-primary-dark transition-colors">
-          Finish Audit
-        </button>
+        <div className="flex flex-col sm:flex-row gap-3">
+          <button onClick={handleDownloadReport} className="flex items-center justify-center bg-blue-600 text-white px-4 py-2 rounded-lg shadow hover:bg-blue-700 transition-colors">
+            <DownloadIcon />
+            <span className="ml-2">Download Report</span>
+          </button>
+          <button onClick={handleFinishAudit} className="bg-primary text-white px-4 py-2 rounded-lg shadow hover:bg-primary-dark transition-colors">
+            Finish Audit
+          </button>
+        </div>
       </div>
 
       <div className="bg-white p-6 rounded-xl shadow-md">
