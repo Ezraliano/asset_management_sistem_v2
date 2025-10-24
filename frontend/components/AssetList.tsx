@@ -270,7 +270,7 @@ const AssetList: React.FC<AssetListProps> = ({ navigateTo }) => {
         ))}
       </div>
 
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+      <div className="flex flex-col gap-4">
         <div>
           <h1 className="text-3xl font-bold text-dark-text">{t('asset_list.title')}</h1>
           <p className="text-gray-600 mt-1">
@@ -278,10 +278,10 @@ const AssetList: React.FC<AssetListProps> = ({ navigateTo }) => {
             {hasActiveFilters && ' (filtered)'}
           </p>
         </div>
-        <div className="flex items-center space-x-3">
+        <div className="flex flex-wrap gap-2 sm:gap-3">
           <button
             onClick={() => setShowFilters(!showFilters)}
-            className={`flex items-center px-4 py-2 rounded-lg border transition-colors ${
+            className={`flex items-center px-3 sm:px-4 py-2 rounded-lg border transition-colors text-sm ${
               showFilters || hasActiveFilters
                 ? 'bg-primary text-white border-primary'
                 : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
@@ -292,24 +292,26 @@ const AssetList: React.FC<AssetListProps> = ({ navigateTo }) => {
           </button>
           <button
             onClick={() => setTransferModalOpen(true)}
-            className="flex items-center bg-orange-600 text-white px-4 py-2 rounded-lg shadow hover:bg-orange-700 transition-colors"
+            className="flex items-center bg-orange-600 text-white px-3 sm:px-4 py-2 rounded-lg shadow hover:bg-orange-700 transition-colors text-sm"
           >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 sm:h-5 sm:w-5" viewBox="0 0 20 20" fill="currentColor">
               <path d="M8 5a1 1 0 100 2h5.586l-1.293 1.293a1 1 0 001.414 1.414l3-3a1 1 0 000-1.414l-3-3a1 1 0 10-1.414 1.414L13.586 5H8zM12 15a1 1 0 100-2H6.414l1.293-1.293a1 1 0 10-1.414-1.414l-3 3a1 1 0 000 1.414l3 3a1 1 0 001.414-1.414L6.414 15H12z" />
             </svg>
-            <span className="ml-2">Validasi Perpindahan</span>
+            <span className="ml-2 hidden sm:inline">Validasi Perpindahan</span>
+            <span className="ml-2 sm:hidden">Validasi</span>
           </button>
           <button
             onClick={handleDepreciateAssets}
             disabled={loading}
-            className="flex items-center bg-green-600 text-white px-4 py-2 rounded-lg shadow hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex items-center bg-green-600 text-white px-3 sm:px-4 py-2 rounded-lg shadow hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm"
           >
             <AssetIcon />
-            <span className="ml-2">Depresiasi Asset</span>
+            <span className="ml-2 hidden sm:inline">Depresiasi Asset</span>
+            <span className="ml-2 sm:hidden">Depresiasi</span>
           </button>
           <button
             onClick={handleAdd}
-            className="flex items-center bg-primary text-white px-4 py-2 rounded-lg shadow hover:bg-primary-dark transition-colors"
+            className="flex items-center bg-primary text-white px-3 sm:px-4 py-2 rounded-lg shadow hover:bg-primary-dark transition-colors text-sm"
           >
             <PlusIcon />
             <span className="ml-2">{t('asset_list.add_new_asset')}</span>
@@ -388,25 +390,27 @@ const AssetList: React.FC<AssetListProps> = ({ navigateTo }) => {
 
       {/* Tombol Aksi untuk item terpilih */}
       {selectedAssets.size > 0 && (
-        <div className="bg-white p-4 rounded-xl shadow-md border border-gray-200 flex items-center justify-between">
-          <span className="text-gray-700 font-medium">
-            {selectedAssets.size} asset(s) selected
-          </span>
-          <div className="flex items-center space-x-3">
-            <button
-              onClick={handleDeleteSelected}
-              className="flex items-center bg-red-600 text-white px-4 py-2 rounded-lg shadow hover:bg-red-700 transition-colors"
-            >
-              <DeleteIcon />
-              <span className="ml-2">Delete Selected</span>
-            </button>
-            <button
-              onClick={handleDownloadQRCodes}
-              className="flex items-center bg-green-600 text-white px-4 py-2 rounded-lg shadow hover:bg-green-700 transition-colors"
-            >
-              <DownloadIcon />
-              <span className="ml-2">Download QR Codes</span>
-            </button>
+        <div className="bg-white p-4 rounded-xl shadow-md border border-gray-200">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+            <span className="text-gray-700 font-medium text-sm sm:text-base">
+              {selectedAssets.size} asset(s) selected
+            </span>
+            <div className="flex flex-wrap items-center gap-2 sm:gap-3 w-full sm:w-auto">
+              <button
+                onClick={handleDeleteSelected}
+                className="flex items-center bg-red-600 text-white px-3 sm:px-4 py-2 rounded-lg shadow hover:bg-red-700 transition-colors text-sm flex-1 sm:flex-none justify-center"
+              >
+                <DeleteIcon />
+                <span className="ml-2">Delete</span>
+              </button>
+              <button
+                onClick={handleDownloadQRCodes}
+                className="flex items-center bg-green-600 text-white px-3 sm:px-4 py-2 rounded-lg shadow hover:bg-green-700 transition-colors text-sm flex-1 sm:flex-none justify-center"
+              >
+                <DownloadIcon />
+                <span className="ml-2">Download QR</span>
+              </button>
+            </div>
           </div>
         </div>
       )}
@@ -418,13 +422,14 @@ const AssetList: React.FC<AssetListProps> = ({ navigateTo }) => {
           <div className="p-8 text-center">No assets found.</div>
         ) : (
           <>
-            <div className="overflow-x-auto">
+            {/* Desktop Table View - Hidden on Mobile */}
+            <div className="hidden md:block overflow-x-auto">
               <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
                   <tr>
                     <th className="px-6 py-4 text-left">
-                      <input 
-                        type="checkbox" 
+                      <input
+                        type="checkbox"
                         className="h-4 w-4 text-primary border-gray-300 rounded focus:ring-primary"
                         onChange={handleSelectAll}
                         checked={selectedAssets.size === paginatedAssets.length && paginatedAssets.length > 0}
@@ -443,8 +448,8 @@ const AssetList: React.FC<AssetListProps> = ({ navigateTo }) => {
                   {paginatedAssets.map((asset) => (
                     <tr key={asset.id} className={`hover:bg-gray-50 transition-colors ${selectedAssets.has(asset.id) ? 'bg-blue-50' : ''}`}>
                       <td className="px-6 py-4">
-                        <input 
-                          type="checkbox" 
+                        <input
+                          type="checkbox"
                           className="h-4 w-4 text-primary border-gray-300 rounded focus:ring-primary"
                           checked={selectedAssets.has(asset.id)}
                           onChange={() => handleSelectAsset(asset.id)}
@@ -471,6 +476,98 @@ const AssetList: React.FC<AssetListProps> = ({ navigateTo }) => {
                   ))}
                 </tbody>
               </table>
+            </div>
+
+            {/* Mobile Card View - Visible only on Mobile */}
+            <div className="md:hidden">
+              {/* Select All Checkbox for Mobile */}
+              <div className="px-4 py-3 bg-gray-50 border-b border-gray-200">
+                <label className="flex items-center">
+                  <input
+                    type="checkbox"
+                    className="h-4 w-4 text-primary border-gray-300 rounded focus:ring-primary"
+                    onChange={handleSelectAll}
+                    checked={selectedAssets.size === paginatedAssets.length && paginatedAssets.length > 0}
+                  />
+                  <span className="ml-2 text-sm font-medium text-gray-700">Select All</span>
+                </label>
+              </div>
+
+              {/* Asset Cards */}
+              <div className="divide-y divide-gray-200">
+                {paginatedAssets.map((asset) => (
+                  <div
+                    key={asset.id}
+                    className={`p-4 ${selectedAssets.has(asset.id) ? 'bg-blue-50' : 'bg-white'} hover:bg-gray-50 transition-colors`}
+                  >
+                    {/* Checkbox and Asset Tag */}
+                    <div className="flex items-start justify-between mb-3">
+                      <div className="flex items-start gap-3">
+                        <input
+                          type="checkbox"
+                          className="h-4 w-4 text-primary border-gray-300 rounded focus:ring-primary mt-1"
+                          checked={selectedAssets.has(asset.id)}
+                          onChange={() => handleSelectAsset(asset.id)}
+                        />
+                        <div>
+                          <div className="text-xs font-medium text-gray-500 uppercase">Asset Tag</div>
+                          <div className="text-sm font-bold text-gray-900">{asset.asset_tag}</div>
+                        </div>
+                      </div>
+                      <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${statusColorMap[asset.status as AssetStatus] || 'bg-gray-100 text-gray-800'}`}>
+                        {asset.status}
+                      </span>
+                    </div>
+
+                    {/* Asset Details */}
+                    <div className="space-y-2 mb-3">
+                      <div>
+                        <div className="text-xs font-medium text-gray-500">Name</div>
+                        <div className="text-sm font-medium text-gray-900">{asset.name}</div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-2">
+                        <div>
+                          <div className="text-xs font-medium text-gray-500">Category</div>
+                          <div className="text-sm text-gray-900">{asset.category}</div>
+                        </div>
+                        <div>
+                          <div className="text-xs font-medium text-gray-500">Unit</div>
+                          <div className="text-sm text-gray-900">{asset.unit ? asset.unit.name : '-'}</div>
+                        </div>
+                      </div>
+                      <div>
+                        <div className="text-xs font-medium text-gray-500">Value</div>
+                        <div className="text-sm font-bold text-primary">{formatToRupiah(asset.value)}</div>
+                      </div>
+                    </div>
+
+                    {/* Action Buttons */}
+                    <div className="flex gap-2 pt-3 border-t border-gray-200">
+                      <button
+                        onClick={() => navigateTo({ type: 'ASSET_DETAIL', assetId: asset.id.toString() })}
+                        className="flex-1 flex items-center justify-center gap-1 px-3 py-2 bg-indigo-50 text-indigo-700 rounded-lg hover:bg-indigo-100 transition-colors text-sm font-medium"
+                      >
+                        <ViewIcon />
+                        <span>View</span>
+                      </button>
+                      <button
+                        onClick={() => handleEdit(asset)}
+                        className="flex-1 flex items-center justify-center gap-1 px-3 py-2 bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100 transition-colors text-sm font-medium"
+                      >
+                        <EditIcon />
+                        <span>Edit</span>
+                      </button>
+                      <button
+                        onClick={() => handleDelete(asset.id)}
+                        className="flex-1 flex items-center justify-center gap-1 px-3 py-2 bg-red-50 text-red-700 rounded-lg hover:bg-red-100 transition-colors text-sm font-medium"
+                      >
+                        <DeleteIcon />
+                        <span>Delete</span>
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
             
             {/* Paginasi */}

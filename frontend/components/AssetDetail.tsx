@@ -510,10 +510,13 @@ const AssetDetail: React.FC<AssetDetailProps> = ({ assetId, navigateTo }) => {
                     <div className="flex flex-col">
                         <span className="text-sm font-medium text-gray-500">{t('asset_detail.labels.status')}</span>
                         <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                          asset.status === 'In Use' ? 'bg-green-100 text-green-800' :
-                          asset.status === 'In Repair' ? 'bg-yellow-100 text-yellow-800' :
-                          asset.status === 'Disposed' ? 'bg-red-100 text-red-800' :
-                          'bg-gray-100 text-gray-800'
+                          (() => {
+                            const s = String(asset.status).toLowerCase();
+                            if (s === 'in use' || s === 'in_use' || s === 'in-use' || s === 'inuse') return 'bg-green-100 text-green-800';
+                            if (s === 'in repair' || s === 'in_repair' || s === 'in-repair' || s === 'inrepair') return 'bg-yellow-100 text-yellow-800';
+                            if (s === 'disposed' || s === 'disposed') return 'bg-red-100 text-red-800';
+                            return 'bg-gray-100 text-gray-800';
+                          })()
                         }`}>
                           {asset.status}
                         </span>
@@ -910,10 +913,10 @@ const AssetDetail: React.FC<AssetDetailProps> = ({ assetId, navigateTo }) => {
                                             <span className="text-xs font-medium text-gray-500">Foto Bukti:</span>
                                             <div className="mt-2">
                                                 <img
-                                                    src={`https://assetgunungarjunabackend.ezraliano.my.id/storage/${maint.photo_proof}`}
+                                                    src={`https://assetmanagementga.arjunaconnect.com/storage/${maint.photo_proof}`}
                                                     alt="Bukti Perbaikan/Pemeliharaan"
                                                     className="max-w-xs rounded-lg border border-gray-300 shadow-sm hover:shadow-md transition-shadow cursor-pointer"
-                                                    onClick={() => window.open(`https://assetgunungarjunabackend.ezraliano.my.id/storage/${maint.photo_proof}`, '_blank')}
+                                                    onClick={() => window.open(`https://assetmanagementga.arjunaconnect.com/storage/${maint.photo_proof}`, '_blank')}
                                                 />
                                             </div>
                                         </div>
