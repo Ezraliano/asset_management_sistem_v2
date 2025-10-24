@@ -326,13 +326,13 @@ const AssetSalesList: React.FC<AssetSalesListProps> = ({ user, navigateTo }) => 
             <div className="text-center">
               <div className="text-sm text-gray-500">Total Nilai</div>
               <div className="text-2xl font-bold text-green-600">
-                {formatCurrency(sales.reduce((sum, sale) => sum + sale.sale_price, 0))}
+                {formatCurrency(sales.reduce((sum, sale) => sum + Number(sale.sale_price || 0), 0))}
               </div>
             </div>
             <div className="text-center">
               <div className="text-sm text-gray-500">Rata-rata Harga</div>
               <div className="text-2xl font-bold text-blue-600">
-                {formatCurrency(sales.reduce((sum, sale) => sum + sale.sale_price, 0) / sales.length)}
+                {sales.length > 0 ? formatCurrency(sales.reduce((sum, sale) => sum + Number(sale.sale_price || 0), 0) / sales.length) : formatCurrency(0)}
               </div>
             </div>
           </div>
