@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, JSX } from 'react';
 import { getUsers } from '../services/api';
 import { User } from '../types';
 import { useTranslation } from '../hooks/useTranslation';
@@ -27,33 +27,64 @@ const UserList: React.FC = () => {
 
     return (
         <div className="space-y-6">
-            <h1 className="text-4xl font-bold text-dark-text">{t('user_list.title')}</h1>
+            <h1 className="text-2xl md:text-4xl font-bold text-dark-text">{t('user_list.title')}</h1>
             <div className="bg-white rounded-xl shadow-md overflow-hidden">
                 {loading ? (
                     <p className="p-4 text-center">{t('user_list.loading')}</p>
                 ) : (
-                    <table className="min-w-full divide-y divide-gray-200">
-                        <thead className="bg-gray-50">
-                            <tr>
-                                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('user_list.table.name')}</th>
-                                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('user_list.table.username')}</th>
-                                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('user_list.table.role')}</th>
-                            </tr>
-                        </thead>
-                        <tbody className="bg-white divide-y divide-gray-200">
+                    <>
+                        {/* Desktop View - Table */}
+                        <div className="hidden md:block overflow-x-auto">
+                            <table className="min-w-full divide-y divide-gray-200">
+                                <thead className="bg-gray-50">
+                                    <tr>
+                                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('user_list.table.name')}</th>
+                                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('user_list.table.username')}</th>
+                                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('user_list.table.role')}</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="bg-white divide-y divide-gray-200">
+                                    {users.map((user) => (
+                                        <tr key={user.id} className="hover:bg-gray-50">
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{user.name}</td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">{user.username}</td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm">
+                                                <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${roleColorMap[user.role]}`}>
+                                                    {user.role}
+                                                </span>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+
+                        {/* Mobile View - Cards */}
+                        <div className="md:hidden divide-y divide-gray-200">
                             {users.map((user) => (
-                                <tr key={user.id} className="hover:bg-gray-50">
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{user.name}</td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">{user.username}</td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm">
-                                        <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${roleColorMap[user.role]}`}>
-                                            {user.role}
-                                        </span>
-                                    </td>
-                                </tr>
+                                <div key={user.id} className="p-4 hover:bg-gray-50">
+                                    <div className="space-y-2">
+                                        <div>
+                                            <span className="text-xs font-medium text-gray-500 uppercase">{t('user_list.table.name')}</span>
+                                            <p className="text-sm font-medium text-gray-900 mt-1">{user.name}</p>
+                                        </div>
+                                        <div>
+                                            <span className="text-xs font-medium text-gray-500 uppercase">{t('user_list.table.username')}</span>
+                                            <p className="text-sm text-gray-700 mt-1">{user.username}</p>
+                                        </div>
+                                        <div>
+                                            <span className="text-xs font-medium text-gray-500 uppercase">{t('user_list.table.role')}</span>
+                                            <div className="mt-1">
+                                                <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${roleColorMap[user.role]}`}>
+                                                    {user.role}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
                             ))}
-                        </tbody>
-                    </table>
+                        </div>
+                    </>
                 )}
             </div>
         </div>
