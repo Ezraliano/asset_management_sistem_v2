@@ -192,6 +192,7 @@
     "loading": "Memuat pengguna...",
     "table": {
       "name": "Nama",
+      "username": "Username",
       "role": "Peran",
       "user_id": "ID Pengguna"
     }

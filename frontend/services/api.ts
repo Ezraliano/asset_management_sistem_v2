@@ -857,7 +857,13 @@ export const getUnitUsers = async (unitId: number): Promise<User[]> => {
 
 // Users API
 export const getUsers = async (): Promise<User[]> => {
-  return [];
+  try {
+    const data = await apiRequest('/users');
+    return handleApiResponse<User[]>(data);
+  } catch (error) {
+    console.error('Get users error:', error);
+    return [];
+  }
 };
 
 // Bulk Assets

@@ -192,6 +192,7 @@
     "loading": "Loading users...",
     "table": {
       "name": "Name",
+      "username": "Username",
       "role": "Role",
       "user_id": "User ID"
     }

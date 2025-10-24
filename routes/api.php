@@ -31,6 +31,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
     // Routes for ALL authenticated users
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::get('/user', [AuthController::class, 'user']);
+    Route::get('/users', [AuthController::class, 'index']);
     Route::get('/dashboard/stats', [DashboardController::class, 'stats']);
     
     // Group for Laporan & Reports (All authenticated users with role-based filtering in controller)

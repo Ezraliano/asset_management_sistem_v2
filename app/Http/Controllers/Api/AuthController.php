@@ -65,4 +65,32 @@ class AuthController extends Controller
             ],
         ]);
     }
+
+    public function index(Request $request)
+    {
+        // Get all users with their unit information
+        $users = User::with('unit:id,name,code')
+            ->orderBy('name', 'asc')
+            ->get()
+            ->map(function ($user) {
+                return [
+                    'id' => $user->id,
+                    'name' => $user->name,
+                    'username' => $user->username,
+                    'email' => $user->email,
+                    'role' => $user->role,
+                    'unit_id' => $user->unit_id,
+                    'unit' => $user->unit ? [
+                        'id' => $user->unit->id,
+                        'name' => $user->unit->name,
+                        'code' => $user->unit->code,
+                    ] : null,
+                ];
+            });
+
+        return response()->json([
+            'success' => true,
+            'data' => $users,
+        ]);
+    }
 }
