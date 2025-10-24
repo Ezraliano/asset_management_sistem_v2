@@ -65,15 +65,15 @@ const UserList: React.FC = () => {
                                 <div key={user.id} className="p-4 hover:bg-gray-50">
                                     <div className="space-y-2">
                                         <div>
-                                            <span className="text-xs font-medium text-gray-500 uppercase">{t('user_list.table.name')}</span>
+                                            <span className="text-xs font-medium text-gray-500 uppercase">NAMA</span>
                                             <p className="text-sm font-medium text-gray-900 mt-1">{user.name}</p>
                                         </div>
                                         <div>
-                                            <span className="text-xs font-medium text-gray-500 uppercase">{t('user_list.table.username')}</span>
+                                            <span className="text-xs font-medium text-gray-500 uppercase">USERNAME</span>
                                             <p className="text-sm text-gray-700 mt-1">{user.username}</p>
                                         </div>
                                         <div>
-                                            <span className="text-xs font-medium text-gray-500 uppercase">{t('user_list.table.role')}</span>
+                                            <span className="text-xs font-medium text-gray-500 uppercase">PERAN</span>
                                             <div className="mt-1">
                                                 <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${roleColorMap[user.role]}`}>
                                                     {user.role}
