@@ -138,10 +138,10 @@ export const getDashboardStats = async (
 };
 
 // Assets API - ✅ PERBAIKAN UTAMA: Fix response handling
-export const getAssets = async (filters: { category?: string; location?: string; status?: string } = {}): Promise<Asset[]> => {
+export const getAssets = async (filters: { category?: string; unit_id?: string; status?: string } = {}): Promise<Asset[]> => {
   const queryParams = new URLSearchParams();
   if (filters.category) queryParams.append('category', filters.category);
-  if (filters.location) queryParams.append('location', filters.location);
+  if (filters.unit_id) queryParams.append('unit_id', filters.unit_id);
   if (filters.status) queryParams.append('status', filters.status);
 
   const queryString = queryParams.toString();
