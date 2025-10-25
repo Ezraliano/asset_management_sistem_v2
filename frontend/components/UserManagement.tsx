@@ -14,7 +14,7 @@ interface UserFormData {
   username: string;
   email: string;
   password: string;
-  role: 'Admin Unit' | 'User';
+  role: 'Admin Unit' | 'User' | 'Auditor';
   unit_id: number | '';
 }
 
@@ -92,8 +92,14 @@ const UserManagement: React.FC<UserManagementProps> = ({
     setError('');
 
     // Validation
-    if (!formData.name || !formData.username || !formData.email || !formData.role || formData.unit_id === '') {
-      setError('Semua field wajib diisi');
+    if (!formData.name || !formData.username || !formData.email || !formData.role) {
+      setError('Nama, username, email, dan role wajib diisi');
+      return;
+    }
+
+    // Unit is required for Admin Unit and User, but not for Auditor
+    if (formData.role !== 'Auditor' && formData.unit_id === '') {
+      setError('Unit wajib diisi untuk Admin Unit dan User');
       return;
     }
 
@@ -112,7 +118,7 @@ const UserManagement: React.FC<UserManagementProps> = ({
           username: formData.username,
           email: formData.email,
           role: formData.role,
-          unit_id: formData.unit_id as number,
+          unit_id: formData.role === 'Auditor' ? null : (formData.unit_id as number),
         };
 
         // Only include password if it's not empty
@@ -129,7 +135,7 @@ const UserManagement: React.FC<UserManagementProps> = ({
           email: formData.email,
           password: formData.password,
           role: formData.role,
-          unit_id: formData.unit_id as number,
+          unit_id: formData.role === 'Auditor' ? null : (formData.unit_id as number),
         });
       }
 
@@ -240,33 +246,38 @@ const UserManagement: React.FC<UserManagementProps> = ({
               >
                 <option value="User">User</option>
                 <option value="Admin Unit">Admin Unit</option>
+                <option value="Auditor">Auditor</option>
               </select>
               <p className="mt-1 text-xs text-gray-500">
                 {formData.role === 'User'
                   ? 'User: Dapat meminjam aset dari unit mereka'
-                  : 'Admin Unit: Dapat mengelola aset dan menyetujui peminjaman di unit mereka'}
+                  : formData.role === 'Admin Unit'
+                  ? 'Admin Unit: Dapat mengelola aset dan menyetujui peminjaman di unit mereka'
+                  : 'Auditor: Dapat melakukan audit inventaris dan melihat laporan audit'}
               </p>
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Unit <span className="text-red-500">*</span>
-              </label>
-              <select
-                name="unit_id"
-                value={formData.unit_id}
-                onChange={handleInputChange}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
-                required
-              >
-                <option value="">Pilih Unit</option>
-                {units.map((unit) => (
-                  <option key={unit.id} value={unit.id}>
-                    {unit.name}
-                  </option>
-                ))}
-              </select>
-            </div>
+            {formData.role !== 'Auditor' && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Unit <span className="text-red-500">*</span>
+                </label>
+                <select
+                  name="unit_id"
+                  value={formData.unit_id}
+                  onChange={handleInputChange}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+                  required
+                >
+                  <option value="">Pilih Unit</option>
+                  {units.map((unit) => (
+                    <option key={unit.id} value={unit.id}>
+                      {unit.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
 
             <div className="flex gap-3 pt-4">
               <button

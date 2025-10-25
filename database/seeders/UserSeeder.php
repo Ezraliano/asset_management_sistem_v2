@@ -79,6 +79,17 @@ class UserSeeder extends Seeder
                 'created_at' => now(),
                 'updated_at' => now(),
             ],
+            [
+                'name' => 'Auditor',
+                'email' => 'auditor@example.com',
+                'username' => 'auditor',
+                'password' => Hash::make('123'),
+                'role' => 'Auditor',
+                'unit_id' => null, // Auditor tidak terikat dengan unit tertentu
+                'email_verified_at' => now(),
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
         ];
 
         DB::table('users')->insert($users);
@@ -90,5 +101,6 @@ class UserSeeder extends Seeder
         $this->command->info('Admin Unit Kajoetangan: unitkajoetangan / 123');
         $this->command->info('Admin Unit Batu: unitbatu / 123');
         $this->command->info('Regular User: user / 123');
+        $this->command->info('Auditor: auditor / 123');
     }
 }

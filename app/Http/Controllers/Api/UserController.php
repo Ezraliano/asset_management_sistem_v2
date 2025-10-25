@@ -120,16 +120,27 @@ class UserController extends Controller
             'username' => 'required|string|max:255|unique:users,username',
             'email' => 'required|email|max:255|unique:users,email',
             'password' => 'required|string|min:3',
-            'role' => ['required', Rule::in(['Admin Unit', 'User'])],
-            'unit_id' => 'required|exists:units,id',
+            'role' => ['required', Rule::in(['Admin Unit', 'User', 'Auditor'])],
+            'unit_id' => 'nullable|exists:units,id',
         ]);
 
-        // Super Admin and Admin Holding can only create Admin Unit or User
-        if (!in_array($validated['role'], ['Admin Unit', 'User'])) {
+        // Super Admin and Admin Holding can only create Admin Unit, User, or Auditor
+        if (!in_array($validated['role'], ['Admin Unit', 'User', 'Auditor'])) {
             return response()->json([
                 'success' => false,
-                'message' => 'You can only create users with role Admin Unit or User.',
+                'message' => 'You can only create users with role Admin Unit, User, or Auditor.',
             ], 403);
+        }
+
+        // Auditor tidak memerlukan unit_id
+        if ($validated['role'] === 'Auditor') {
+            $validated['unit_id'] = null;
+        } elseif (empty($validated['unit_id'])) {
+            // Admin Unit dan User harus memiliki unit_id
+            return response()->json([
+                'success' => false,
+                'message' => 'Admin Unit and User must be assigned to a unit.',
+            ], 422);
         }
 
         // Create user
@@ -214,17 +225,22 @@ class UserController extends Controller
                 'max:255',
                 Rule::unique('users', 'email')->ignore($user->id),
             ],
-            'role' => ['sometimes', 'required', Rule::in(['Admin Unit', 'User'])],
-            'unit_id' => 'sometimes|required|exists:units,id',
+            'role' => ['sometimes', 'required', Rule::in(['Admin Unit', 'User', 'Auditor'])],
+            'unit_id' => 'sometimes|nullable|exists:units,id',
             'password' => 'sometimes|nullable|string|min:3',
         ]);
 
-        // Only allow updating to Admin Unit or User
-        if (isset($validated['role']) && !in_array($validated['role'], ['Admin Unit', 'User'])) {
+        // Only allow updating to Admin Unit, User, or Auditor
+        if (isset($validated['role']) && !in_array($validated['role'], ['Admin Unit', 'User', 'Auditor'])) {
             return response()->json([
                 'success' => false,
-                'message' => 'You can only set role to Admin Unit or User.',
+                'message' => 'You can only set role to Admin Unit, User, or Auditor.',
             ], 403);
+        }
+
+        // Jika role diubah menjadi Auditor, set unit_id menjadi null
+        if (isset($validated['role']) && $validated['role'] === 'Auditor') {
+            $validated['unit_id'] = null;
         }
 
         // Update user
@@ -296,11 +312,11 @@ class UserController extends Controller
             ], 404);
         }
 
-        // Cannot delete Super Admin or Admin Holding accounts
-        if ($user->isSuperAdmin() || $user->isAdminHolding()) {
+        // Cannot delete Super Admin, Admin Holding, or Auditor accounts
+        if ($user->isSuperAdmin() || $user->isAdminHolding() || $user->isAuditor()) {
             return response()->json([
                 'success' => false,
-                'message' => 'Cannot delete Super Admin or Admin Holding accounts.',
+                'message' => 'Cannot delete Super Admin, Admin Holding, or Auditor accounts.',
             ], 403);
         }
 

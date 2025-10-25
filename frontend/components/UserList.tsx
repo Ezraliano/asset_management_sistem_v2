@@ -71,10 +71,11 @@ const UserList: React.FC = () => {
         'Admin Holding': 'bg-blue-100 text-blue-800',
         'Admin Unit': 'bg-green-100 text-green-800',
         'User': 'bg-gray-100 text-gray-800',
+        'Auditor': 'bg-yellow-100 text-yellow-800',
     };
 
     const canEditOrDelete = (user: User) => {
-        return user.role !== 'Super Admin' && user.role !== 'Admin Holding';
+        return user.role !== 'Super Admin' && user.role !== 'Admin Holding' && user.role !== 'Auditor';
     };
 
     // Filter users based on search and role filter
@@ -138,6 +139,7 @@ const UserList: React.FC = () => {
                         <option value="Admin Holding">Admin Holding</option>
                         <option value="Admin Unit">Admin Unit</option>
                         <option value="User">User</option>
+                        <option value="Auditor">Auditor</option>
                     </select>
                 </div>
             </div>

@@ -34,17 +34,26 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::get('/user', [AuthController::class, 'user']);
     Route::get('/dashboard/stats', [DashboardController::class, 'stats']);
     
-    // Group for Laporan & Reports (All authenticated users with role-based filtering in controller)
+    // Group for Laporan & Reports
+    // Admin Holding can access all reports
+    // Auditor can only access audit report
     Route::middleware(['auth:sanctum'])->group(function () {
-        Route::get('/reports/all', [ReportController::class, 'getAllReports']);
-        Route::get('/reports/full-asset', [ReportController::class, 'getFullAssetReport']);
-        Route::get('/reports/maintenance', [ReportController::class, 'getMaintenanceReport']);
-        Route::get('/reports/repair', [ReportController::class, 'getRepairReport']);
-        Route::get('/reports/loan', [ReportController::class, 'getLoanReport']);
-        Route::get('/reports/damage', [ReportController::class, 'getDamageReport']);
-        Route::get('/reports/sale', [ReportController::class, 'getSaleReport']);
-        Route::get('/reports/loss', [ReportController::class, 'getLossReport']);
-        Route::get('/reports/audit', [ReportController::class, 'getAuditReport']);
+        // All reports - Admin Holding only
+        Route::middleware('role:Super Admin,Admin Holding')->group(function () {
+            Route::get('/reports/all', [ReportController::class, 'getAllReports']);
+            Route::get('/reports/full-asset', [ReportController::class, 'getFullAssetReport']);
+            Route::get('/reports/maintenance', [ReportController::class, 'getMaintenanceReport']);
+            Route::get('/reports/repair', [ReportController::class, 'getRepairReport']);
+            Route::get('/reports/loan', [ReportController::class, 'getLoanReport']);
+            Route::get('/reports/damage', [ReportController::class, 'getDamageReport']);
+            Route::get('/reports/sale', [ReportController::class, 'getSaleReport']);
+            Route::get('/reports/loss', [ReportController::class, 'getLossReport']);
+        });
+
+        // Audit report - Admin Holding and Auditor
+        Route::middleware('role:Super Admin,Admin Holding,Auditor')->group(function () {
+            Route::get('/reports/audit', [ReportController::class, 'getAuditReport']);
+        });
     });
 
     // Group for Aset menu (Admin Holding, Admin Unit)
@@ -131,17 +140,19 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::get('/units/{unit}/assets', [UnitController::class, 'assets']);
         Route::get('/units/{unit}/users', [UnitController::class, 'users']);
 
-        // Inventory Audit Routes - accessible by all authenticated users (role-based filtering in controller)
-        Route::get('/inventory-audits', [InventoryAuditController::class, 'index']);
-        Route::post('/inventory-audits', [InventoryAuditController::class, 'store']);
-        Route::get('/inventory-audits/{id}', [InventoryAuditController::class, 'show']);
-        Route::post('/inventory-audits/{id}/scan', [InventoryAuditController::class, 'scanAsset']);
-        Route::post('/inventory-audits/{id}/complete', [InventoryAuditController::class, 'complete']);
-        Route::post('/inventory-audits/{id}/cancel', [InventoryAuditController::class, 'cancel']);
+        // Inventory Audit Routes - Admin Holding and Auditor
+        Route::middleware('role:Super Admin,Admin Holding,Auditor')->group(function () {
+            Route::get('/inventory-audits', [InventoryAuditController::class, 'index']);
+            Route::post('/inventory-audits', [InventoryAuditController::class, 'store']);
+            Route::get('/inventory-audits/{id}', [InventoryAuditController::class, 'show']);
+            Route::post('/inventory-audits/{id}/scan', [InventoryAuditController::class, 'scanAsset']);
+            Route::post('/inventory-audits/{id}/complete', [InventoryAuditController::class, 'complete']);
+            Route::post('/inventory-audits/{id}/cancel', [InventoryAuditController::class, 'cancel']);
 
-        // Delete audit - Only Super Admin & Admin Holding
-        Route::middleware('role:Super Admin,Admin Holding')->group(function () {
-            Route::delete('/inventory-audits/{id}', [InventoryAuditController::class, 'destroy']);
+            // Delete audit - Only Super Admin & Admin Holding
+            Route::middleware('role:Super Admin,Admin Holding')->group(function () {
+                Route::delete('/inventory-audits/{id}', [InventoryAuditController::class, 'destroy']);
+            });
         });
     });
 

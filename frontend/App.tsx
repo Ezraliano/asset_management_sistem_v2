@@ -96,7 +96,7 @@ const AppContent: React.FC = () => {
       case 'USERS':
           return <UserList />;
       case 'REPORTS':
-          return <ReportView />;
+          return <ReportView user={user} />;
       case 'BULK_TRANSACTION':
           return <BulkTransaction navigateTo={navigateTo} />;
       case 'INVENTORY_AUDIT_SETUP':

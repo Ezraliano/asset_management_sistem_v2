@@ -74,7 +74,7 @@ const Header: React.FC<HeaderProps> = ({ user, onLogout, isSidebarOpen, setSideb
                             <NavItem icon={<SellIcon />} label="Penjualan Aset" isActive={getIsActive('ASSET_SALES') || getIsActive('ASSET_SALE_DETAIL')} onClick={() => navigateTo({ type: 'ASSET_SALES' })} />
                         </Restricted>
 
-                        <Restricted user={user} allowedRoles={['Admin Holding']}>
+                        <Restricted user={user} allowedRoles={['Admin Holding', 'Auditor']}>
                             <NavItem icon={<AuditIcon />} label={t('sidebar.inventory_audit')} isActive={getIsActive('INVENTORY_AUDIT_SETUP') || getIsActive('INVENTORY_AUDIT_SESSION')} onClick={() => navigateTo({ type: 'INVENTORY_AUDIT_SETUP' })} />
                         </Restricted>
 
@@ -86,7 +86,7 @@ const Header: React.FC<HeaderProps> = ({ user, onLogout, isSidebarOpen, setSideb
                             <NavItem icon={<QRIcon />} label={t('sidebar.scan_qr')} isActive={getIsActive('QR_SCANNER')} onClick={() => navigateTo({ type: 'QR_SCANNER' })} />
                         </Restricted>
 
-                        <Restricted user={user} allowedRoles={['Admin Holding']}>
+                        <Restricted user={user} allowedRoles={['Admin Holding', 'Auditor']}>
                             <NavItem icon={<ReportIcon />} label={t('sidebar.reports')} isActive={getIsActive('REPORTS')} onClick={() => navigateTo({ type: 'REPORTS' })} />
                         </Restricted>
 

@@ -881,8 +881,8 @@ export const createUser = async (userData: {
   username: string;
   email: string;
   password: string;
-  role: 'Admin Unit' | 'User';
-  unit_id: number;
+  role: 'Admin Unit' | 'User' | 'Auditor';
+  unit_id?: number | null;
 }): Promise<User | null> => {
   try {
     const data = await apiRequest('/users', {
@@ -901,8 +901,8 @@ export const updateUser = async (id: number, userData: {
   username?: string;
   email?: string;
   password?: string;
-  role?: 'Admin Unit' | 'User';
-  unit_id?: number;
+  role?: 'Admin Unit' | 'User' | 'Auditor';
+  unit_id?: number | null;
 }): Promise<User | null> => {
   try {
     const data = await apiRequest(`/users/${id}`, {

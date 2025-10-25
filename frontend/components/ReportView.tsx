@@ -14,7 +14,7 @@ import {
     getUnits
 } from '../services/api';
 import { exportToCsv, exportToPdf } from '../utils/exportUtils';
-import { Unit } from '../types';
+import { Unit, User } from '../types';
 
 interface ReportCardProps {
     title: string;
@@ -114,7 +114,11 @@ const getDataFromResponse = (response: any): any[] => {
     return [];
 };
 
-const ReportView: React.FC = () => {
+interface ReportViewProps {
+    user: User;
+}
+
+const ReportView: React.FC<ReportViewProps> = ({ user }) => {
     const { t } = useTranslation();
     const [loadingReport, setLoadingReport] = useState<string | null>(null);
     const [selectedMonth, setSelectedMonth] = useState<string>(String(new Date().getMonth() + 1));
@@ -135,7 +139,7 @@ const ReportView: React.FC = () => {
         fetchUnits();
     }, []);
 
-    const reports = [
+    const allReports = [
         {
             key: 'full_asset',
             title: t('reports.cards.full_asset.title'),
@@ -183,9 +187,16 @@ const ReportView: React.FC = () => {
         },
     ];
 
+    // Filter reports based on user role
+    // Auditor can only see audit report
+    // Admin Holding can see all reports
+    const reports = user.role === 'Auditor'
+        ? allReports.filter(report => report.key === 'audit')
+        : allReports;
+
     const handleExport = async (reportKey: string, format: 'CSV' | 'PDF') => {
         setLoadingReport(reportKey);
-        const reportInfo = reports.find(r => r.key === reportKey);
+        const reportInfo = allReports.find(r => r.key === reportKey);
         const reportTitle = reportInfo ? reportInfo.title : 'Report';
 
         try {
