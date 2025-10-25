@@ -845,10 +845,14 @@ class ReportController extends Controller
                 Log::info('Unit filter applied', ['unit_id' => $request->unit_id]);
             }
 
-            // Filter berdasarkan status
+            // Filter berdasarkan status - default hanya completed
             if ($request->has('status') && $request->status !== 'all') {
                 $query->where('status', $request->status);
                 Log::info('Status filter applied', ['status' => $request->status]);
+            } else {
+                // Default: hanya tampilkan audit yang sudah selesai (completed)
+                $query->where('status', 'completed');
+                Log::info('Default status filter applied: completed');
             }
 
             // Filter berdasarkan tanggal

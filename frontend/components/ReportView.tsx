@@ -59,7 +59,7 @@ const ReportCard: React.FC<ReportCardProps> = ({ title, description, isLoading, 
     );
 };
 
-// Fungsi format Rupiah
+// Fungsi format Rupiah untuk display
 const formatToRupiah = (value: number): string => {
     if (!value || isNaN(value)) return 'Rp 0';
     return new Intl.NumberFormat('id-ID', {
@@ -68,6 +68,16 @@ const formatToRupiah = (value: number): string => {
         minimumFractionDigits: 0,
         maximumFractionDigits: 0
     }).format(value);
+};
+
+// Fungsi format Rupiah khusus untuk CSV export (tanpa karakter special)
+const formatToRupiahForCSV = (value: number): string => {
+    if (!value || isNaN(value)) return 'Rp 0';
+    const formatted = new Intl.NumberFormat('id-ID', {
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 0
+    }).format(value);
+    return `Rp ${formatted}`;
 };
 
 // Fungsi format tanggal
@@ -244,13 +254,13 @@ const ReportView: React.FC<ReportViewProps> = ({ user }) => {
                         truncateText(asset.name, 30),
                         asset.category || 'N/A',
                         truncateText(asset.unit_name, 20),
-                        formatToRupiah(asset.value || 0),
+                        formatToRupiahForCSV(asset.value || 0),
                         formatDate(asset.purchase_date),
                         asset.useful_life ? `${asset.useful_life} bulan` : 'N/A',
                         asset.status || 'N/A',
-                        formatToRupiah(asset.monthly_depreciation || 0),
-                        formatToRupiah(asset.accumulated_depreciation || 0),
-                        formatToRupiah(asset.current_value || 0)
+                        formatToRupiahForCSV(asset.monthly_depreciation || 0),
+                        formatToRupiahForCSV(asset.accumulated_depreciation || 0),
+                        formatToRupiahForCSV(asset.current_value || 0)
                     ]);
                     break;
                 }
@@ -455,10 +465,10 @@ const ReportView: React.FC<ReportViewProps> = ({ user }) => {
                         s.asset_tag || 'N/A',
                         truncateText(s.asset_name, 30),
                         truncateText(s.unit_name, 20),
-                        formatToRupiah(s.original_value || 0),
-                        formatToRupiah(s.book_value || 0),
-                        formatToRupiah(s.sale_price || 0),
-                        formatToRupiah(s.profit_loss || 0),
+                        formatToRupiahForCSV(s.original_value || 0),
+                        formatToRupiahForCSV(s.book_value || 0),
+                        formatToRupiahForCSV(s.sale_price || 0),
+                        formatToRupiahForCSV(s.profit_loss || 0),
                         formatDate(s.sale_date),
                         s.buyer_name || 'N/A'
                     ]);
@@ -498,8 +508,8 @@ const ReportView: React.FC<ReportViewProps> = ({ user }) => {
                         l.asset_tag || 'N/A',
                         truncateText(l.asset_name, 30),
                         truncateText(l.unit_name, 20),
-                        formatToRupiah(l.original_value || 0),
-                        formatToRupiah(l.value_at_loss || 0),
+                        formatToRupiahForCSV(l.original_value || 0),
+                        formatToRupiahForCSV(l.value_at_loss || 0),
                         l.reporter_name || 'N/A',
                         formatDate(l.date),
                         truncateText(l.description, 40),
@@ -512,7 +522,8 @@ const ReportView: React.FC<ReportViewProps> = ({ user }) => {
                     response = await getAuditReport({
                         start_date: undefined,
                         end_date: undefined,
-                        unit_id: selectedUnit !== 'all' ? selectedUnit : undefined
+                        unit_id: selectedUnit !== 'all' ? selectedUnit : undefined,
+                        status: 'completed' // Hanya tampilkan audit yang sudah selesai
                     });
                     let reportData = getDataFromResponse(response);
                     console.log('Audit Data:', reportData);
