@@ -201,6 +201,9 @@ const DamageReportValidationModal: React.FC<DamageReportValidationModalProps> = 
               alt="Bukti kerusakan"
               className="max-w-full h-auto rounded-lg border border-gray-300 shadow-sm cursor-pointer hover:shadow-md transition-shadow"
               onClick={() => window.open(`http://localhost:8000/storage/${report.evidence_photo_path}`, '_blank')}
+              onError={(e) => {
+                (e.target as HTMLImageElement).src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="400" height="300"%3E%3Crect fill="%23ddd" width="400" height="300"/%3E%3Ctext fill="%23999" x="50%25" y="50%25" text-anchor="middle" dy=".3em"%3EGambar tidak tersedia%3C/text%3E%3C/svg%3E';
+              }}
             />
           </div>
         )}

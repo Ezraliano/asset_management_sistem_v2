@@ -28,6 +28,9 @@ class AuthController extends Controller
 
         $token = $user->createToken('api-token')->plainTextToken;
 
+        // Token timeout: 60 minutes (3600 seconds)
+        $tokenTimeout = 60 * 60;
+
         return response()->json([
             'success' => true,
             'user' => [
@@ -38,6 +41,7 @@ class AuthController extends Controller
                 'role' => $user->role,
             ],
             'token' => $token,
+            'token_timeout' => $tokenTimeout,
         ]);
     }
 

@@ -3,6 +3,69 @@ import { Asset, AssetMovement, Maintenance, User, DamageReport, LossReport, Dash
 
 const API_BASE_URL = 'http://localhost:8000/api';
 
+// Token timeout checker interval
+let tokenTimeoutInterval: NodeJS.Timeout | null = null;
+
+// Function to check and handle token timeout
+export const startTokenTimeoutChecker = (): void => {
+  // Clear any existing interval
+  if (tokenTimeoutInterval) {
+    clearInterval(tokenTimeoutInterval);
+  }
+
+  // Check token every minute (60000ms)
+  tokenTimeoutInterval = setInterval(() => {
+    const expirationTime = localStorage.getItem('token_expiration');
+    if (!expirationTime) return;
+
+    const expirationMs = parseInt(expirationTime, 10);
+    const currentTime = Date.now();
+    const timeRemaining = expirationMs - currentTime;
+
+    // If token has expired or will expire in less than 1 minute
+    if (timeRemaining <= 0) {
+      console.warn('Token has expired');
+      handleTokenExpiration();
+    }
+    // If token will expire in 5 minutes, show warning
+    else if (timeRemaining <= 5 * 60 * 1000) {
+      console.warn('Token will expire soon in', Math.floor(timeRemaining / 1000), 'seconds');
+      // Emit custom event for UI components to handle
+      window.dispatchEvent(new CustomEvent('tokenExpiringWarning', {
+        detail: { timeRemaining }
+      }));
+    }
+  }, 60000); // Check every minute
+};
+
+// Function to stop the timeout checker
+export const stopTokenTimeoutChecker = (): void => {
+  if (tokenTimeoutInterval) {
+    clearInterval(tokenTimeoutInterval);
+    tokenTimeoutInterval = null;
+  }
+};
+
+// Function to handle token expiration
+export const handleTokenExpiration = (): void => {
+  stopTokenTimeoutChecker();
+  localStorage.removeItem('auth_token');
+  localStorage.removeItem('token_expiration');
+  window.location.href = '/';
+};
+
+// Function to get remaining token time in seconds
+export const getTokenRemainingTime = (): number => {
+  const expirationTime = localStorage.getItem('token_expiration');
+  if (!expirationTime) return 0;
+
+  const expirationMs = parseInt(expirationTime, 10);
+  const currentTime = Date.now();
+  const timeRemaining = expirationMs - currentTime;
+
+  return Math.max(0, Math.floor(timeRemaining / 1000));
+};
+
 // Enhanced API request function dengan response handling yang lebih baik
 const apiRequest = async (endpoint: string, options: RequestInit = {}) => {
   const token = localStorage.getItem('auth_token');
@@ -81,6 +144,15 @@ export const loginUser = async (username: string, password: string): Promise<Use
 
     if (data.success && data.token) {
       localStorage.setItem('auth_token', data.token);
+
+      // Set token timeout (1 hour = 3600 seconds)
+      const tokenTimeout = data.token_timeout || 3600;
+      const expirationTime = Date.now() + (tokenTimeout * 1000);
+      localStorage.setItem('token_expiration', expirationTime.toString());
+
+      // Start timeout checker
+      startTokenTimeoutChecker();
+
       return data.user;
     }
     return null;
@@ -92,11 +164,13 @@ export const loginUser = async (username: string, password: string): Promise<Use
 
 export const logoutUser = async (): Promise<void> => {
   try {
+    stopTokenTimeoutChecker();
     await apiRequest('/logout', { method: 'POST' });
   } catch (error) {
     console.error('Logout error:', error);
   } finally {
     localStorage.removeItem('auth_token');
+    localStorage.removeItem('token_expiration');
   }
 };
 

@@ -9,8 +9,6 @@ import ReportIssueForm from './ReportIssueForm';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 
-declare const Html5Qrcode: any;
-
 interface InventoryAuditProps {
   unitId: number;
   unitName: string;
@@ -20,6 +18,13 @@ interface InventoryAuditProps {
 }
 
 type Tab = 'missing' | 'found' | 'misplaced';
+
+interface ScanConfirmation {
+  isOpen: boolean;
+  assetId: number | null;
+  assetName: string;
+  assetTag: string;
+}
 
 const InventoryAudit: React.FC<InventoryAuditProps> = ({ unitName, auditId, mode, navigateTo }) => {
   const { t } = useTranslation();
@@ -31,7 +36,16 @@ const InventoryAudit: React.FC<InventoryAuditProps> = ({ unitName, auditId, mode
   const [scanResult, setScanResult] = useState<{ type: 'success' | 'info' | 'error', message: string } | null>(null);
   const [activeTab, setActiveTab] = useState<Tab>('missing');
   const [reportingAsset, setReportingAsset] = useState<Asset | null>(null);
+  const [scanConfirmation, setScanConfirmation] = useState<ScanConfirmation>({
+    isOpen: false,
+    assetId: null,
+    assetName: '',
+    assetTag: ''
+  });
   const qrScannerRef = useRef<any>(null);
+  const [isScannerPaused, setIsScannerPaused] = useState(false);
+  const [isReportDownloaded, setIsReportDownloaded] = useState(false);
+  const [showFinishWarning, setShowFinishWarning] = useState(false);
 
   useEffect(() => {
     const fetchAuditData = async () => {
@@ -62,14 +76,26 @@ const InventoryAudit: React.FC<InventoryAuditProps> = ({ unitName, auditId, mode
       if (response.type === 'success') {
         // Asset found in correct unit - use the asset ID from response
         const assetId = response.asset?.id;
+        const assetName = response.asset?.name || 'Unknown Asset';
+        const assetTag = response.asset?.asset_tag || 'N/A';
+
         if (assetId) {
           setFoundAssetIds(prev => {
             const newSet = new Set(prev);
             newSet.add(assetId);
             return newSet;
           });
+
+          // Pause scanner and show confirmation modal
+          setIsScannerPaused(true);
+          setScanConfirmation({
+            isOpen: true,
+            assetId: assetId,
+            assetName: assetName,
+            assetTag: assetTag
+          });
+          setScanResult({ type: 'success', message: response.message });
         }
-        setScanResult({ type: 'success', message: response.message });
       } else if (response.type === 'info') {
         // Asset is misplaced - refresh misplaced assets list
         const audit = await getInventoryAuditById(auditId);
@@ -93,9 +119,42 @@ const InventoryAudit: React.FC<InventoryAuditProps> = ({ unitName, auditId, mode
       setManualInput('');
   };
 
+  const handleContinueScan = () => {
+    // Close confirmation modal and resume scanning
+    setScanConfirmation({
+      isOpen: false,
+      assetId: null,
+      assetName: '',
+      assetTag: ''
+    });
+    setIsScannerPaused(false);
+    // Clear the scan result message
+    setScanResult(null);
+  };
+
+  const handleStopScan = () => {
+    // Close confirmation modal without resuming scan
+    setScanConfirmation({
+      isOpen: false,
+      assetId: null,
+      assetName: '',
+      assetTag: ''
+    });
+    setIsScannerPaused(false);
+    setScanResult(null);
+  };
+
   // Initialize and manage QR scanner with continuous scanning
   useEffect(() => {
     if (mode !== 'camera' || loading) return;
+
+    // Access Html5Qrcode from window object
+    const Html5Qrcode = (window as any).Html5Qrcode;
+    if (!Html5Qrcode) {
+      console.error("Html5Qrcode library not loaded");
+      setScanResult({ type: 'error', message: 'QR Code scanner library failed to load' });
+      return;
+    }
 
     const qrScanner = new Html5Qrcode("audit-qr-reader");
     qrScannerRef.current = qrScanner;
@@ -149,17 +208,34 @@ const InventoryAudit: React.FC<InventoryAuditProps> = ({ unitName, auditId, mode
       error: 'bg-red-100 text-red-800'
   }[scanResult?.type || 'success'];
 
-  const handleFinishAudit = async () => {
-    if (window.confirm('Are you sure you want to finish this audit?')) {
-      try {
-        await completeInventoryAudit(auditId);
-        alert('Audit completed successfully!');
-        // Tetap di halaman audit, tidak redirect ke dashboard
-        // User dapat melihat hasil audit dan download report sebelum kembali
-      } catch (error: any) {
-        alert('Failed to complete audit: ' + error.message);
-      }
+  const handleFinishAudit = () => {
+    // Jika laporan belum didownload, tampilkan warning modal
+    if (!isReportDownloaded) {
+      setShowFinishWarning(true);
+    } else {
+      // Jika sudah didownload, langsung selesaikan audit
+      completeAuditProcess();
     }
+  };
+
+  const completeAuditProcess = async () => {
+    try {
+      await completeInventoryAudit(auditId);
+      alert('Audit completed successfully!');
+      // Tetap di halaman audit, tidak redirect ke dashboard
+      // User dapat melihat hasil audit dan download report sebelum kembali
+    } catch (error: any) {
+      alert('Failed to complete audit: ' + error.message);
+    }
+  };
+
+  const handleConfirmFinishWithoutReport = async () => {
+    setShowFinishWarning(false);
+    await completeAuditProcess();
+  };
+
+  const handleCancelFinish = () => {
+    setShowFinishWarning(false);
   };
 
   const handleDownloadReport = () => {
@@ -327,6 +403,9 @@ const InventoryAudit: React.FC<InventoryAuditProps> = ({ unitName, auditId, mode
       // Download PDF
       const filename = `Laporan_Audit_${unitName.replace(/\s+/g, '_')}_${auditId}_${new Date().toISOString().split('T')[0]}.pdf`;
       doc.save(filename);
+
+      // Mark report as downloaded
+      setIsReportDownloaded(true);
     } catch (error) {
       console.error('Failed to generate PDF:', error);
       alert('Gagal membuat laporan PDF. Silakan coba lagi.');
@@ -454,6 +533,85 @@ const InventoryAudit: React.FC<InventoryAuditProps> = ({ unitName, auditId, mode
                 setReportingAsset(null);
             }}
         />}
+      </Modal>
+
+      <Modal isOpen={scanConfirmation.isOpen} onClose={handleStopScan}>
+        <div className="bg-white rounded-lg p-6 max-w-sm mx-auto">
+          <div className="text-center mb-6">
+            <div className="mb-4">
+              <div className="inline-flex items-center justify-center w-16 h-16 bg-green-100 rounded-full">
+                <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+              </div>
+            </div>
+            <h2 className="text-xl font-bold text-dark-text mb-2">Asset Berhasil Di-Scan</h2>
+            <p className="text-gray-600">Apakah anda ingin melanjutkan proses audit?</p>
+          </div>
+
+          <div className="bg-blue-50 rounded-lg p-4 mb-6">
+            <div className="mb-3">
+              <p className="text-sm text-gray-600">Nama Asset</p>
+              <p className="font-semibold text-dark-text">{scanConfirmation.assetName}</p>
+            </div>
+            <div>
+              <p className="text-sm text-gray-600">Tag Asset</p>
+              <p className="font-semibold text-dark-text">{scanConfirmation.assetTag}</p>
+            </div>
+          </div>
+
+          <div className="flex gap-3">
+            <button
+              onClick={handleStopScan}
+              className="flex-1 px-4 py-2 bg-gray-200 text-gray-800 rounded-lg font-medium hover:bg-gray-300 transition-colors"
+            >
+              Tidak, Hentikan
+            </button>
+            <button
+              onClick={handleContinueScan}
+              className="flex-1 px-4 py-2 bg-primary text-white rounded-lg font-medium hover:bg-primary-dark transition-colors"
+            >
+              Ya, Lanjutkan
+            </button>
+          </div>
+        </div>
+      </Modal>
+
+      <Modal isOpen={showFinishWarning} onClose={handleCancelFinish}>
+        <div className="bg-white rounded-lg p-6 max-w-sm mx-auto">
+          <div className="text-center mb-6">
+            <div className="mb-4">
+              <div className="inline-flex items-center justify-center w-16 h-16 bg-yellow-100 rounded-full">
+                <svg className="w-8 h-8 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+            </div>
+            <h2 className="text-xl font-bold text-dark-text mb-2">Peringatan</h2>
+            <p className="text-gray-600">Apakah anda yakin untuk mengakhiri proses audit tanpa mendownload laporan audit?</p>
+          </div>
+
+          <div className="bg-yellow-50 rounded-lg p-4 mb-6">
+            <p className="text-sm text-yellow-800">
+              Anda belum mendownload laporan audit. Laporan ini penting untuk dokumentasi dan referensi di masa mendatang.
+            </p>
+          </div>
+
+          <div className="flex gap-3">
+            <button
+              onClick={handleCancelFinish}
+              className="flex-1 px-4 py-2 bg-primary text-white rounded-lg font-medium hover:bg-primary-dark transition-colors"
+            >
+              Batal, Download Laporan
+            </button>
+            <button
+              onClick={handleConfirmFinishWithoutReport}
+              className="flex-1 px-4 py-2 bg-red-500 text-white rounded-lg font-medium hover:bg-red-600 transition-colors"
+            >
+              Ya, Akhiri Audit
+            </button>
+          </div>
+        </div>
       </Modal>
     </div>
   );

@@ -16,7 +16,7 @@ import InventoryAuditSetup from './components/InventoryAuditSetup';
 import InventoryAudit from './components/InventoryAudit';
 import Login from './components/Login';
 import { LanguageProvider } from './hooks/useTranslation';
-import { getCurrentUser } from './services/api';
+import { getCurrentUser, startTokenTimeoutChecker, stopTokenTimeoutChecker } from './services/api';
 
 const AppContent: React.FC = () => {
   const [user, setUser] = useState<User | null>(null);
@@ -32,8 +32,11 @@ const AppContent: React.FC = () => {
         const currentUser = await getCurrentUser();
         if (currentUser) {
           setUser(currentUser);
+          // Start token timeout checker if token exists
+          startTokenTimeoutChecker();
         } else {
           localStorage.removeItem('auth_token');
+          localStorage.removeItem('token_expiration');
         }
       }
       setLoading(false);
@@ -55,8 +58,11 @@ const AppContent: React.FC = () => {
   };
   
   const handleLogout = async () => {
-    // Panggil API logout di sini jika diperlukan
+    // Stop token timeout checker
+    stopTokenTimeoutChecker();
+    // Clear stored data
     localStorage.removeItem('auth_token');
+    localStorage.removeItem('token_expiration');
     setUser(null);
   };
 

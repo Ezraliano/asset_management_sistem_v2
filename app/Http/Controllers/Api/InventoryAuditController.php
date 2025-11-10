@@ -23,7 +23,7 @@ class InventoryAuditController extends Controller
             $query = InventoryAudit::with(['unit', 'auditor']);
 
             // Filter by user role
-            if ($user->role === 'Super Admin' || $user->role === 'Admin Holding') {
+            if ($user->role === 'Super Admin' || $user->role === 'Admin Holding' || $user->role === 'Auditor') {
                 // Can see all audits
             } else {
                 // Can only see audits for their own unit
@@ -85,7 +85,9 @@ class InventoryAuditController extends Controller
             $user = Auth::user();
 
             // Check if user has permission to audit this unit
-            if ($user->role !== 'Super Admin' && $user->role !== 'Admin Holding') {
+            // Auditor, Super Admin, and Admin Holding can audit any unit
+            // Other roles can only audit their own unit
+            if ($user->role !== 'Super Admin' && $user->role !== 'Admin Holding' && $user->role !== 'Auditor') {
                 if ($user->unit_id != $validated['unit_id']) {
                     return response()->json(['error' => 'Unauthorized to audit this unit'], 403);
                 }
@@ -142,7 +144,8 @@ class InventoryAuditController extends Controller
             $audit = InventoryAudit::with(['unit', 'auditor'])->findOrFail($id);
 
             // Check permission
-            if ($user->role !== 'Super Admin' && $user->role !== 'Admin Holding') {
+            // Auditor, Super Admin, and Admin Holding can view any audit
+            if ($user->role !== 'Super Admin' && $user->role !== 'Admin Holding' && $user->role !== 'Auditor') {
                 if ($audit->unit_id != $user->unit_id) {
                     return response()->json(['error' => 'Unauthorized'], 403);
                 }
@@ -211,7 +214,8 @@ class InventoryAuditController extends Controller
             $audit = InventoryAudit::findOrFail($id);
 
             // Check permission
-            if ($user->role !== 'Super Admin' && $user->role !== 'Admin Holding') {
+            // Auditor, Super Admin, and Admin Holding can scan assets in any audit
+            if ($user->role !== 'Super Admin' && $user->role !== 'Admin Holding' && $user->role !== 'Auditor') {
                 if ($audit->unit_id != $user->unit_id) {
                     return response()->json(['error' => 'Unauthorized'], 403);
                 }
@@ -307,7 +311,8 @@ class InventoryAuditController extends Controller
             $audit = InventoryAudit::findOrFail($id);
 
             // Check permission
-            if ($user->role !== 'Super Admin' && $user->role !== 'Admin Holding') {
+            // Auditor, Super Admin, and Admin Holding can complete any audit
+            if ($user->role !== 'Super Admin' && $user->role !== 'Admin Holding' && $user->role !== 'Auditor') {
                 if ($audit->unit_id != $user->unit_id) {
                     return response()->json(['error' => 'Unauthorized'], 403);
                 }
@@ -354,7 +359,8 @@ class InventoryAuditController extends Controller
             $audit = InventoryAudit::findOrFail($id);
 
             // Check permission
-            if ($user->role !== 'Super Admin' && $user->role !== 'Admin Holding') {
+            // Auditor, Super Admin, and Admin Holding can cancel any audit
+            if ($user->role !== 'Super Admin' && $user->role !== 'Admin Holding' && $user->role !== 'Auditor') {
                 if ($audit->unit_id != $user->unit_id) {
                     return response()->json(['error' => 'Unauthorized'], 403);
                 }
