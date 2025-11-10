@@ -381,7 +381,7 @@ class AssetSaleController extends Controller
     }
 
     /**
-     * Get sale proof file
+     * Get sale proof file dengan Stream
      */
     public function getProofFile($id)
     {
@@ -418,7 +418,66 @@ class AssetSaleController extends Controller
                 ], Response::HTTP_NOT_FOUND);
             }
 
-            return response()->file(storage_path('app/public/' . $sale->sale_proof_path));
+            // Get file path
+            $fullPath = Storage::disk('public')->path($sale->sale_proof_path);
+
+            // Check if file exists on disk
+            if (!\File::exists($fullPath)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Sale proof file not found on disk'
+                ], Response::HTTP_NOT_FOUND);
+            }
+
+            // Get MIME type
+            $mimeType = \File::mimeType($fullPath);
+            $fileName = basename($sale->sale_proof_path);
+
+            // Stream file dengan range support
+            $fileSize = filesize($fullPath);
+            $request = request();
+
+            // Handle range request untuk resume download
+            if ($request->hasHeader('Range')) {
+                $range = $request->header('Range');
+                if (preg_match('/bytes=(\d+)-(\d*)/', $range, $matches)) {
+                    $start = intval($matches[1]);
+                    $end = $matches[2] !== '' ? intval($matches[2]) : $fileSize - 1;
+
+                    if ($start >= 0 && $end < $fileSize && $start <= $end) {
+                        $length = $end - $start + 1;
+
+                        return response()->stream(function() use ($fullPath, $start, $length) {
+                            $handle = fopen($fullPath, 'r');
+                            fseek($handle, $start);
+                            echo fread($handle, $length);
+                            fclose($handle);
+                        }, 206, [
+                            'Content-Type' => $mimeType,
+                            'Content-Length' => $length,
+                            'Content-Range' => "bytes $start-$end/$fileSize",
+                            'Content-Disposition' => "inline; filename=\"$fileName\"",
+                            'Accept-Ranges' => 'bytes',
+                            'Cache-Control' => 'public, max-age=3600'
+                        ]);
+                    }
+                }
+            }
+
+            // Stream file normal
+            return response()->stream(function() use ($fullPath) {
+                $handle = fopen($fullPath, 'r');
+                while (!feof($handle)) {
+                    echo fread($handle, 8192); // 8KB chunks
+                }
+                fclose($handle);
+            }, 200, [
+                'Content-Type' => $mimeType,
+                'Content-Length' => $fileSize,
+                'Content-Disposition' => "inline; filename=\"$fileName\"",
+                'Accept-Ranges' => 'bytes',
+                'Cache-Control' => 'public, max-age=3600'
+            ]);
 
         } catch (\Exception $e) {
             Log::error("Error fetching sale proof file for sale {$id}: " . $e->getMessage());

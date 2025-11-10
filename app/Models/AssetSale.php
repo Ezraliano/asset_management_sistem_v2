@@ -32,6 +32,8 @@ class AssetSale extends Model
         ];
     }
 
+    protected $appends = ['sale_proof_url'];
+
     /**
      * Relasi ke Asset
      */
@@ -49,14 +51,15 @@ class AssetSale extends Model
     }
 
     /**
-     * Get full URL for sale proof file
+     * Get full URL for sale proof file dengan FileHelper
      */
     public function getSaleProofUrlAttribute(): ?string
     {
-        if ($this->sale_proof_path) {
-            return asset('storage/' . $this->sale_proof_path);
+        if (!$this->sale_proof_path) {
+            return null;
         }
-        return null;
+
+        return \App\Helpers\FileHelper::getAccessibleFileUrl($this->sale_proof_path, 'public');
     }
 
     /**

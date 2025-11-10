@@ -38,6 +38,8 @@ class AssetLoan extends Model
         'return_rejection_reason',
     ];
 
+    protected $appends = ['loan_proof_photo_url', 'return_proof_photo_url'];
+
     /**
      * Get the asset that was borrowed.
      */
@@ -68,5 +70,29 @@ class AssetLoan extends Model
     public function returnVerifier(): BelongsTo
     {
         return $this->belongsTo(User::class, 'return_verified_by');
+    }
+
+    /**
+     * Accessor untuk loan proof photo URL
+     */
+    public function getLoanProofPhotoUrlAttribute(): ?string
+    {
+        if (!$this->loan_proof_photo_path) {
+            return null;
+        }
+
+        return \App\Helpers\FileHelper::getAccessibleFileUrl($this->loan_proof_photo_path, 'public');
+    }
+
+    /**
+     * Accessor untuk return proof photo URL
+     */
+    public function getReturnProofPhotoUrlAttribute(): ?string
+    {
+        if (!$this->return_proof_photo_path) {
+            return null;
+        }
+
+        return \App\Helpers\FileHelper::getAccessibleFileUrl($this->return_proof_photo_path, 'public');
     }
 }

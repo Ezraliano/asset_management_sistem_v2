@@ -605,7 +605,7 @@ class IncidentReportController extends Controller
     }
 
     /**
-     * Get evidence photo for an incident.
+     * Get evidence photo for an incident dengan Stream.
      */
     public function getIncidentPhoto($id)
     {
@@ -651,7 +651,66 @@ class IncidentReportController extends Controller
                 ], Response::HTTP_NOT_FOUND);
             }
 
-            return response()->file(storage_path('app/public/' . $incident->evidence_photo_path));
+            // Get file path
+            $fullPath = Storage::disk('public')->path($incident->evidence_photo_path);
+
+            // Check if file exists on disk
+            if (!\File::exists($fullPath)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Photo file not found on disk'
+                ], Response::HTTP_NOT_FOUND);
+            }
+
+            // Get MIME type
+            $mimeType = \File::mimeType($fullPath);
+            $fileName = basename($incident->evidence_photo_path);
+
+            // Stream file dengan range support
+            $fileSize = filesize($fullPath);
+            $request = request();
+
+            // Handle range request untuk resume download
+            if ($request->hasHeader('Range')) {
+                $range = $request->header('Range');
+                if (preg_match('/bytes=(\d+)-(\d*)/', $range, $matches)) {
+                    $start = intval($matches[1]);
+                    $end = $matches[2] !== '' ? intval($matches[2]) : $fileSize - 1;
+
+                    if ($start >= 0 && $end < $fileSize && $start <= $end) {
+                        $length = $end - $start + 1;
+
+                        return response()->stream(function() use ($fullPath, $start, $length) {
+                            $handle = fopen($fullPath, 'r');
+                            fseek($handle, $start);
+                            echo fread($handle, $length);
+                            fclose($handle);
+                        }, 206, [
+                            'Content-Type' => $mimeType,
+                            'Content-Length' => $length,
+                            'Content-Range' => "bytes $start-$end/$fileSize",
+                            'Content-Disposition' => "inline; filename=\"$fileName\"",
+                            'Accept-Ranges' => 'bytes',
+                            'Cache-Control' => 'public, max-age=3600'
+                        ]);
+                    }
+                }
+            }
+
+            // Stream file normal
+            return response()->stream(function() use ($fullPath) {
+                $handle = fopen($fullPath, 'r');
+                while (!feof($handle)) {
+                    echo fread($handle, 8192); // 8KB chunks
+                }
+                fclose($handle);
+            }, 200, [
+                'Content-Type' => $mimeType,
+                'Content-Length' => $fileSize,
+                'Content-Disposition' => "inline; filename=\"$fileName\"",
+                'Accept-Ranges' => 'bytes',
+                'Cache-Control' => 'public, max-age=3600'
+            ]);
 
         } catch (\Exception $e) {
             Log::error("Error fetching incident photo {$id}: " . $e->getMessage());

@@ -4,9 +4,7 @@ import { View } from '../types';
 import { getAssetByTag } from '../services/api';
 import { QRIcon, CameraIcon } from './icons';
 import { useTranslation } from '../hooks/useTranslation';
-
-// Assume Html5Qrcode is available globally from the script tag in index.html
-declare const Html5Qrcode: any;
+import { Html5Qrcode } from 'html5-qrcode';
 
 interface QRCodeScannerProps {
   navigateTo: (view: View) => void;
@@ -42,29 +40,74 @@ const QRCodeScanner: React.FC<QRCodeScannerProps> = ({ navigateTo }) => {
       return;
     }
 
-    const qrScanner = new Html5Qrcode("qr-reader");
-    const config = { fps: 10, qrbox: { width: 250, height: 250 } };
+    let qrScanner: any = null;
+    let isMounted = true;
 
-    const qrCodeSuccessCallback = (decodedText: string) => {
-      qrScanner.stop().then(() => {
-        setAssetId(decodedText);
-        setIsScanning(false);
-        handleSearch(decodedText);
-      });
+    const initializeScanner = async () => {
+      try {
+        // Check if camera is supported
+        const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+        // Stop the stream immediately, we just needed to check if it's available
+        stream.getTracks().forEach(track => track.stop());
+
+        if (!isMounted) return;
+
+        qrScanner = new Html5Qrcode("qr-reader");
+        const config = { fps: 10, qrbox: { width: 250, height: 250 } };
+
+        const qrCodeSuccessCallback = (decodedText: string) => {
+          if (qrScanner && qrScanner.isScanning) {
+            qrScanner.stop()
+              .then(() => {
+                if (isMounted) {
+                  setAssetId(decodedText);
+                  setIsScanning(false);
+                  handleSearch(decodedText);
+                }
+              })
+              .catch((err: any) => {
+                console.error("Failed to stop scanner after successful scan", err);
+                if (isMounted) {
+                  setIsScanning(false);
+                }
+              });
+          }
+        };
+
+        const qrCodeErrorCallback = (errorMessage: string) => {
+          // Silently ignore QR scanning errors
+        };
+
+        await qrScanner.start(
+          { facingMode: "environment" },
+          config,
+          qrCodeSuccessCallback,
+          qrCodeErrorCallback
+        );
+      } catch (err: any) {
+        console.error("Unable to start QR scanner", err);
+        if (isMounted) {
+          // Provide more specific error message
+          let errorMsg = t('qr_scanner.errors.camera_fail');
+          if (err.message && err.message.includes("NotAllowedError")) {
+            errorMsg = t('qr_scanner.errors.permission_denied') || "Camera permission denied";
+          } else if (err.message && err.message.includes("NotFoundError")) {
+            errorMsg = t('qr_scanner.errors.camera_not_found') || "No camera found on this device";
+          }
+          setError(errorMsg);
+          setIsScanning(false);
+        }
+      }
     };
 
-    qrScanner.start({ facingMode: "environment" }, config, qrCodeSuccessCallback, undefined)
-      .catch((err: any) => {
-        console.error("Unable to start QR scanner", err);
-        setError(t('qr_scanner.errors.camera_fail'));
-        setIsScanning(false);
-      });
+    initializeScanner();
 
     return () => {
-      // Check if the scanner exists and is in a scanning state before trying to stop it.
+      isMounted = false;
+      // Clean up scanner on unmount or when isScanning changes
       if (qrScanner && qrScanner.isScanning) {
         qrScanner.stop()
-          .catch((err: any) => console.error("Failed to stop QR scanner", err));
+          .catch((err: any) => console.error("Failed to stop QR scanner during cleanup", err));
       }
     };
   }, [isScanning, handleSearch, t]);
@@ -79,7 +122,15 @@ const QRCodeScanner: React.FC<QRCodeScannerProps> = ({ navigateTo }) => {
         
         {isScanning ? (
           <div className="mt-4">
-            <div id="qr-reader" className="w-full border-2 border-dashed border-gray-300 rounded-lg overflow-hidden"></div>
+            <div className="relative">
+              <div id="qr-reader" className="w-full border-2 border-dashed border-gray-300 rounded-lg overflow-hidden bg-gray-100 min-h-64 flex items-center justify-center">
+                <div className="text-center text-gray-500">
+                  <p className="mb-2">📷 {t('qr_scanner.position_camera') || 'Position camera to QR code'}</p>
+                  <p className="text-sm">{t('qr_scanner.scanning') || 'Scanning...'}</p>
+                </div>
+              </div>
+            </div>
+            {error && <p className="text-red-500 mt-3 text-sm">{error}</p>}
             <button
               onClick={() => setIsScanning(false)}
               className="w-full bg-red-500 text-white font-bold py-3 px-4 rounded-lg mt-4 hover:bg-red-600 transition-colors"

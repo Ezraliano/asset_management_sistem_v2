@@ -32,9 +32,23 @@ class IncidentReport extends Model
         ];
     }
 
+    protected $appends = ['evidence_photo_url'];
+
     public function asset(): BelongsTo
     {
         return $this->belongsTo(Asset::class);
+    }
+
+    /**
+     * Accessor untuk get file URL yang accessible
+     */
+    public function getEvidencePhotoUrlAttribute()
+    {
+        if (!$this->evidence_photo_path) {
+            return null;
+        }
+
+        return \App\Helpers\FileHelper::getAccessibleFileUrl($this->evidence_photo_path, 'public');
     }
 
     public function reporter(): BelongsTo

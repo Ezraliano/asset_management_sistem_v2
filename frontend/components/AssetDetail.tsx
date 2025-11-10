@@ -23,6 +23,7 @@ import LossReportDetailModal from './LossReportDetailModal';
 import MaintenanceValidationModal from './MaintenanceValidationModal';
 import DamageReportValidationModal from './DamageReportValidationModal';
 import { useTranslation } from '../hooks/useTranslation';
+import { generateCustomQRLayout as qrGenerator } from '../utils/qrCodeGenerator';
 
 interface AssetDetailProps {
   assetId: string;
@@ -255,48 +256,26 @@ const AssetDetail: React.FC<AssetDetailProps> = ({ assetId, navigateTo }) => {
   const handleDownloadQR = () => {
     const sourceCanvas = document.getElementById('qr-code-canvas') as HTMLCanvasElement;
     if (sourceCanvas && asset) {
-        const canvas = document.createElement('canvas');
-        const ctx = canvas.getContext('2d');
-        if (!ctx) return;
+      try {
+        const unitName = asset.unit?.name || 'Inventaris';
+        const dataUrl = qrGenerator({
+          sourceCanvas,
+          assetTag: asset.asset_tag,
+          unitName,
+          layout: 'horizontal'
+        });
 
-        const qrSize = 320;
-        const padding = 20;
-        const fontSize = 18;
-        const textHeight = 40;
-        const font = `${fontSize}px Arial`;
-
-        canvas.width = qrSize + padding * 2;
-        canvas.height = qrSize + padding * 2 + textHeight;
-
-        // Draw background
-        ctx.fillStyle = 'white';
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-        // Draw QR code
-        ctx.imageSmoothingEnabled = false;
-        ctx.drawImage(sourceCanvas, padding, padding, qrSize, qrSize);
-
-        // Draw Asset Tag text
-        ctx.fillStyle = '#1F2937';
-        ctx.font = font;
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        
-        const textX = canvas.width / 2;
-        const textY = padding + qrSize + (textHeight / 2);
-        
-        ctx.fillText(asset.asset_tag, textX, textY);
-        
         // Trigger download
-        const pngUrl = canvas
-            .toDataURL("image/png")
-            .replace("image/png", "image/octet-stream");
-        const downloadLink = document.createElement("a");
-        downloadLink.href = pngUrl;
+        const downloadLink = document.createElement('a');
+        downloadLink.href = dataUrl;
         downloadLink.download = `${asset.asset_tag}_qr_code.png`;
         document.body.appendChild(downloadLink);
         downloadLink.click();
         document.body.removeChild(downloadLink);
+      } catch (error) {
+        console.error('Failed to generate QR code:', error);
+        alert('Failed to generate QR code. Please try again.');
+      }
     }
   };
 
@@ -824,18 +803,32 @@ const AssetDetail: React.FC<AssetDetailProps> = ({ assetId, navigateTo }) => {
                                         <div className="flex justify-between items-start">
                                             <div className="flex-1">
                                                 <div className="flex items-center mb-2">
-                                                    <span className="font-medium text-gray-900">Unit:</span>
-                                                    <span className="ml-2 text-gray-700">{movement.location}</span>
+                                                    <span className="font-medium text-gray-900">Dari:</span>
+                                                    <span className="ml-2 text-gray-700">{movement.fromUnit?.name || 'N/A'}</span>
                                                 </div>
-                                                {movement.moved_by && (
-                                                    <div className="flex items-center text-sm text-gray-600">
-                                                        <span className="font-medium">Dipindahkan oleh:</span>
-                                                        <span className="ml-2">{movement.moved_by.name}</span>
+                                                <div className="flex items-center mb-2">
+                                                    <span className="font-medium text-gray-900">Ke:</span>
+                                                    <span className="ml-2 text-gray-700">{movement.toUnit?.name || 'N/A'}</span>
+                                                </div>
+                                                <div className="flex items-center text-sm text-gray-600">
+                                                    <span className="font-medium">Status:</span>
+                                                    <span className={`ml-2 px-2 py-1 rounded text-xs font-semibold ${
+                                                        movement.status === 'APPROVED' ? 'bg-green-100 text-green-800' :
+                                                        movement.status === 'PENDING' ? 'bg-yellow-100 text-yellow-800' :
+                                                        'bg-red-100 text-red-800'
+                                                    }`}>
+                                                        {movement.status}
+                                                    </span>
+                                                </div>
+                                                {movement.requestedBy && (
+                                                    <div className="flex items-center text-sm text-gray-600 mt-2">
+                                                        <span className="font-medium">Diminta oleh:</span>
+                                                        <span className="ml-2">{movement.requestedBy.name}</span>
                                                     </div>
                                                 )}
                                             </div>
                                             <div className="text-sm text-gray-500 whitespace-nowrap">
-                                                {formatDateTime(movement.moved_at)}
+                                                {formatDate(movement.requested_at)}
                                             </div>
                                         </div>
                                     </li>
@@ -869,7 +862,7 @@ const AssetDetail: React.FC<AssetDetailProps> = ({ assetId, navigateTo }) => {
                                             <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
                                                 maint.status === 'COMPLETED' ? 'bg-green-100 text-green-800' :
                                                 maint.status === 'IN_PROGRESS' ? 'bg-blue-100 text-blue-800' :
-                                                maint.status === 'SCHEDULED' ? 'bg-purple-100 text-purple-800' :
+                                                maint.status === 'PENDING' ? 'bg-purple-100 text-purple-800' :
                                                 'bg-gray-100 text-gray-800'
                                             }`}>
                                                 {maint.status}
@@ -971,8 +964,8 @@ const AssetDetail: React.FC<AssetDetailProps> = ({ assetId, navigateTo }) => {
                                         <div>
                                             <span className="font-medium text-gray-900">Status:</span>
                                             <span className={`ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                                                report.status === 'Resolved' ? 'bg-green-100 text-green-800' :
-                                                report.status === 'In Progress' ? 'bg-blue-100 text-blue-800' :
+                                                report.status === 'RESOLVED' || report.status === 'CLOSED' ? 'bg-green-100 text-green-800' :
+                                                report.status === 'UNDER_REVIEW' ? 'bg-blue-100 text-blue-800' :
                                                 'bg-red-100 text-red-800'
                                             }`}>
                                                 {report.status}

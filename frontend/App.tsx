@@ -9,6 +9,7 @@ import AssetDetail from './components/AssetDetail';
 import AssetSalesList from './components/AssetSalesList';
 import AssetSaleDetail from './components/AssetSaleDetail';
 import QRCodeScanner from './components/QRCodeScanner';
+import ErrorBoundary from './components/ErrorBoundary';
 import UserList from './components/UserList';
 import ReportView from './components/ReportView';
 import BulkTransaction from './components/BulkTransaction';
@@ -98,7 +99,11 @@ const AppContent: React.FC = () => {
       case 'ASSET_SALE_DETAIL':
         return <AssetSaleDetail saleId={view.saleId} user={user} navigateTo={navigateTo} />;
       case 'QR_SCANNER':
-        return <QRCodeScanner navigateTo={navigateTo} />;
+        return (
+          <ErrorBoundary>
+            <QRCodeScanner navigateTo={navigateTo} />
+          </ErrorBoundary>
+        );
       case 'USERS':
           return <UserList />;
       case 'REPORTS':

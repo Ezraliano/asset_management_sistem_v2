@@ -10,6 +10,7 @@ import { useTranslation } from '../hooks/useTranslation';
 import { formatToRupiah } from '../utils/formatters';
 import { QRCodeCanvas } from 'qrcode.react';
 import JSZip from 'jszip';
+import { generateCustomQRLayout } from '../utils/qrCodeGenerator';
 
 interface AssetListProps {
   navigateTo: (view: View) => void;
@@ -108,48 +109,36 @@ const AssetList: React.FC<AssetListProps> = ({ navigateTo }) => {
     for (const asset of selectedAssetObjects) {
       const sourceCanvas = document.getElementById(`qr-code-${asset.id}`) as HTMLCanvasElement;
       if (sourceCanvas) {
-        const canvas = document.createElement('canvas');
-        const ctx = canvas.getContext('2d');
-        if (!ctx) continue;
+        try {
+          const unitName = asset.unit?.name || 'Inventaris';
+          const dataUrl = generateCustomQRLayout({
+            sourceCanvas,
+            assetTag: asset.asset_tag,
+            unitName,
+            layout: 'horizontal'
+          });
 
-        const qrSize = 256;
-        const padding = 20;
-        const fontSize = 16;
-        const textHeight = 30;
-        const font = `${fontSize}px Arial`;
-
-        canvas.width = qrSize + padding * 2;
-        canvas.height = qrSize + padding * 2 + textHeight;
-
-        // Latar belakang putih
-        ctx.fillStyle = 'white';
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-        // Gambar QR code
-        ctx.drawImage(sourceCanvas, padding, padding, qrSize, qrSize);
-
-        // Tambahkan teks ID Asset
-        ctx.fillStyle = 'black';
-        ctx.font = font;
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        const textX = canvas.width / 2;
-        const textY = padding + qrSize + (textHeight / 2);
-        ctx.fillText(asset.asset_tag, textX, textY);
-
-        const pngUrl = canvas.toDataURL('image/png');
-        qrCodesFolder.file(`${asset.asset_tag}.png`, pngUrl.split(',')[1], { base64: true });
+          // Extract base64 from data URL
+          const base64Data = dataUrl.split(',')[1];
+          qrCodesFolder.file(`${asset.asset_tag}.png`, base64Data, { base64: true });
+        } catch (error) {
+          console.error(`Failed to generate QR code for asset ${asset.asset_tag}:`, error);
+        }
       }
     }
 
-    zip.generateAsync({ type: 'blob' }).then(content => {
+    try {
+      const content = await zip.generateAsync({ type: 'blob' });
       const link = document.createElement('a');
       link.href = URL.createObjectURL(content);
       link.download = 'asset-qr-codes.zip';
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-    });
+    } catch (error) {
+      console.error('Failed to generate ZIP file:', error);
+      alert('Failed to download QR codes. Please try again.');
+    }
   };
 
   const handleDeleteSelected = async () => {

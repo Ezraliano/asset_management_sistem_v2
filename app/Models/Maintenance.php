@@ -39,9 +39,23 @@ class Maintenance extends Model
         ];
     }
 
+    protected $appends = ['photo_proof_url'];
+
     public function asset(): BelongsTo
     {
         return $this->belongsTo(Asset::class);
+    }
+
+    /**
+     * Accessor untuk photo proof URL
+     */
+    public function getPhotoProofUrlAttribute(): ?string
+    {
+        if (!$this->photo_proof) {
+            return null;
+        }
+
+        return \App\Helpers\FileHelper::getAccessibleFileUrl($this->photo_proof, 'public');
     }
 
     public function unit(): BelongsTo
