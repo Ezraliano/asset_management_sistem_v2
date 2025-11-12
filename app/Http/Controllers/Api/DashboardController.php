@@ -22,9 +22,9 @@ class DashboardController extends Controller
 
         // 2. DETERMINE UNIT FILTER
         $unitId = null;
-        if ($user->role === 'Admin Unit' && $user->unit_id) {
+        if ($user->role === 'unit' && $user->unit_id) {
             $unitId = $user->unit_id;
-        } elseif (in_array($user->role, ['Super Admin', 'Admin Holding']) && $requestedUnitId && $requestedUnitId !== 'all') {
+        } elseif (in_array($user->role, ['super-admin', 'admin']) && $requestedUnitId && $requestedUnitId !== 'all') {
             $unitId = (int) $requestedUnitId;
         }
 

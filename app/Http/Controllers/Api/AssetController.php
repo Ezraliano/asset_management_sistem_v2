@@ -32,11 +32,11 @@ class AssetController extends Controller
             $user = Auth::user();
 
             // ✅ EXCEPTION: Jika for_request=true, Admin Unit bisa lihat asset dari unit lain
-            if ($for_request === 'true' && $user && $user->role === 'Admin Unit' && $user->unit_id) {
+            if ($for_request === 'true' && $user && $user->role === 'unit' && $user->unit_id) {
                 // Admin Unit request: hanya lihat asset dari unit LAIN yang Available
                 $query->where('unit_id', '!=', $user->unit_id)
                       ->where('status', 'Available');
-            } elseif ($user && in_array($user->role, ['Admin Unit', 'User'])) {
+            } elseif ($user && in_array($user->role, ['unit', 'user'])) {
                 // Admin Unit & User hanya bisa lihat asset di unit mereka (behavior normal)
                 if ($user->unit_id) {
                     $query->where('unit_id', $user->unit_id);
@@ -44,7 +44,7 @@ class AssetController extends Controller
                     // User tanpa unit_id akan melihat empty list
                     $query->whereRaw('1 = 0'); // Force empty result
                 }
-            } elseif ($user && $user->role === 'Admin Holding' && $unit_id) {
+            } elseif ($user && $user->role === 'admin' && $unit_id) {
                 // Admin Holding bisa filter by unit tertentu
                 $query->where('unit_id', $unit_id);
             }
@@ -56,7 +56,7 @@ class AssetController extends Controller
             }
 
             // Filter unit_id hanya untuk Super Admin dan Admin Holding
-            if (!empty($unit_id) && $user && in_array($user->role, ['Super Admin', 'Admin Holding'])) {
+            if (!empty($unit_id) && $user && in_array($user->role, ['super-admin', 'admin'])) {
                 $query->where('unit_id', $unit_id);
             }
 
@@ -143,7 +143,7 @@ class AssetController extends Controller
 
             // ✅ Middleware sudah validasi role, kita hanya perlu handle business logic
             // Admin Unit otomatis di-set unit_id nya
-            if ($user && $user->role === 'Admin Unit' && $user->unit_id) {
+            if ($user && $user->role === 'unit' && $user->unit_id) {
                 $validated['unit_id'] = $user->unit_id;
             }
 
@@ -285,7 +285,7 @@ class AssetController extends Controller
 
             // ✅ Middleware sudah validasi unit permission, langsung proses update
             $user = Auth::user();
-            if ($user && $user->role === 'Admin Unit' && $user->unit_id) {
+            if ($user && $user->role === 'unit' && $user->unit_id) {
                 // Admin Unit tidak bisa ubah unit_id asset
                 if (isset($validated['unit_id']) && $validated['unit_id'] != $user->unit_id) {
                     return response()->json([
@@ -429,7 +429,7 @@ class AssetController extends Controller
             $baseQuery = Asset::query();
             
             // ✅ Filter berdasarkan unit untuk Admin Unit dan User
-            if ($user && in_array($user->role, ['Admin Unit', 'User'])) {
+            if ($user && in_array($user->role, ['unit', 'user'])) {
                 $baseQuery->where('unit_id', $user->unit_id);
             }
 
@@ -455,7 +455,7 @@ class AssetController extends Controller
 
             // Hitung informasi depresiasi dengan filter unit
             $depreciationQuery = \App\Models\AssetDepreciation::query();
-            if ($user && in_array($user->role, ['Admin Unit', 'User'])) {
+            if ($user && in_array($user->role, ['unit', 'user'])) {
                 $depreciationQuery->whereHas('asset', function($q) use ($user) {
                     $q->where('unit_id', $user->unit_id);
                 });
@@ -522,12 +522,12 @@ class AssetController extends Controller
             $updates = $validated['updates'];
 
             // ✅ Validasi: Admin Unit hanya bisa update asset di unit mereka
-            if ($user && $user->role === 'Admin Unit' && $user->unit_id) {
+            if ($user && $user->role === 'unit' && $user->unit_id) {
                 $userAssetIds = Asset::where('unit_id', $user->unit_id)
                     ->whereIn('id', $assetIds)
                     ->pluck('id')
                     ->toArray();
-                
+
                 if (count($userAssetIds) !== count($assetIds)) {
                     return response()->json([
                         'success' => false,
@@ -542,7 +542,7 @@ class AssetController extends Controller
                         'message' => 'Anda tidak dapat mengubah unit asset'
                     ], Response::HTTP_FORBIDDEN);
                 }
-                
+
                 // Force unit_id sesuai unit Admin Unit
                 $updates['unit_id'] = $user->unit_id;
             }
@@ -609,7 +609,7 @@ class AssetController extends Controller
             }]);
 
             // ✅ Filter berdasarkan unit user
-            if ($user && in_array($user->role, ['Admin Unit', 'User'])) {
+            if ($user && in_array($user->role, ['unit', 'user'])) {
                 $query->where('unit_id', $user->unit_id);
             }
 
@@ -738,7 +738,7 @@ class AssetController extends Controller
             }]);
 
             // ✅ Filter berdasarkan unit user
-            if ($user && in_array($user->role, ['Admin Unit', 'User'])) {
+            if ($user && in_array($user->role, ['unit', 'user'])) {
                 $query->where('unit_id', $user->unit_id);
             }
 
@@ -843,7 +843,7 @@ class AssetController extends Controller
             }
 
             // Validasi unit untuk Admin Unit
-            if (isset($validated['unit_id']) && $user && $user->role === 'Admin Unit') {
+            if (isset($validated['unit_id']) && $user && $user->role === 'unit') {
                 if ($validated['unit_id'] != $user->unit_id) {
                     $validationResults[] = [
                         'field' => 'unit_id',
@@ -892,7 +892,7 @@ class AssetController extends Controller
                 }, 'unit']);
 
             // ✅ PERBAIKAN: Filter berdasarkan unit user
-            if ($user && in_array($user->role, ['Admin Unit', 'User'])) {
+            if ($user && in_array($user->role, ['unit', 'user'])) {
                 // User hanya bisa pinjam asset di unit mereka sendiri
                 if ($user->unit_id) {
                     $query->where('unit_id', $user->unit_id);
@@ -956,7 +956,7 @@ class AssetController extends Controller
             $user = Auth::user();
 
             // Validasi akses unit
-            if ($user && in_array($user->role, ['Admin Unit', 'User']) && $user->unit_id != $unitId) {
+            if ($user && in_array($user->role, ['unit', 'user']) && $user->unit_id != $unitId) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Unauthorized to access assets from this unit'
@@ -1008,7 +1008,7 @@ class AssetController extends Controller
 
             // Check unit authorization
             $user = Auth::user();
-            if ($user && in_array($user->role, ['Admin Unit', 'User'])) {
+            if ($user && in_array($user->role, ['unit', 'user'])) {
                 if ($asset->unit_id != $user->unit_id) {
                     Log::warning("Unauthorized access attempt to asset {$assetTag} by user {$user->id}");
                     return response()->json([

@@ -22,7 +22,7 @@ const LossReportDetailModal: React.FC<LossReportDetailModalProps> = ({
   const [responsibleParty, setResponsibleParty] = useState('');
 
   // Check if user can validate (Super Admin or Admin Holding only)
-  const canValidate = ['Super Admin', 'Admin Holding'].includes(currentUser.role) &&
+  const canValidate = ['super-admin', 'admin'].includes(currentUser.role) &&
                       report.status === 'PENDING';
 
   const formatDate = (dateString: string): string => {

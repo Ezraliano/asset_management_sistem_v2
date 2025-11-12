@@ -14,7 +14,7 @@ interface UserFormData {
   username: string;
   email: string;
   password: string;
-  role: 'Admin Unit' | 'User' | 'Auditor';
+  role: 'unit' | 'user' | 'auditor';
   unit_id: number | '';
 }
 
@@ -32,7 +32,7 @@ const UserManagement: React.FC<UserManagementProps> = ({
     username: '',
     email: '',
     password: '',
-    role: 'User',
+    role: 'user',
     unit_id: '',
   });
 
@@ -48,7 +48,7 @@ const UserManagement: React.FC<UserManagementProps> = ({
           username: editUser.username,
           email: editUser.email,
           password: '',
-          role: editUser.role as 'Admin Unit' | 'User',
+          role: editUser.role as 'unit' | 'user' | 'auditor',
           unit_id: editUser.unit_id || '',
         });
       } else {
@@ -73,7 +73,7 @@ const UserManagement: React.FC<UserManagementProps> = ({
       username: '',
       email: '',
       password: '',
-      role: 'User',
+      role: 'user',
       unit_id: '',
     });
     setError('');
@@ -97,9 +97,9 @@ const UserManagement: React.FC<UserManagementProps> = ({
       return;
     }
 
-    // Unit is required for Admin Unit and User, but not for Auditor
-    if (formData.role !== 'Auditor' && formData.unit_id === '') {
-      setError('Unit wajib diisi untuk Admin Unit dan User');
+    // Unit is required for unit and user, but not for auditor
+    if (formData.role !== 'auditor' && formData.unit_id === '') {
+      setError('Unit wajib diisi untuk unit dan user');
       return;
     }
 
@@ -117,8 +117,8 @@ const UserManagement: React.FC<UserManagementProps> = ({
           name: formData.name,
           username: formData.username,
           email: formData.email,
-          role: formData.role,
-          unit_id: formData.role === 'Auditor' ? null : (formData.unit_id as number),
+          role: getRoleForApi(formData.role),
+          unit_id: formData.role === 'auditor' ? null : (formData.unit_id as number),
         };
 
         // Only include password if it's not empty
@@ -134,8 +134,8 @@ const UserManagement: React.FC<UserManagementProps> = ({
           username: formData.username,
           email: formData.email,
           password: formData.password,
-          role: formData.role,
-          unit_id: formData.role === 'Auditor' ? null : (formData.unit_id as number),
+          role: getRoleForApi(formData.role),
+          unit_id: formData.role === 'auditor' ? null : (formData.unit_id as number),
         });
       }
 
@@ -151,6 +151,15 @@ const UserManagement: React.FC<UserManagementProps> = ({
   const handleClose = () => {
     resetForm();
     onClose();
+  };
+
+  const getRoleForApi = (role: string): 'unit' | 'user' | 'auditor' => {
+    const roleMap: Record<string, 'unit' | 'user' | 'auditor'> = {
+      'unit': 'unit',
+      'user': 'user',
+      'auditor': 'auditor',
+    };
+    return roleMap[role] || 'user';
   };
 
   if (!isOpen) return null;
@@ -244,20 +253,20 @@ const UserManagement: React.FC<UserManagementProps> = ({
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
                 required
               >
-                <option value="User">User</option>
-                <option value="Admin Unit">Admin Unit</option>
-                <option value="Auditor">Auditor</option>
+                <option value="user">User</option>
+                <option value="unit">Admin Unit</option>
+                <option value="auditor">Auditor</option>
               </select>
               <p className="mt-1 text-xs text-gray-500">
-                {formData.role === 'User'
+                {formData.role === 'user'
                   ? 'User: Dapat meminjam aset dari unit mereka'
-                  : formData.role === 'Admin Unit'
+                  : formData.role === 'unit'
                   ? 'Admin Unit: Dapat mengelola aset dan menyetujui peminjaman di unit mereka'
                   : 'Auditor: Dapat melakukan audit inventaris dan melihat laporan audit'}
               </p>
             </div>
 
-            {formData.role !== 'Auditor' && (
+            {formData.role !== 'auditor' && (
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Unit <span className="text-red-500">*</span>

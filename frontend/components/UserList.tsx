@@ -67,15 +67,15 @@ const UserList: React.FC = () => {
     };
 
     const roleColorMap: Record<string, string> = {
-        'Super Admin': 'bg-purple-100 text-purple-800',
-        'Admin Holding': 'bg-blue-100 text-blue-800',
-        'Admin Unit': 'bg-green-100 text-green-800',
-        'User': 'bg-gray-100 text-gray-800',
-        'Auditor': 'bg-yellow-100 text-yellow-800',
+        'super-admin': 'bg-purple-100 text-purple-800',
+        'admin': 'bg-blue-100 text-blue-800',
+        'unit': 'bg-green-100 text-green-800',
+        'user': 'bg-gray-100 text-gray-800',
+        'auditor': 'bg-yellow-100 text-yellow-800',
     };
 
     const canEditOrDelete = (user: User) => {
-        return user.role !== 'Super Admin' && user.role !== 'Admin Holding' && user.role !== 'Auditor';
+        return user.role !== 'super-admin' && user.role !== 'admin' && user.role !== 'auditor';
     };
 
     // Filter users based on search and role filter
@@ -135,11 +135,11 @@ const UserList: React.FC = () => {
                         className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
                     >
                         <option value="all">Semua Role</option>
-                        <option value="Super Admin">Super Admin</option>
-                        <option value="Admin Holding">Admin Holding</option>
-                        <option value="Admin Unit">Admin Unit</option>
-                        <option value="User">User</option>
-                        <option value="Auditor">Auditor</option>
+                        <option value="super-admin">Super Admin</option>
+                        <option value="admin">Admin Holding</option>
+                        <option value="unit">Admin Unit</option>
+                        <option value="user">User</option>
+                        <option value="auditor">Auditor</option>
                     </select>
                 </div>
             </div>

@@ -24,7 +24,7 @@ class UnitController extends Controller
             ->where('is_active', true);
 
         // ✅ Filter based on user role
-        if (in_array($user->role, ['Admin Unit', 'User'])) {
+        if (in_array($user->role, ['unit', 'user'])) {
             // Admin Unit & User hanya bisa lihat unit mereka sendiri
             if ($user->unit_id) {
                 $query->where('id', $user->unit_id);
@@ -64,7 +64,7 @@ class UnitController extends Controller
         $user = Auth::user();
 
         // Check if user can view this unit's assets
-        if ($user->role === 'Admin Unit' && $user->unit_id !== $unit->id) {
+        if ($user->role === 'unit' && $user->unit_id !== $unit->id) {
             return response()->json([
                 'success' => false,
                 'message' => 'Unauthorized to view assets from other units'
@@ -89,9 +89,9 @@ class UnitController extends Controller
         $user = Auth::user();
 
         // Only Super Admin and Admin Holding can view users from all units
-        if (!in_array($user->role, ['Super Admin', 'Admin Holding'])) {
+        if (!in_array($user->role, ['super-admin', 'admin'])) {
             // Admin Unit can only view users from their own unit
-            if ($user->role === 'Admin Unit' && $user->unit_id !== $unit->id) {
+            if ($user->role === 'unit' && $user->unit_id !== $unit->id) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Unauthorized to view users from other units'

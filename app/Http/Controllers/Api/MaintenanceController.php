@@ -19,7 +19,7 @@ class MaintenanceController extends Controller
         $query = Maintenance::with(['asset', 'unit', 'validator', 'completedBy']);
 
         // Filter berdasarkan role
-        if ($user->role === 'Admin Unit') {
+        if ($user->role === 'unit') {
             // Admin Unit hanya bisa lihat maintenance dari unit mereka
             $query->forUnit($user->unit_id);
         }

@@ -1,7 +1,7 @@
 // api.ts - PERBAIKAN RESPONSE HANDLING
 import { Asset, AssetMovement, Maintenance, User, DamageReport, LossReport, DashboardStats, AssetLoan, AssetLoanStatus, Unit, AssetSale, IncidentReport, AssetRequest, InventoryAudit } from '../types';
 
-const API_BASE_URL = 'http://localhost:8000/api';
+const API_BASE_URL = 'https://assetmanagementga.arjunaconnect.com/api';
 
 // Token timeout checker interval
 let tokenTimeoutInterval: NodeJS.Timeout | null = null;
@@ -955,7 +955,7 @@ export const createUser = async (userData: {
   username: string;
   email: string;
   password: string;
-  role: 'Admin Unit' | 'User' | 'Auditor';
+  role: 'unit' | 'user' | 'auditor';
   unit_id?: number | null;
 }): Promise<User | null> => {
   try {
@@ -975,7 +975,7 @@ export const updateUser = async (id: number, userData: {
   username?: string;
   email?: string;
   password?: string;
-  role?: 'Admin Unit' | 'User' | 'Auditor';
+  role?: 'unit' | 'user' | 'auditor';
   unit_id?: number | null;
 }): Promise<User | null> => {
   try {

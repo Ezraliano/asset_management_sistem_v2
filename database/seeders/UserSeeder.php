@@ -29,7 +29,7 @@ class UserSeeder extends Seeder
                 'email' => 'superadmin@example.com',
                 'username' => 'superadmin',
                 'password' => Hash::make('123'),
-                'role' => 'Super Admin',
+                'role' => 'super-admin',
                 'unit_id' => null, // Super Admin tidak terikat dengan unit tertentu
                 'email_verified_at' => now(),
                 'created_at' => now(),
@@ -40,7 +40,7 @@ class UserSeeder extends Seeder
                 'email' => 'adminholding@example.com',
                 'username' => 'adminholding',
                 'password' => Hash::make('123'),
-                'role' => 'Admin Holding',
+                'role' => 'admin',
                 'unit_id' => null, // Admin Holding tidak terikat dengan unit tertentu
                 'email_verified_at' => now(),
                 'created_at' => now(),
@@ -51,7 +51,7 @@ class UserSeeder extends Seeder
                 'email' => 'unit@example.com',
                 'username' => 'unitkajoetangan',
                 'password' => Hash::make('123'),
-                'role' => 'Admin Unit', // Changed from 'Unit' to 'Admin Unit'
+                'role' => 'unit', // Changed from 'Admin Unit' to 'unit'
                 'unit_id' => $unitKajoetangan?->id, // Assign to Unit Kajoetangan
                 'email_verified_at' => now(),
                 'created_at' => now(),
@@ -62,7 +62,7 @@ class UserSeeder extends Seeder
                 'email' => 'adminbatu@example.com',
                 'username' => 'unitbatu',
                 'password' => Hash::make('123'),
-                'role' => 'Admin Unit',
+                'role' => 'unit',
                 'unit_id' => $unitBatu?->id,
                 'email_verified_at' => now(),
                 'created_at' => now(),
@@ -73,7 +73,7 @@ class UserSeeder extends Seeder
                 'email' => 'user@example.com',
                 'username' => 'user',
                 'password' => Hash::make('123'),
-                'role' => 'User',
+                'role' => 'user',
                 'unit_id' => $unitKajoetangan?->id, // Regular user terikat dengan unit Kajoetangan
                 'email_verified_at' => now(),
                 'created_at' => now(),
@@ -84,7 +84,7 @@ class UserSeeder extends Seeder
                 'email' => 'auditor@example.com',
                 'username' => 'auditor',
                 'password' => Hash::make('123'),
-                'role' => 'Auditor',
+                'role' => 'auditor',
                 'unit_id' => null, // Auditor tidak terikat dengan unit tertentu
                 'email_verified_at' => now(),
                 'created_at' => now(),
@@ -96,11 +96,11 @@ class UserSeeder extends Seeder
         DB::statement('SET FOREIGN_KEY_CHECKS=1;');
 
         $this->command->info('Users seeded successfully with new roles!');
-        $this->command->info('Super Admin: superadmin / 123');
-        $this->command->info('Admin Holding: adminholding / 123');
-        $this->command->info('Admin Unit Kajoetangan: unitkajoetangan / 123');
-        $this->command->info('Admin Unit Batu: unitbatu / 123');
-        $this->command->info('Regular User: user / 123');
-        $this->command->info('Auditor: auditor / 123');
+        $this->command->info('Super Admin (super-admin): superadmin / 123');
+        $this->command->info('Admin Holding (admin): adminholding / 123');
+        $this->command->info('Admin Unit Kajoetangan (unit): unitkajoetangan / 123');
+        $this->command->info('Admin Unit Batu (unit): unitbatu / 123');
+        $this->command->info('Regular User (user): user / 123');
+        $this->command->info('Auditor (auditor): auditor / 123');
     }
 }

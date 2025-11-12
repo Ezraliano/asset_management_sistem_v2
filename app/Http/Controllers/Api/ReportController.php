@@ -40,7 +40,7 @@ class ReportController extends Controller
                 ->select('assets.*');
 
             // Filter berdasarkan role
-            if ($user->role === 'Admin Unit') {
+            if ($user->role === 'unit') {
                 $query->where('unit_id', $user->unit_id);
                 Log::info('Admin Unit filter applied', ['unit_id' => $user->unit_id]);
             } elseif ($request->has('unit_id') && $request->unit_id !== 'all') {
@@ -151,7 +151,7 @@ class ReportController extends Controller
                 ->select('maintenances.*');
 
             // Filter berdasarkan role
-            if ($user->role === 'Admin Unit') {
+            if ($user->role === 'unit') {
                 $query->whereHas('asset', function($q) use ($user) {
                     $q->where('unit_id', $user->unit_id);
                 });
@@ -260,7 +260,7 @@ class ReportController extends Controller
                 ->select('maintenances.*');
 
             // Filter berdasarkan role
-            if ($user->role === 'Admin Unit') {
+            if ($user->role === 'unit') {
                 $query->whereHas('asset', function($q) use ($user) {
                     $q->where('unit_id', $user->unit_id);
                 });
@@ -364,7 +364,7 @@ class ReportController extends Controller
                 ->select('asset_loans.*');
 
             // Filter berdasarkan role - cek unit dari asset
-            if ($user->role === 'Admin Unit') {
+            if ($user->role === 'unit') {
                 $query->whereHas('asset', function($q) use ($user) {
                     $q->where('unit_id', $user->unit_id);
                 });
@@ -475,7 +475,7 @@ class ReportController extends Controller
                 ->select('incident_reports.*');
 
             // Filter berdasarkan role
-            if ($user->role === 'Admin Unit') {
+            if ($user->role === 'unit') {
                 $query->whereHas('asset', function($q) use ($user) {
                     $q->where('unit_id', $user->unit_id);
                 });
@@ -575,7 +575,7 @@ class ReportController extends Controller
                 ->select('asset_sales.*');
 
             // Filter berdasarkan role
-            if ($user->role === 'Admin Unit') {
+            if ($user->role === 'unit') {
                 $query->whereHas('asset', function($q) use ($user) {
                     $q->where('unit_id', $user->unit_id);
                 });
@@ -680,7 +680,7 @@ class ReportController extends Controller
                 ->select('incident_reports.*');
 
             // Filter berdasarkan role
-            if ($user->role === 'Admin Unit') {
+            if ($user->role === 'unit') {
                 $query->whereHas('asset', function($q) use ($user) {
                     $q->where('unit_id', $user->unit_id);
                 });
@@ -837,7 +837,7 @@ class ReportController extends Controller
             $query = InventoryAudit::with(['unit', 'auditor']);
 
             // Filter berdasarkan role
-            if ($user->role === 'Admin Unit') {
+            if ($user->role === 'unit') {
                 $query->where('unit_id', $user->unit_id);
                 Log::info('Admin Unit filter applied', ['unit_id' => $user->unit_id]);
             } elseif ($request->has('unit_id') && $request->unit_id !== 'all') {

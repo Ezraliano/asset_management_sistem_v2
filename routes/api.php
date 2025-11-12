@@ -39,7 +39,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
     // Auditor can only access audit report
     Route::middleware(['auth:sanctum'])->group(function () {
         // All reports - Admin Holding only
-        Route::middleware('role:Super Admin,Admin Holding')->group(function () {
+        Route::middleware('role:super-admin,admin')->group(function () {
             Route::get('/reports/all', [ReportController::class, 'getAllReports']);
             Route::get('/reports/full-asset', [ReportController::class, 'getFullAssetReport']);
             Route::get('/reports/maintenance', [ReportController::class, 'getMaintenanceReport']);
@@ -51,13 +51,13 @@ Route::middleware(['auth:sanctum'])->group(function () {
         });
 
         // Audit report - Admin Holding and Auditor
-        Route::middleware('role:Super Admin,Admin Holding,Auditor')->group(function () {
+        Route::middleware('role:super-admin,admin,auditor')->group(function () {
             Route::get('/reports/audit', [ReportController::class, 'getAuditReport']);
         });
     });
 
     // Group for Aset menu (Admin Holding, Admin Unit)
-    Route::middleware('role:Admin Holding,Admin Unit')->group(function () {
+    Route::middleware('role:admin,unit')->group(function () {
         Route::apiResource('assets', AssetController::class);
         Route::get('/assets/{id}/depreciation', [AssetDepreciationController::class, 'show']);
         Route::get('/assets/{id}/depreciation-preview', [AssetDepreciationController::class, 'preview']);
@@ -99,7 +99,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::put('/incident-reports/{id}/status', [IncidentReportController::class, 'updateStatus']);
 
         // Delete - Super Admin & Admin Holding only
-        Route::middleware('role:Super Admin,Admin Holding')->group(function () {
+        Route::middleware('role:super-admin,admin')->group(function () {
             Route::delete('/incident-reports/{id}', [IncidentReportController::class, 'destroy']);
         });
     });
@@ -113,7 +113,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
     });
 
     // Asset Movement Management Routes (Admin only - Super Admin/Admin Holding/Admin Unit)
-    Route::middleware('role:Super Admin,Admin Holding,Admin Unit')->group(function () {
+    Route::middleware('role:super-admin,admin,unit')->group(function () {
         Route::post('/asset-movements/request-transfer', [AssetMovementController::class, 'requestTransfer']);
         Route::get('/asset-movements-pending', [AssetMovementController::class, 'getPendingMovements']);
         Route::post('/asset-movements/{id}/approve', [AssetMovementController::class, 'approveTransfer']);
@@ -141,7 +141,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::get('/units/{unit}/users', [UnitController::class, 'users']);
 
         // Inventory Audit Routes - Admin Holding and Auditor
-        Route::middleware('role:Super Admin,Admin Holding,Auditor')->group(function () {
+        Route::middleware('role:super-admin,admin,auditor')->group(function () {
             Route::get('/inventory-audits', [InventoryAuditController::class, 'index']);
             Route::post('/inventory-audits', [InventoryAuditController::class, 'store']);
             Route::get('/inventory-audits/{id}', [InventoryAuditController::class, 'show']);
@@ -150,14 +150,14 @@ Route::middleware(['auth:sanctum'])->group(function () {
             Route::post('/inventory-audits/{id}/cancel', [InventoryAuditController::class, 'cancel']);
 
             // Delete audit - Only Super Admin & Admin Holding
-            Route::middleware('role:Super Admin,Admin Holding')->group(function () {
+            Route::middleware('role:super-admin,admin')->group(function () {
                 Route::delete('/inventory-audits/{id}', [InventoryAuditController::class, 'destroy']);
             });
         });
     });
 
     // Asset Loan Management Routes (Super Admin/Admin Holding/Admin Unit Access)
-    Route::middleware('role:Super Admin,Admin Holding,Admin Unit')->group(function () {
+    Route::middleware('role:super-admin,admin,unit')->group(function () {
         Route::post('asset-loans/{assetLoan}/approve', [AssetLoanController::class, 'approve'])->name('asset-loans.approve');
         Route::post('asset-loans/{assetLoan}/reject', [AssetLoanController::class, 'reject'])->name('asset-loans.reject');
 
@@ -187,7 +187,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
     });
 
     // Asset Request Return Routes - Admin Unit can submit return
-    Route::middleware('role:Super Admin,Admin Holding,Admin Unit')->group(function () {
+    Route::middleware('role:super-admin,admin,unit')->group(function () {
         Route::post('/asset-requests/{id}/return', [AssetRequestController::class, 'returnAsset']);
         Route::get('/asset-requests-active-loans', [AssetRequestController::class, 'getActiveLoans']);
     });
@@ -197,7 +197,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::post('asset-loans/{assetLoan}/return', [AssetLoanController::class, 'returnAsset'])->name('asset-loans.return');
 
     // Asset Sales Routes - Super Admin, Admin Holding, Admin Unit
-    Route::middleware('role:Super Admin,Admin Holding,Admin Unit')->group(function () {
+    Route::middleware('role:super-admin,admin,unit')->group(function () {
         Route::get('/asset-sales', [AssetSaleController::class, 'index']);
         Route::post('/asset-sales', [AssetSaleController::class, 'store']);
         Route::get('/asset-sales/statistics', [AssetSaleController::class, 'statistics']);
@@ -206,7 +206,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::get('/asset-sales/{id}/proof', [AssetSaleController::class, 'getProofFile']);
 
         // Update & Delete only for Super Admin & Admin Holding
-        Route::middleware('role:Super Admin,Admin Holding')->group(function () {
+        Route::middleware('role:super-admin,admin')->group(function () {
             Route::put('/asset-sales/{id}', [AssetSaleController::class, 'update']);
             Route::delete('/asset-sales/{id}', [AssetSaleController::class, 'destroy']);
         });

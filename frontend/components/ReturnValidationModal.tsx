@@ -170,7 +170,7 @@ const ReturnValidationModal: React.FC<ReturnValidationModalProps> = ({
               </label>
               <div className="border border-gray-300 rounded-lg overflow-hidden">
                 <img
-                  src={`http://localhost:8000/storage/${loan.return_proof_photo_path}`}
+                  src={`https://assetmanagementga.arjunaconnect.com/storage/${loan.return_proof_photo_path}`}
                   alt="Bukti pengembalian"
                   className="w-full h-auto max-h-96 object-contain bg-gray-50"
                   onError={(e) => {

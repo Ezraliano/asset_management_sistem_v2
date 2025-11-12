@@ -15,7 +15,7 @@ const Restricted: React.FC<Props> = ({ user, allowedRoles, children }) => {
   const userRole = user.role.toLowerCase();
 
   // Super Admin (or Administrator) can see everything
-  if (['super admin', 'administrator'].includes(userRole)) {
+  if (['super-admin', 'administrator'].includes(userRole)) {
     return <>{children}</>;
   }
 

@@ -62,35 +62,35 @@ const Header: React.FC<HeaderProps> = ({ user, onLogout, isSidebarOpen, setSideb
                         <NavItem icon={<DashboardIcon />} label={t('sidebar.dashboard')} isActive={getIsActive('DASHBOARD')} onClick={() => navigateTo({ type: 'DASHBOARD' })} />
                         
 
-                        <Restricted user={user} allowedRoles={['Admin Holding', 'Admin Unit']}>
+                        <Restricted user={user} allowedRoles={['admin', 'unit']}>
                             <NavItem icon={<AssetIcon />} label={t('sidebar.assets')} isActive={getIsActive('ASSET_LIST') || getIsActive('ASSET_DETAIL')} onClick={() => navigateTo({ type: 'ASSET_LIST' })} />
                         </Restricted>
 
-                        <Restricted user={user} allowedRoles={['User', 'Super Admin', 'Admin Holding', 'Admin Unit']}>
+                        <Restricted user={user} allowedRoles={['user', 'super-admin', 'admin', 'unit']}>
                             <NavItem icon={<SwitchHorizontalIcon />} label={t('Peminjaman Asset')} isActive={currentView.type === 'ASSET_LENDING'} onClick={() => navigateTo({ type: 'ASSET_LENDING' })} />
                         </Restricted>
 
-                        <Restricted user={user} allowedRoles={['Super Admin', 'Admin Holding', 'Admin Unit']}>
+                        <Restricted user={user} allowedRoles={['super-admin', 'admin', 'unit']}>
                             <NavItem icon={<SellIcon />} label="Penjualan Aset" isActive={getIsActive('ASSET_SALES') || getIsActive('ASSET_SALE_DETAIL')} onClick={() => navigateTo({ type: 'ASSET_SALES' })} />
                         </Restricted>
 
-                        <Restricted user={user} allowedRoles={['Admin Holding', 'Auditor']}>
+                        <Restricted user={user} allowedRoles={['admin', 'auditor']}>
                             <NavItem icon={<AuditIcon />} label={t('sidebar.inventory_audit')} isActive={getIsActive('INVENTORY_AUDIT_SETUP') || getIsActive('INVENTORY_AUDIT_SESSION')} onClick={() => navigateTo({ type: 'INVENTORY_AUDIT_SETUP' })} />
                         </Restricted>
 
-                        <Restricted user={user} allowedRoles={['Admin Holding', 'Admin Unit']}>
+                        <Restricted user={user} allowedRoles={['admin', 'unit']}>
                             <NavItem icon={<BulkIcon />} label={t('sidebar.bulk_transaction')} isActive={getIsActive('BULK_TRANSACTION')} onClick={() => navigateTo({ type: 'BULK_TRANSACTION' })} />
                         </Restricted>
 
-                        <Restricted user={user} allowedRoles={['Admin Holding', 'Admin Unit']}>
+                        <Restricted user={user} allowedRoles={['admin', 'unit']}>
                             <NavItem icon={<QRIcon />} label={t('sidebar.scan_qr')} isActive={getIsActive('QR_SCANNER')} onClick={() => navigateTo({ type: 'QR_SCANNER' })} />
                         </Restricted>
 
-                        <Restricted user={user} allowedRoles={['Admin Holding', 'Auditor']}>
+                        <Restricted user={user} allowedRoles={['admin', 'auditor']}>
                             <NavItem icon={<ReportIcon />} label={t('sidebar.reports')} isActive={getIsActive('REPORTS')} onClick={() => navigateTo({ type: 'REPORTS' })} />
                         </Restricted>
 
-                        <Restricted user={user} allowedRoles={['Admin Holding']}>
+                        <Restricted user={user} allowedRoles={['admin']}>
                             <NavItem icon={<UserIcon />} label={t('sidebar.users')} isActive={getIsActive('USERS')} onClick={() => navigateTo({ type: 'USERS' })} />
                         </Restricted>
                     </ul>

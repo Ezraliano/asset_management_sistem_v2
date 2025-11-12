@@ -26,10 +26,10 @@ class AssetLoanController extends Controller
 
             // Check user role and filter accordingly
             $user = Auth::user();
-            if ($user && $user->role === 'User') {
+            if ($user && $user->role === 'user') {
                 // Regular users can only see their own loans
                 $loans->where('borrower_id', $user->id);
-            } elseif ($user && $user->role === 'Admin Unit' && $user->unit_id) {
+            } elseif ($user && $user->role === 'unit' && $user->unit_id) {
                 // Admin Unit can see loans for assets in their unit OR loans they borrowed themselves
                 $loans->where(function ($query) use ($user) {
                     $query->whereHas('asset', function($q) use ($user) {
@@ -37,7 +37,7 @@ class AssetLoanController extends Controller
                     })->orWhere('borrower_id', $user->id);
                 });
             }
-            // Super Admin and Admin Holding can see all loans (no additional filter needed)
+            // super-admin and admin can see all loans (no additional filter needed)
 
             // Allow filtering by status - TAMBAHKAN STATUS LOST
             if ($request->has('status')) {
@@ -118,7 +118,7 @@ class AssetLoanController extends Controller
             $asset = Asset::with('unit')->findOrFail($request->asset_id);
 
             // ✅ VALIDASI: User hanya bisa pinjam asset di unit mereka sendiri
-            if ($user->role === 'User' && $asset->unit_id !== $user->unit_id) {
+            if ($user->role === 'user' && $asset->unit_id !== $user->unit_id) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Anda hanya dapat meminjam asset di unit Anda sendiri'
@@ -209,7 +209,7 @@ class AssetLoanController extends Controller
             $user = Auth::user();
 
             // Check if user can view this loan
-            if ($user->role === 'User' && $assetLoan->borrower_id !== $user->id) {
+            if ($user->role === 'user' && $assetLoan->borrower_id !== $user->id) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Unauthorized to view this loan'
@@ -217,7 +217,7 @@ class AssetLoanController extends Controller
             }
 
             // Check for Admin Unit - hanya bisa lihat loan di unit mereka
-            if ($user->role === 'Admin Unit' && $user->unit_id && $assetLoan->asset->unit_id !== $user->unit_id) {
+            if ($user->role === 'unit' && $user->unit_id && $assetLoan->asset->unit_id !== $user->unit_id) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Unauthorized to view loans from other units'
@@ -589,7 +589,7 @@ class AssetLoanController extends Controller
             $assetLoan->load('asset.unit', 'borrower');
 
             // Authorization check
-            $isAdmin = in_array($user->role, ['Super Admin', 'Admin Holding', 'Admin Unit']);
+            $isAdmin = in_array($user->role, ['super-admin', 'admin', 'unit']);
             if (!$isAdmin) {
                 return response()->json([
                     'success' => false,
@@ -601,8 +601,8 @@ class AssetLoanController extends Controller
             // Admin Unit HANYA BOLEH approve return untuk:
             // 1. Asset ada di unit mereka (asset milik unit mereka)
             // 2. DAN borrower juga dari unit mereka (peminjaman internal dalam unit yang sama)
-            // Jika salah satu tidak terpenuhi, hanya Super Admin & Admin Holding yang boleh
-            if ($user->role === 'Admin Unit' && $user->unit_id) {
+            // Jika salah satu tidak terpenuhi, hanya super-admin & admin yang boleh
+            if ($user->role === 'unit' && $user->unit_id) {
                 $assetBelongsToUserUnit = $assetLoan->asset->unit_id === $user->unit_id;
                 $borrowerFromSameUnit = $assetLoan->borrower &&
                                         $assetLoan->borrower->unit_id === $user->unit_id;
@@ -611,7 +611,7 @@ class AssetLoanController extends Controller
                 if (!$assetBelongsToUserUnit || !$borrowerFromSameUnit) {
                     return response()->json([
                         'success' => false,
-                        'message' => 'Validasi pengembalian untuk peminjaman antar unit hanya dapat dilakukan oleh Super Admin atau Admin Holding.'
+                        'message' => 'Validasi pengembalian untuk peminjaman antar unit hanya dapat dilakukan oleh super-admin atau admin.'
                     ], Response::HTTP_FORBIDDEN);
                 }
             }
@@ -701,7 +701,7 @@ class AssetLoanController extends Controller
             $assetLoan->load('asset.unit', 'borrower');
 
             // Authorization check
-            $isAdmin = in_array($user->role, ['Super Admin', 'Admin Holding', 'Admin Unit']);
+            $isAdmin = in_array($user->role, ['super-admin', 'admin', 'unit']);
             if (!$isAdmin) {
                 return response()->json([
                     'success' => false,
@@ -713,8 +713,8 @@ class AssetLoanController extends Controller
             // Admin Unit HANYA BOLEH reject return untuk:
             // 1. Asset ada di unit mereka (asset milik unit mereka)
             // 2. DAN borrower juga dari unit mereka (peminjaman internal dalam unit yang sama)
-            // Jika salah satu tidak terpenuhi, hanya Super Admin & Admin Holding yang boleh
-            if ($user->role === 'Admin Unit' && $user->unit_id) {
+            // Jika salah satu tidak terpenuhi, hanya super-admin & admin yang boleh
+            if ($user->role === 'unit' && $user->unit_id) {
                 $assetBelongsToUserUnit = $assetLoan->asset->unit_id === $user->unit_id;
                 $borrowerFromSameUnit = $assetLoan->borrower &&
                                         $assetLoan->borrower->unit_id === $user->unit_id;
@@ -723,7 +723,7 @@ class AssetLoanController extends Controller
                 if (!$assetBelongsToUserUnit || !$borrowerFromSameUnit) {
                     return response()->json([
                         'success' => false,
-                        'message' => 'Validasi pengembalian untuk peminjaman antar unit hanya dapat dilakukan oleh Super Admin atau Admin Holding.'
+                        'message' => 'Validasi pengembalian untuk peminjaman antar unit hanya dapat dilakukan oleh super-admin atau admin.'
                     ], Response::HTTP_FORBIDDEN);
                 }
             }
@@ -800,7 +800,7 @@ class AssetLoanController extends Controller
 
             // Check if user can view this photo
             $user = Auth::user();
-            if ($user->role === 'User' && $assetLoan->borrower_id !== $user->id) {
+            if ($user->role === 'user' && $assetLoan->borrower_id !== $user->id) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Unauthorized to view this photo'
@@ -808,7 +808,7 @@ class AssetLoanController extends Controller
             }
 
             // Check for Admin Unit - hanya bisa lihat photo di unit mereka
-            if ($user->role === 'Admin Unit' && $user->unit_id && $assetLoan->asset->unit_id !== $user->unit_id) {
+            if ($user->role === 'unit' && $user->unit_id && $assetLoan->asset->unit_id !== $user->unit_id) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Unauthorized to view photos from other units'
@@ -909,7 +909,7 @@ class AssetLoanController extends Controller
 
             // Check if user can view this photo
             $user = Auth::user();
-            if ($user->role === 'User' && $assetLoan->borrower_id !== $user->id) {
+            if ($user->role === 'user' && $assetLoan->borrower_id !== $user->id) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Unauthorized to view this photo'
@@ -917,7 +917,7 @@ class AssetLoanController extends Controller
             }
 
             // Check for Admin Unit - hanya bisa lihat photo di unit mereka
-            if ($user->role === 'Admin Unit' && $user->unit_id && $assetLoan->asset->unit_id !== $user->unit_id) {
+            if ($user->role === 'unit' && $user->unit_id && $assetLoan->asset->unit_id !== $user->unit_id) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Unauthorized to view photos from other units'
@@ -1014,9 +1014,9 @@ class AssetLoanController extends Controller
             $query = AssetLoan::query();
 
             // Regular users can only see their own statistics
-            if ($user->role === 'User') {
+            if ($user->role === 'user') {
                 $query->where('borrower_id', $user->id);
-            } elseif ($user->role === 'Admin Unit' && $user->unit_id) {
+            } elseif ($user->role === 'unit' && $user->unit_id) {
                 // Admin Unit can only see statistics for their unit's assets
                 $query->whereHas('asset', function($q) use ($user) {
                     $q->where('unit_id', $user->unit_id);
@@ -1033,13 +1033,13 @@ class AssetLoanController extends Controller
 
             // Recent pending loans for admin
             $recentPendingLoans = [];
-            if (in_array($user->role, ['Super Admin', 'Admin Holding'])) {
+            if (in_array($user->role, ['super-admin', 'admin'])) {
                 $recentPendingLoans = AssetLoan::with(['asset.unit', 'borrower'])
                     ->where('status', 'PENDING')
                     ->orderBy('created_at', 'desc')
                     ->limit(5)
                     ->get();
-            } elseif ($user->role === 'Admin Unit' && $user->unit_id) {
+            } elseif ($user->role === 'unit' && $user->unit_id) {
                 $recentPendingLoans = AssetLoan::with(['asset.unit', 'borrower'])
                     ->whereHas('asset', function($q) use ($user) {
                         $q->where('unit_id', $user->unit_id);
@@ -1099,7 +1099,7 @@ class AssetLoanController extends Controller
             $user = Auth::user();
             
             // Check if user can update this loan
-            if ($user->role === 'User' && $assetLoan->borrower_id !== $user->id) {
+            if ($user->role === 'user' && $assetLoan->borrower_id !== $user->id) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Unauthorized to update this loan'
@@ -1107,7 +1107,7 @@ class AssetLoanController extends Controller
             }
 
             // Check for Admin Unit - hanya bisa update loan di unit mereka
-            if ($user->role === 'Admin Unit' && $user->unit_id && $assetLoan->asset->unit_id !== $user->unit_id) {
+            if ($user->role === 'unit' && $user->unit_id && $assetLoan->asset->unit_id !== $user->unit_id) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Unauthorized to update loans from other units'
@@ -1281,7 +1281,7 @@ class AssetLoanController extends Controller
             $user = Auth::user();
 
             // Authorization check
-            $isAdmin = in_array($user->role, ['Super Admin', 'Admin Holding', 'Admin Unit']);
+            $isAdmin = in_array($user->role, ['super-admin', 'admin', 'unit']);
             if (!$isAdmin) {
                 return response()->json([
                     'success' => false,
@@ -1295,7 +1295,7 @@ class AssetLoanController extends Controller
             // ✅ Filter by unit for Admin Unit
             // Admin Unit hanya bisa lihat pending return untuk peminjaman DALAM unit mereka sendiri
             // (bukan peminjaman antar unit)
-            if ($user->role === 'Admin Unit' && $user->unit_id) {
+            if ($user->role === 'unit' && $user->unit_id) {
                 $query->whereHas('asset', function($q) use ($user) {
                     $q->where('unit_id', $user->unit_id);
                 })
@@ -1340,7 +1340,7 @@ class AssetLoanController extends Controller
             $user = Auth::user();
 
             // Authorization check
-            $isAdmin = in_array($user->role, ['Super Admin', 'Admin Holding', 'Admin Unit']);
+            $isAdmin = in_array($user->role, ['super-admin', 'admin', 'unit']);
             if (!$isAdmin) {
                 return response()->json([
                     'success' => false,
@@ -1352,7 +1352,7 @@ class AssetLoanController extends Controller
                 ->where('status', 'LOST');
 
             // Filter by unit for Admin Unit
-            if ($user->role === 'Admin Unit' && $user->unit_id) {
+            if ($user->role === 'unit' && $user->unit_id) {
                 $query->whereHas('asset', function($q) use ($user) {
                     $q->where('unit_id', $user->unit_id);
                 });
@@ -1410,14 +1410,14 @@ class AssetLoanController extends Controller
                 ->where('expected_return_date', '<', Carbon::today());
 
             // Filter by unit for Admin Unit
-            if ($user->role === 'Admin Unit' && $user->unit_id) {
+            if ($user->role === 'unit' && $user->unit_id) {
                 $query->whereHas('asset', function($q) use ($user) {
                     $q->where('unit_id', $user->unit_id);
                 });
             }
 
             // Filter for User (only their loans)
-            if ($user->role === 'User') {
+            if ($user->role === 'user') {
                 $query->where('borrower_id', $user->id);
             }
 
@@ -1451,7 +1451,7 @@ class AssetLoanController extends Controller
             $user = Auth::user();
 
             // Check permissions
-            if ($user->role === 'User' && $assetLoan->borrower_id !== $user->id) {
+            if ($user->role === 'user' && $assetLoan->borrower_id !== $user->id) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Unauthorized to extend this loan'
@@ -1459,7 +1459,7 @@ class AssetLoanController extends Controller
             }
 
             // Check for Admin Unit - hanya bisa extend loan di unit mereka
-            if ($user->role === 'Admin Unit' && $user->unit_id && $assetLoan->asset->unit_id !== $user->unit_id) {
+            if ($user->role === 'unit' && $user->unit_id && $assetLoan->asset->unit_id !== $user->unit_id) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Unauthorized to extend loans from other units'
@@ -1539,7 +1539,7 @@ class AssetLoanController extends Controller
             }
 
             // Check permissions for Admin Unit
-            if ($user->role === 'Admin Unit' && $user->unit_id && $asset->unit_id !== $user->unit_id) {
+            if ($user->role === 'unit' && $user->unit_id && $asset->unit_id !== $user->unit_id) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Unauthorized to view loan history for assets from other units'
@@ -1595,7 +1595,7 @@ class AssetLoanController extends Controller
                 ->get();
 
             // Filter loans based on user permissions
-            if ($user->role === 'Admin Unit' && $user->unit_id) {
+            if ($user->role === 'unit' && $user->unit_id) {
                 $loans = $loans->filter(function ($loan) use ($user) {
                     return $loan->asset->unit_id === $user->unit_id;
                 });

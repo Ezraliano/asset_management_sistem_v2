@@ -20,12 +20,12 @@ const MaintenanceValidationModal: React.FC<MaintenanceValidationModalProps> = ({
   const [showCompleteForm, setShowCompleteForm] = useState(false);
   const [validationNotes, setValidationNotes] = useState('');
 
-  // Check if user can validate (Super Admin, Admin Holding, or Admin Unit)
-  const canValidate = ['Super Admin', 'Admin Holding', 'Admin Unit'].includes(currentUser.role) &&
+  // Check if user can validate (Super Admin, Admin, or Unit Admin)
+  const canValidate = ['super-admin', 'admin', 'unit'].includes(currentUser.role) &&
                       maintenance.validation_status === 'PENDING';
 
-  // Check if user can complete (Super Admin, Admin Holding, or Admin Unit)
-  const canComplete = ['Super Admin', 'Admin Holding', 'Admin Unit'].includes(currentUser.role) &&
+  // Check if user can complete (Super Admin, Admin, or Unit Admin)
+  const canComplete = ['super-admin', 'admin', 'unit'].includes(currentUser.role) &&
                       maintenance.validation_status === 'APPROVED' &&
                       maintenance.status !== 'COMPLETED';
 
@@ -59,7 +59,7 @@ const MaintenanceValidationModal: React.FC<MaintenanceValidationModalProps> = ({
     setIsProcessing(true);
     try {
       const token = localStorage.getItem('auth_token');
-      const response = await fetch(`http://localhost:8000/api/maintenances/${maintenance.id}/validate`, {
+      const response = await fetch(`https://assetmanagementga.arjunaconnect.com/api/maintenances/${maintenance.id}/validate`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -95,7 +95,7 @@ const MaintenanceValidationModal: React.FC<MaintenanceValidationModalProps> = ({
     setIsProcessing(true);
     try {
       const token = localStorage.getItem('auth_token');
-      const response = await fetch(`http://localhost:8000/api/maintenances/${maintenance.id}/validate`, {
+      const response = await fetch(`https://assetmanagementga.arjunaconnect.com/api/maintenances/${maintenance.id}/validate`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -126,7 +126,7 @@ const MaintenanceValidationModal: React.FC<MaintenanceValidationModalProps> = ({
     setIsProcessing(true);
     try {
       const token = localStorage.getItem('auth_token');
-      const response = await fetch(`http://localhost:8000/api/maintenances/${maintenance.id}/complete`, {
+      const response = await fetch(`https://assetmanagementga.arjunaconnect.com/api/maintenances/${maintenance.id}/complete`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -256,10 +256,10 @@ const MaintenanceValidationModal: React.FC<MaintenanceValidationModalProps> = ({
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">Foto Bukti</label>
             <img
-              src={`http://localhost:8000/storage/${maintenance.photo_proof}`}
+              src={`https://assetmanagementga.arjunaconnect.com/storage/${maintenance.photo_proof}`}
               alt="Bukti Perbaikan/Pemeliharaan"
               className="w-full max-w-md h-auto rounded-lg border border-gray-300 shadow-sm cursor-pointer"
-              onClick={() => window.open(`http://localhost:8000/storage/${maintenance.photo_proof}`, '_blank')}
+              onClick={() => window.open(`https://assetmanagementga.arjunaconnect.com/storage/${maintenance.photo_proof}`, '_blank')}
               onError={(e) => {
                 (e.target as HTMLImageElement).src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="400" height="300"%3E%3Crect fill="%23ddd" width="400" height="300"/%3E%3Ctext fill="%23999" x="50%25" y="50%25" text-anchor="middle" dy=".3em"%3EGambar tidak tersedia%3C/text%3E%3C/svg%3E';
               }}

@@ -180,7 +180,7 @@ const Dashboard: React.FC<DashboardProps> = ({ navigateTo }) => {
   }
 
   // Check if user can filter by unit (Super Admin or Admin Holding)
-  const canFilterByUnit = currentUser && ['Super Admin', 'Admin Holding'].includes(currentUser.role);
+  const canFilterByUnit = currentUser && ['super-admin', 'admin'].includes(currentUser.role);
 
   return (
     <div className="space-y-6">

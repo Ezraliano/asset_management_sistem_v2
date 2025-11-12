@@ -25,7 +25,7 @@ const AssetRequestList: React.FC<AssetRequestListProps> = ({ currentUser }) => {
     setLoading(true);
     try {
       const token = localStorage.getItem('auth_token');
-      let url = 'http://localhost:8000/api/asset-requests';
+      let url = 'https://assetmanagementga.arjunaconnect.com/api/asset-requests';
 
       if (statusFilter !== 'ALL') {
         url += `?status=${statusFilter}`;
@@ -77,7 +77,7 @@ const AssetRequestList: React.FC<AssetRequestListProps> = ({ currentUser }) => {
     setReturnLoading(true);
     try {
       const token = localStorage.getItem('auth_token');
-      const response = await fetch(`http://localhost:8000/api/asset-requests/${selectedRequest.id}/return`, {
+      const response = await fetch(`https://assetmanagementga.arjunaconnect.com/api/asset-requests/${selectedRequest.id}/return`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -141,7 +141,7 @@ const AssetRequestList: React.FC<AssetRequestListProps> = ({ currentUser }) => {
     }
   };
 
-  const canValidate = currentUser?.role === 'Super Admin' || currentUser?.role === 'Admin Holding';
+  const canValidate = currentUser?.role === 'super-admin' || currentUser?.role === 'admin';
 
   const handleCreateRequest = () => {
     // This will be passed from parent
@@ -157,7 +157,7 @@ const AssetRequestList: React.FC<AssetRequestListProps> = ({ currentUser }) => {
 
         <div className="flex gap-3 items-center">
           {/* Request Button for Admin Unit */}
-          {currentUser?.role === 'Admin Unit' && (
+          {currentUser?.role === 'unit' && (
             <button
               onClick={handleCreateRequest}
               className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm font-medium"
@@ -184,7 +184,7 @@ const AssetRequestList: React.FC<AssetRequestListProps> = ({ currentUser }) => {
       </div>
 
       {/* Info Badge */}
-      {currentUser?.role === 'Admin Unit' && (
+      {currentUser?.role === 'unit' && (
         <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
           <p className="text-sm text-blue-800">
             Berikut adalah request peminjaman yang dibuat oleh unit Anda. Request akan divalidasi oleh Admin Holding atau Super Admin.
@@ -288,7 +288,7 @@ const AssetRequestList: React.FC<AssetRequestListProps> = ({ currentUser }) => {
 
                       {/* Show Return button for ACTIVE loans */}
                       {request.loan_status === 'ACTIVE' &&
-                       currentUser?.role === 'Admin Unit' &&
+                       currentUser?.role === 'unit' &&
                        request.requester_unit_id === currentUser?.unit_id && (
                         <button
                           onClick={() => handleReturnAsset(request)}

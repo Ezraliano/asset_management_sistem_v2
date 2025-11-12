@@ -23,7 +23,7 @@ class InventoryAuditController extends Controller
             $query = InventoryAudit::with(['unit', 'auditor']);
 
             // Filter by user role
-            if ($user->role === 'Super Admin' || $user->role === 'Admin Holding' || $user->role === 'Auditor') {
+            if ($user->role === 'super-admin' || $user->role === 'admin' || $user->role === 'auditor') {
                 // Can see all audits
             } else {
                 // Can only see audits for their own unit
@@ -85,9 +85,9 @@ class InventoryAuditController extends Controller
             $user = Auth::user();
 
             // Check if user has permission to audit this unit
-            // Auditor, Super Admin, and Admin Holding can audit any unit
+            // auditor, super-admin, and admin can audit any unit
             // Other roles can only audit their own unit
-            if ($user->role !== 'Super Admin' && $user->role !== 'Admin Holding' && $user->role !== 'Auditor') {
+            if ($user->role !== 'super-admin' && $user->role !== 'admin' && $user->role !== 'auditor') {
                 if ($user->unit_id != $validated['unit_id']) {
                     return response()->json(['error' => 'Unauthorized to audit this unit'], 403);
                 }
@@ -144,8 +144,8 @@ class InventoryAuditController extends Controller
             $audit = InventoryAudit::with(['unit', 'auditor'])->findOrFail($id);
 
             // Check permission
-            // Auditor, Super Admin, and Admin Holding can view any audit
-            if ($user->role !== 'Super Admin' && $user->role !== 'Admin Holding' && $user->role !== 'Auditor') {
+            // auditor, super-admin, and admin can view any audit
+            if ($user->role !== 'super-admin' && $user->role !== 'admin' && $user->role !== 'auditor') {
                 if ($audit->unit_id != $user->unit_id) {
                     return response()->json(['error' => 'Unauthorized'], 403);
                 }
@@ -214,8 +214,8 @@ class InventoryAuditController extends Controller
             $audit = InventoryAudit::findOrFail($id);
 
             // Check permission
-            // Auditor, Super Admin, and Admin Holding can scan assets in any audit
-            if ($user->role !== 'Super Admin' && $user->role !== 'Admin Holding' && $user->role !== 'Auditor') {
+            // auditor, super-admin, and admin can scan assets in any audit
+            if ($user->role !== 'super-admin' && $user->role !== 'admin' && $user->role !== 'auditor') {
                 if ($audit->unit_id != $user->unit_id) {
                     return response()->json(['error' => 'Unauthorized'], 403);
                 }
@@ -311,8 +311,8 @@ class InventoryAuditController extends Controller
             $audit = InventoryAudit::findOrFail($id);
 
             // Check permission
-            // Auditor, Super Admin, and Admin Holding can complete any audit
-            if ($user->role !== 'Super Admin' && $user->role !== 'Admin Holding' && $user->role !== 'Auditor') {
+            // auditor, super-admin, and admin can complete any audit
+            if ($user->role !== 'super-admin' && $user->role !== 'admin' && $user->role !== 'auditor') {
                 if ($audit->unit_id != $user->unit_id) {
                     return response()->json(['error' => 'Unauthorized'], 403);
                 }
@@ -359,8 +359,8 @@ class InventoryAuditController extends Controller
             $audit = InventoryAudit::findOrFail($id);
 
             // Check permission
-            // Auditor, Super Admin, and Admin Holding can cancel any audit
-            if ($user->role !== 'Super Admin' && $user->role !== 'Admin Holding' && $user->role !== 'Auditor') {
+            // auditor, super-admin, and admin can cancel any audit
+            if ($user->role !== 'super-admin' && $user->role !== 'admin' && $user->role !== 'auditor') {
                 if ($audit->unit_id != $user->unit_id) {
                     return response()->json(['error' => 'Unauthorized'], 403);
                 }
@@ -397,8 +397,8 @@ class InventoryAuditController extends Controller
         try {
             $user = Auth::user();
 
-            // Only Super Admin and Admin Holding can delete audits
-            if ($user->role !== 'Super Admin' && $user->role !== 'Admin Holding') {
+            // Only super-admin and admin can delete audits
+            if ($user->role !== 'super-admin' && $user->role !== 'admin') {
                 return response()->json(['error' => 'Unauthorized'], 403);
             }
 

@@ -25,7 +25,7 @@ const AssetForm: React.FC<AssetFormProps> = ({ asset, onSuccess, onClose }) => {
     unit_id: null as number | null,
     value: 0,
     purchase_date: '',
-    useful_life: 36,
+    useful_life: 12,
     status: AssetStatus.AVAILABLE,
   });
   const [loading, setLoading] = useState(false);
@@ -49,7 +49,7 @@ const AssetForm: React.FC<AssetFormProps> = ({ asset, onSuccess, onClose }) => {
         setCurrentUser(user);
 
         // Check if user is Admin Unit - auto-fill and lock unit field
-        const isAdminUnit = user && user.role === 'Admin Unit' && user.unit_id;
+        const isAdminUnit = user && user.role === 'unit' && user.unit_id;
         if (isAdminUnit) {
           setIsUnitLocked(true);
         }
@@ -74,7 +74,7 @@ const AssetForm: React.FC<AssetFormProps> = ({ asset, onSuccess, onClose }) => {
             unit_id: isAdminUnit ? (user.unit_id as number) : null,
             value: 0,
             purchase_date: today,
-            useful_life: 36,
+            useful_life: 12,
             status: AssetStatus.AVAILABLE,
           });
           setValueInput('');
@@ -310,18 +310,18 @@ const handleSubmit = async (e: React.FormEvent) => {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {asset && (
             <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-gray-700 mb-1">Asset Tag</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Kode Aset</label>
                 <input type="text" value={asset.asset_tag} disabled className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm bg-gray-100" />
             </div>
         )}
 
         <div className="md:col-span-2">
-          <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">Asset Name *</label>
+          <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">Nama Aset *</label>
           <input type="text" name="name" id="name" value={formData.name} onChange={handleChange} required disabled={loading} className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary sm:text-sm disabled:bg-gray-50" placeholder="e.g., Laptop Dell XPS 13" />
         </div>
 
         <div>
-          <label htmlFor="category" className="block text-sm font-medium text-gray-700 mb-1">Category *</label>
+          <label htmlFor="category" className="block text-sm font-medium text-gray-700 mb-1">Kategori *</label>
           <div className="relative">
             <input type="text" name="category" id="category" value={formData.category} onChange={handleChange} required disabled={loading} list="category-options" className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary sm:text-sm disabled:bg-gray-50" placeholder="e.g., Electronics" />
             <datalist id="category-options">
@@ -365,7 +365,7 @@ const handleSubmit = async (e: React.FormEvent) => {
         </div>
 
         <div>
-          <label htmlFor="value" className="block text-sm font-medium text-gray-700 mb-1">Value (IDR) *</label>
+          <label htmlFor="value" className="block text-sm font-medium text-gray-700 mb-1">Nilai Aset (IDR) *</label>
           <div className="relative">
             <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-500">Rp</span>
             <input type="text" name="value" id="value" value={valueInput} onChange={handleValueChange} required disabled={loading} className={`mt-1 block w-full pl-10 pr-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary sm:text-sm disabled:bg-gray-50 ${getFieldError('value') ? 'border-red-300' : 'border-gray-300'}`} placeholder="0" />
@@ -374,17 +374,17 @@ const handleSubmit = async (e: React.FormEvent) => {
         </div>
 
         <div>
-          <label htmlFor="purchase_date" className="block text-sm font-medium text-gray-700 mb-1">Purchase Date *</label>
+          <label htmlFor="purchase_date" className="block text-sm font-medium text-gray-700 mb-1">Tanggal Pembelian *</label>
           <input type="date" name="purchase_date" id="purchase_date" value={formData.purchase_date} onChange={handleChange} required disabled={loading} max={new Date().toISOString().split('T')[0]} className={`mt-1 block w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary sm:text-sm disabled:bg-gray-50 ${getFieldError('purchase_date') ? 'border-red-300' : 'border-gray-300'}`} />
           {getFieldError('purchase_date') && <p className="mt-1 text-sm text-red-600">{getFieldError('purchase_date')}</p>}
-          <p className="mt-1 text-xs text-gray-500">Cannot be a future date</p>
+          <p className="mt-1 text-xs text-gray-500">Tidak boleh tanggal di masa depan</p>
         </div>
 
         <div>
-          <label htmlFor="useful_life" className="block text-sm font-medium text-gray-700 mb-1">Useful Life (months) *</label>
-          <input type="number" name="useful_life" id="useful_life" value={formData.useful_life} onChange={handleChange} required min="1" max="600" disabled={loading} className={`mt-1 block w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary sm:text-sm disabled:bg-gray-50 ${getFieldError('useful_life') ? 'border-red-300' : 'border-gray-300'}`} placeholder="36" />
+          <label htmlFor="useful_life" className="block text-sm font-medium text-gray-700 mb-1">Umur Manfaat (bulan) *</label>
+          <input type="number" name="useful_life" id="useful_life" value={formData.useful_life} onChange={handleChange} required min="1" max="600" disabled={loading} className={`mt-1 block w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary sm:text-sm disabled:bg-gray-50 ${getFieldError('useful_life') ? 'border-red-300' : 'border-gray-300'}`} placeholder="12" />
           {getFieldError('useful_life') && <p className="mt-1 text-sm text-red-600">{getFieldError('useful_life')}</p>}
-          <p className="mt-1 text-xs text-gray-500">{formData.useful_life} months ≈ {Math.round(formData.useful_life / 12 * 10) / 10} years</p>
+          <p className="mt-1 text-xs text-gray-500">{formData.useful_life} bulan ≈ {Math.round(formData.useful_life / 12 * 10) / 10} tahun</p>
         </div>
 
         <div className="md:col-span-2">
@@ -392,7 +392,7 @@ const handleSubmit = async (e: React.FormEvent) => {
           <select name="status" id="status" value={formData.status} onChange={handleChange} required disabled={loading} className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary sm:text-sm disabled:bg-gray-50">
             {availableStatuses.map(status => <option key={status} value={status}>{status}</option>)}
           </select>
-          {!asset && <p className="mt-1 text-sm text-gray-500">For new assets, "Available" and "Terpinjam" status are available</p>}
+          {!asset && <p className="mt-1 text-sm text-gray-500">Untuk aset baru, status "Available" dan "Terpinjam" tersedia</p>}
         </div>
       </div>
 
@@ -424,7 +424,7 @@ const handleSubmit = async (e: React.FormEvent) => {
 
       <div className="flex justify-end space-x-3 pt-6 border-t sticky bottom-0 bg-white pb-2">
         <button type="submit" disabled={loading || hasErrors()} className="px-6 py-2 text-sm font-medium text-white bg-primary rounded-md hover:bg-primary-dark disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center min-w-[120px] justify-center">
-          {loading ? <><div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>Saving...</> : (asset ? 'Update Asset' : 'Create Asset')}
+          {loading ? <><div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>Menyimpan...</> : (asset ? 'Perbarui Aset' : 'Buat Aset')}
         </button>
       </div>
 

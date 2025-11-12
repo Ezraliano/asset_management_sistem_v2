@@ -200,13 +200,13 @@ const AssetLending: React.FC = () => {
 
     // Apply role-based filtering
     if (currentUser) {
-      if (currentUser.role === 'User') {
-        // For 'User' role, show loans they have borrowed
+      if (currentUser.role === 'user') {
+        // For 'user' role, show loans they have borrowed
         loans = loans.filter(loan => loan.borrower_id === currentUser.id);
-      } else if (currentUser.role === 'Admin Unit' && currentUser.unit_id) {
-        // For 'Admin Unit' role, show loans where their unit is the lender OR the borrower
-        loans = loans.filter(loan => 
-          loan.asset.unit_id === currentUser.unit_id || 
+      } else if (currentUser.role === 'unit' && currentUser.unit_id) {
+        // For 'unit' role, show loans where their unit is the lender OR the borrower
+        loans = loans.filter(loan =>
+          loan.asset.unit_id === currentUser.unit_id ||
           loan.borrower.unit_id === currentUser.unit_id
         );
       }
@@ -218,7 +218,7 @@ const AssetLending: React.FC = () => {
     }
 
     // Apply unit filter (for Super Admin and Admin Holding)
-    if (unitFilter !== 'ALL' && currentUser && ['Super Admin', 'Admin Holding'].includes(currentUser.role)) {
+    if (unitFilter !== 'ALL' && currentUser && ['super-admin', 'admin'].includes(currentUser.role)) {
       loans = loans.filter(loan => loan.asset.unit_id?.toString() === unitFilter);
     }
 
@@ -227,7 +227,7 @@ const AssetLending: React.FC = () => {
 
   // Get unique units for filter (for admins)
   const availableUnits = useMemo(() => {
-    if (!currentUser || !['Super Admin', 'Admin Holding'].includes(currentUser.role)) {
+    if (!currentUser || !['super-admin', 'admin'].includes(currentUser.role)) {
       return [];
     }
 
@@ -256,7 +256,7 @@ const AssetLending: React.FC = () => {
 
     let pending = allLoans.filter(loan => loan.status === AssetLoanStatus.PENDING);
 
-    if (currentUser && currentUser.role === 'Admin Unit' && currentUser.unit_id) {
+    if (currentUser && currentUser.role === 'unit' && currentUser.unit_id) {
       pending = pending.filter(loan => loan.asset.unit_id === currentUser.unit_id);
     }
 
@@ -266,23 +266,23 @@ const AssetLending: React.FC = () => {
   // ✅ PERBAIKAN: Check if user can manage loans (approve/reject/return)
   const canManageLoans = useMemo(() => {
     if (!currentUser) return false;
-    return ['Super Admin', 'Admin Holding', 'Admin Unit'].includes(currentUser.role);
+    return ['super-admin', 'admin', 'unit'].includes(currentUser.role);
   }, [currentUser]);
 
   // ✅ PERBAIKAN: Check if user can borrow assets - SEMUA ROLE BISA PINJAM
   const canBorrowAssets = useMemo(() => {
     if (!currentUser) return false;
-    
+
     // Semua role bisa melakukan peminjaman
-    return ['Super Admin', 'Admin Holding', 'Admin Unit', 'User'].includes(currentUser.role);
+    return ['super-admin', 'admin', 'unit', 'user'].includes(currentUser.role);
   }, [currentUser]);
 
   // ✅ PERBAIKAN: Check if user can see available assets section
   const canSeeAvailableAssets = useMemo(() => {
     if (!currentUser) return false;
-    
+
     // Semua role bisa melihat section aset yang tersedia
-    return ['Super Admin', 'Admin Holding', 'Admin Unit', 'User'].includes(currentUser.role);
+    return ['super-admin', 'admin', 'unit', 'user'].includes(currentUser.role);
   }, [currentUser]);
 
   // Status badge styling
@@ -398,7 +398,7 @@ const AssetLending: React.FC = () => {
       return 'Kelola permintaan peminjaman aset di sistem Anda';
     }
     // REQUESTS view
-    if (currentUser?.role === 'Admin Unit') {
+    if (currentUser?.role === 'unit') {
       return 'Request peminjaman asset dari unit lain';
     }
     return 'Validasi request peminjaman asset antar unit';
@@ -406,7 +406,7 @@ const AssetLending: React.FC = () => {
 
   const renderRoleDescription = () => {
     if (viewMode === 'REQUESTS') {
-      if (currentUser?.role === 'Admin Unit') {
+      if (currentUser?.role === 'unit') {
         return 'Anda dapat membuat request peminjaman asset untuk unit Anda.';
       }
       return 'Anda dapat memvalidasi request peminjaman asset dari semua unit.';
@@ -414,9 +414,9 @@ const AssetLending: React.FC = () => {
 
     // LOANS view
     switch (currentUser?.role) {
-      case 'User':
+      case 'user':
         return 'Anda hanya dapat meminjam asset di unit Anda sendiri';
-      case 'Admin Unit':
+      case 'unit':
         return 'Anda dapat mengelola peminjaman dan meminjam asset di unit Anda';
       default:
         return 'Anda dapat mengelola semua unit dan meminjam asset';
@@ -432,7 +432,7 @@ const AssetLending: React.FC = () => {
           <h1 className="text-xl sm:text-2xl font-bold text-gray-800">Peminjaman & Permintaan Aset</h1>
 
           {/* View Mode Toggle - Show for Admins */}
-          {['Super Admin', 'Admin Holding', 'Admin Unit'].includes(currentUser?.role || '') && (
+          {['super-admin', 'admin', 'unit'].includes(currentUser?.role || '') && (
             <div className="flex gap-2 flex-wrap">
               <button
                 onClick={() => setViewMode('LOANS')}
@@ -494,7 +494,7 @@ const AssetLending: React.FC = () => {
       )}
 
       {/* Show Asset Request List when in REQUESTS view mode */}
-      {viewMode === 'REQUESTS' && ['Super Admin', 'Admin Holding', 'Admin Unit'].includes(currentUser?.role || '') ? (
+      {viewMode === 'REQUESTS' && ['super-admin', 'admin', 'unit'].includes(currentUser?.role || '') ? (
         <div className="bg-white p-6 rounded-xl shadow-md">
           <AssetRequestList currentUser={currentUser} />
         </div>
@@ -566,7 +566,7 @@ const AssetLending: React.FC = () => {
                       {canBorrowAssets && (
                         <td className="block md:table-cell md:px-6 md:py-4 md:whitespace-nowrap md:text-center mt-4 md:mt-0">
                           <button onClick={() => handleBorrowClick(asset)} disabled={actionLoading} className="w-full md:w-auto inline-flex items-center justify-center text-sm font-medium bg-blue-50 text-blue-700 px-4 py-2 rounded-lg hover:bg-blue-100 border border-blue-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
-                            <BorrowIcon className="w-4 h-4 mr-2" /> Pinjam
+                            <span className="w-4 h-4 mr-2"><BorrowIcon /></span> Pinjam
                           </button>
                         </td>
                       )}
@@ -597,7 +597,7 @@ const AssetLending: React.FC = () => {
         <div className="bg-white p-4 sm:p-6 rounded-xl shadow-md">
           <h2 className="text-base sm:text-lg md:text-xl font-semibold text-gray-800 mb-4">
             Permintaan Peminjaman Menunggu Persetujuan
-            {currentUser?.role === 'Admin Unit' && ' - Unit Anda'}
+            {currentUser?.role === 'unit' && ' - Unit Anda'}
           </h2>
           <div className="overflow-x-auto border border-gray-200 rounded-lg">
             <table className="min-w-full divide-y divide-gray-200">
@@ -663,7 +663,7 @@ const AssetLending: React.FC = () => {
       <div className="bg-white p-4 sm:p-6 rounded-xl shadow-md">
         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-4 sm:mb-6 gap-3 sm:gap-4">
           <h2 className="text-base sm:text-lg md:text-xl font-semibold text-gray-800">
-            {currentUser?.role === 'User' ? 'Riwayat Peminjaman Saya' : 'Riwayat Peminjaman'}
+            {currentUser?.role === 'user' ? 'Riwayat Peminjaman Saya' : 'Riwayat Peminjaman'}
           </h2>
           
           <div className="flex flex-col sm:flex-row gap-4 w-full md:w-auto">
@@ -707,12 +707,12 @@ const AssetLending: React.FC = () => {
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Aset
                   </th>
-                  {currentUser?.role !== 'User' && (
+                  {currentUser?.role !== 'user' && (
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Peminjam
                     </th>
                   )}
-                  {['Super Admin', 'Admin Holding'].includes(currentUser?.role || '') && (
+                  {['super-admin', 'admin'].includes(currentUser?.role || '') && (
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Unit
                     </th>
@@ -745,14 +745,14 @@ const AssetLending: React.FC = () => {
                         <div className="text-sm font-medium text-gray-900 inline md:block">{loan.asset.name}</div>
                         <div className="text-sm text-gray-500 font-mono inline md:block md:mt-1">{loan.asset.asset_tag}</div>
                       </td>
-                      {currentUser?.role !== 'User' && (
+                      {currentUser?.role !== 'user' && (
                         <td className="block md:table-cell md:px-6 md:py-4 md:whitespace-nowrap">
                           <span className="font-bold md:hidden">Peminjam: </span>
                           <div className="text-sm text-gray-900 inline md:block">{loan.borrower.name}</div>
                           <div className="text-sm text-gray-500 inline md:block md:mt-1">{loan.borrower.email}</div>
                         </td>
                       )}
-                      {['Super Admin', 'Admin Holding'].includes(currentUser?.role || '') && (
+                      {['super-admin', 'admin'].includes(currentUser?.role || '') && (
                         <td className="block md:table-cell md:px-6 md:py-4 md:whitespace-nowrap">
                           <span className="font-bold md:hidden">Unit: </span>
                           <div className="text-sm text-gray-500 inline md:block">{loan.asset.unit?.name || 'N/A'}</div>
@@ -801,8 +801,8 @@ const AssetLending: React.FC = () => {
               <CalendarIcon className="w-16 h-16 mx-auto" />
             </div>
             <p className="text-gray-500 text-lg font-medium">
-              {currentUser?.role === 'User' 
-                ? 'Anda belum memiliki riwayat peminjaman' 
+              {currentUser?.role === 'user'
+                ? 'Anda belum memiliki riwayat peminjaman'
                 : 'Tidak ada data peminjaman'
               }
             </p>

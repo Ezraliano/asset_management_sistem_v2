@@ -120,26 +120,26 @@ class UserController extends Controller
             'username' => 'required|string|max:255|unique:users,username',
             'email' => 'required|email|max:255|unique:users,email',
             'password' => 'required|string|min:3',
-            'role' => ['required', Rule::in(['Admin Unit', 'User', 'Auditor'])],
+            'role' => ['required', Rule::in(['unit', 'user', 'auditor'])],
             'unit_id' => 'nullable|exists:units,id',
         ]);
 
-        // Super Admin and Admin Holding can only create Admin Unit, User, or Auditor
-        if (!in_array($validated['role'], ['Admin Unit', 'User', 'Auditor'])) {
+        // super-admin and admin can only create unit, user, or auditor
+        if (!in_array($validated['role'], ['unit', 'user', 'auditor'])) {
             return response()->json([
                 'success' => false,
-                'message' => 'You can only create users with role Admin Unit, User, or Auditor.',
+                'message' => 'You can only create users with role unit, user, or auditor.',
             ], 403);
         }
 
         // Auditor tidak memerlukan unit_id
-        if ($validated['role'] === 'Auditor') {
+        if ($validated['role'] === 'auditor') {
             $validated['unit_id'] = null;
         } elseif (empty($validated['unit_id'])) {
-            // Admin Unit dan User harus memiliki unit_id
+            // unit dan user harus memiliki unit_id
             return response()->json([
                 'success' => false,
-                'message' => 'Admin Unit and User must be assigned to a unit.',
+                'message' => 'Unit and User must be assigned to a unit.',
             ], 422);
         }
 
@@ -225,21 +225,21 @@ class UserController extends Controller
                 'max:255',
                 Rule::unique('users', 'email')->ignore($user->id),
             ],
-            'role' => ['sometimes', 'required', Rule::in(['Admin Unit', 'User', 'Auditor'])],
+            'role' => ['sometimes', 'required', Rule::in(['unit', 'user', 'auditor'])],
             'unit_id' => 'sometimes|nullable|exists:units,id',
             'password' => 'sometimes|nullable|string|min:3',
         ]);
 
-        // Only allow updating to Admin Unit, User, or Auditor
-        if (isset($validated['role']) && !in_array($validated['role'], ['Admin Unit', 'User', 'Auditor'])) {
+        // Only allow updating to unit, user, or auditor
+        if (isset($validated['role']) && !in_array($validated['role'], ['unit', 'user', 'auditor'])) {
             return response()->json([
                 'success' => false,
-                'message' => 'You can only set role to Admin Unit, User, or Auditor.',
+                'message' => 'You can only set role to unit, user, or auditor.',
             ], 403);
         }
 
         // Jika role diubah menjadi Auditor, set unit_id menjadi null
-        if (isset($validated['role']) && $validated['role'] === 'Auditor') {
+        if (isset($validated['role']) && $validated['role'] === 'auditor') {
             $validated['unit_id'] = null;
         }
 
@@ -289,8 +289,8 @@ class UserController extends Controller
 
     /**
      * Remove the specified user
-     * Super Admin and Admin Holding can delete Admin Unit or User
-     * Cannot delete Super Admin or Admin Holding accounts
+     * super-admin and admin can delete unit or user
+     * Cannot delete super-admin or admin accounts
      */
     public function destroy(Request $request, $id)
     {
@@ -312,11 +312,11 @@ class UserController extends Controller
             ], 404);
         }
 
-        // Cannot delete Super Admin, Admin Holding, or Auditor accounts
+        // Cannot delete super-admin, admin, or auditor accounts
         if ($user->isSuperAdmin() || $user->isAdminHolding() || $user->isAuditor()) {
             return response()->json([
                 'success' => false,
-                'message' => 'Cannot delete Super Admin, Admin Holding, or Auditor accounts.',
+                'message' => 'Cannot delete super-admin, admin, or auditor accounts.',
             ], 403);
         }
 

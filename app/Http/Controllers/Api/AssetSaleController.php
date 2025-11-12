@@ -27,18 +27,18 @@ class AssetSaleController extends Controller
             $query = AssetSale::with(['asset.unit', 'soldBy']);
 
             // Filter based on user role
-            if ($user && $user->role === 'Admin Unit' && $user->unit_id) {
+            if ($user && $user->role === 'unit' && $user->unit_id) {
                 // Admin Unit only sees sales from their unit
                 $query->whereHas('asset', function($q) use ($user) {
                     $q->where('unit_id', $user->unit_id);
                 });
-            } elseif ($user && $user->role === 'Admin Holding' && $request->has('unit_id')) {
+            } elseif ($user && $user->role === 'admin' && $request->has('unit_id')) {
                 // Admin Holding can filter by specific unit
                 $query->whereHas('asset', function($q) use ($request) {
                     $q->where('unit_id', $request->unit_id);
                 });
             }
-            // Super Admin sees all sales (no filter)
+            // super-admin sees all sales (no filter)
 
             // Search filter
             if ($request->has('search') && !empty($request->search)) {
@@ -117,7 +117,7 @@ class AssetSaleController extends Controller
             $asset = Asset::with('unit')->findOrFail($validated['asset_id']);
 
             // Validate unit access for Admin Unit
-            if ($user->role === 'Admin Unit' && $user->unit_id && $asset->unit_id !== $user->unit_id) {
+            if ($user->role === 'unit' && $user->unit_id && $asset->unit_id !== $user->unit_id) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Anda hanya dapat menjual asset di unit Anda sendiri'
@@ -224,7 +224,7 @@ class AssetSaleController extends Controller
             }
 
             // Check unit access for Admin Unit
-            if ($user->role === 'Admin Unit' && $user->unit_id && $sale->asset->unit_id !== $user->unit_id) {
+            if ($user->role === 'unit' && $user->unit_id && $sale->asset->unit_id !== $user->unit_id) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Unauthorized to view sales from other units'
@@ -252,7 +252,7 @@ class AssetSaleController extends Controller
     }
 
     /**
-     * Update the specified asset sale (Admin Holding & Super Admin only)
+     * Update the specified asset sale (admin & super-admin only)
      */
     public function update(Request $request, $id)
     {
@@ -327,7 +327,7 @@ class AssetSaleController extends Controller
     }
 
     /**
-     * Cancel an asset sale and revert asset status (Admin Holding & Super Admin only)
+     * Cancel an asset sale and revert asset status (admin & super-admin only)
      */
     public function destroy($id)
     {
@@ -397,7 +397,7 @@ class AssetSaleController extends Controller
             }
 
             // Check unit access for Admin Unit
-            if ($user->role === 'Admin Unit' && $user->unit_id && $sale->asset->unit_id !== $user->unit_id) {
+            if ($user->role === 'unit' && $user->unit_id && $sale->asset->unit_id !== $user->unit_id) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Unauthorized to access files from other units'
@@ -501,7 +501,7 @@ class AssetSaleController extends Controller
             $query = AssetSale::query();
 
             // Filter by unit for Admin Unit
-            if ($user && $user->role === 'Admin Unit' && $user->unit_id) {
+            if ($user && $user->role === 'unit' && $user->unit_id) {
                 $query->whereHas('asset', function($q) use ($user) {
                     $q->where('unit_id', $user->unit_id);
                 });
@@ -585,7 +585,7 @@ class AssetSaleController extends Controller
                 ->whereDoesntHave('sales'); // Asset yang belum pernah dijual
 
             // Filter by unit for Admin Unit
-            if ($user && $user->role === 'Admin Unit' && $user->unit_id) {
+            if ($user && $user->role === 'unit' && $user->unit_id) {
                 $query->where('unit_id', $user->unit_id);
             }
 

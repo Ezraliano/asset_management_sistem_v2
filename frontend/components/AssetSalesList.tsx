@@ -25,8 +25,8 @@ const AssetSalesList: React.FC<AssetSalesListProps> = ({ user, navigateTo }) => 
   const [isModalOpen, setModalOpen] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
 
-  const canEditSales = ['Super Admin', 'Admin Holding'].includes(user.role);
-  const canCreateSale = ['Super Admin', 'Admin Holding', 'Admin Unit'].includes(user.role);
+  const canEditSales = ['super-admin', 'admin'].includes(user.role);
+  const canCreateSale = ['super-admin', 'admin', 'unit'].includes(user.role);
 
   const fetchData = async () => {
     setLoading(true);
@@ -40,7 +40,7 @@ const AssetSalesList: React.FC<AssetSalesListProps> = ({ user, navigateTo }) => 
 
       const [salesData, unitsData] = await Promise.all([
         getAssetSales(params),
-        user.role === 'Admin Holding' || user.role === 'Super Admin' ? getUnits() : Promise.resolve([])
+        user.role === 'admin' || user.role === 'super-admin' ? getUnits() : Promise.resolve([])
       ]);
 
       setSales(salesData);
@@ -147,7 +147,7 @@ const AssetSalesList: React.FC<AssetSalesListProps> = ({ user, navigateTo }) => 
           </div>
 
           {/* Unit Filter (Admin Holding only) */}
-          {(user.role === 'Admin Holding' || user.role === 'Super Admin') && units.length > 0 && (
+          {(user.role === 'admin' || user.role === 'super-admin') && units.length > 0 && (
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Unit

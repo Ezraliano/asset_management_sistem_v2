@@ -8,6 +8,7 @@ import Modal from './Modal';
 import ReportIssueForm from './ReportIssueForm';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
+import { Html5Qrcode } from 'html5-qrcode';
 
 interface InventoryAuditProps {
   unitId: number;
@@ -148,8 +149,7 @@ const InventoryAudit: React.FC<InventoryAuditProps> = ({ unitName, auditId, mode
   useEffect(() => {
     if (mode !== 'camera' || loading) return;
 
-    // Access Html5Qrcode from window object
-    const Html5Qrcode = (window as any).Html5Qrcode;
+    // Html5Qrcode is now imported directly
     if (!Html5Qrcode) {
       console.error("Html5Qrcode library not loaded");
       setScanResult({ type: 'error', message: 'QR Code scanner library failed to load' });

@@ -64,7 +64,7 @@ const AssetLoanManagement: React.FC = () => {
 
   const canManageLoans = useMemo(() => {
     if (!currentUser) return false;
-    return ['Super Admin', 'Admin Holding', 'Admin Unit'].includes(currentUser.role);
+    return ['super-admin', 'admin', 'unit'].includes(currentUser.role);
   }, [currentUser]);
 
   const handleActionClick = (loan: AssetLoan, action: 'approve' | 'reject' | 'return' | 'validate_return') => {
@@ -193,7 +193,7 @@ const AssetLoanManagement: React.FC = () => {
         <h1 className="text-2xl font-bold text-gray-800">Manajemen Peminjaman Aset</h1>
 
         {/* Show Request Button for Admin Unit */}
-        {currentUser?.role === 'Admin Unit' && activeTab === 'REQUESTS' && (
+        {currentUser?.role === 'unit' && activeTab === 'REQUESTS' && (
           <button
             onClick={handleRequestFormOpen}
             className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm font-medium"

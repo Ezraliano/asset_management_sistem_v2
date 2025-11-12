@@ -76,13 +76,13 @@ class User extends Authenticatable
      */
     public function canManageUnit(?Unit $unit): bool
     {
-        // Super Admin and Admin Holding can manage all units
-        if (in_array($this->role, ['Super Admin', 'Admin Holding'])) {
+        // Super Admin and Admin can manage all units
+        if (in_array($this->role, ['super-admin', 'admin'])) {
             return true;
         }
 
-        // Admin Unit can only manage their own unit
-        if ($this->role === 'Admin Unit' && $unit && $this->unit_id === $unit->id) {
+        // Unit admin can only manage their own unit
+        if ($this->role === 'unit' && $unit && $this->unit_id === $unit->id) {
             return true;
         }
 
@@ -94,13 +94,13 @@ class User extends Authenticatable
      */
     public function canApproveLoansForAsset(Asset $asset): bool
     {
-        // Super Admin and Admin Holding can approve all loans
-        if (in_array($this->role, ['Super Admin', 'Admin Holding'])) {
+        // Super Admin and Admin can approve all loans
+        if (in_array($this->role, ['super-admin', 'admin'])) {
             return true;
         }
 
-        // Admin Unit can only approve loans for assets in their unit
-        if ($this->role === 'Admin Unit' && $this->unit_id && $asset->unit_id === $this->unit_id) {
+        // Unit admin can only approve loans for assets in their unit
+        if ($this->role === 'unit' && $this->unit_id && $asset->unit_id === $this->unit_id) {
             return true;
         }
 
@@ -112,13 +112,13 @@ class User extends Authenticatable
      */
     public function canViewUnitAssets(?Unit $unit): bool
     {
-        // Super Admin and Admin Holding can view all units
-        if (in_array($this->role, ['Super Admin', 'Admin Holding'])) {
+        // Super Admin and Admin can view all units
+        if (in_array($this->role, ['super-admin', 'admin'])) {
             return true;
         }
 
-        // Admin Unit and User can only view their own unit
-        if (in_array($this->role, ['Admin Unit', 'User']) && $unit && $this->unit_id === $unit->id) {
+        // Unit admin and User can only view their own unit
+        if (in_array($this->role, ['unit', 'user']) && $unit && $this->unit_id === $unit->id) {
             return true;
         }
 
@@ -131,7 +131,7 @@ class User extends Authenticatable
     public function canBorrowAsset(Asset $asset): bool
     {
         // User can only borrow assets from their own unit
-        if ($this->role === 'User' && $this->unit_id && $asset->unit_id === $this->unit_id) {
+        if ($this->role === 'user' && $this->unit_id && $asset->unit_id === $this->unit_id) {
             return true;
         }
 
@@ -144,13 +144,13 @@ class User extends Authenticatable
      */
     public function canCreateAssetInUnit(?Unit $unit): bool
     {
-        // Super Admin and Admin Holding can create assets in any unit
-        if (in_array($this->role, ['Super Admin', 'Admin Holding'])) {
+        // Super Admin and Admin can create assets in any unit
+        if (in_array($this->role, ['super-admin', 'admin'])) {
             return true;
         }
 
-        // Admin Unit can only create assets in their own unit
-        if ($this->role === 'Admin Unit' && $unit && $this->unit_id === $unit->id) {
+        // Unit admin can only create assets in their own unit
+        if ($this->role === 'unit' && $unit && $this->unit_id === $unit->id) {
             return true;
         }
 
@@ -163,13 +163,13 @@ class User extends Authenticatable
      */
     public function canUpdateAsset(Asset $asset): bool
     {
-        // Super Admin and Admin Holding can update all assets
-        if (in_array($this->role, ['Super Admin', 'Admin Holding'])) {
+        // Super Admin and Admin can update all assets
+        if (in_array($this->role, ['super-admin', 'admin'])) {
             return true;
         }
 
-        // Admin Unit can only update assets in their unit
-        if ($this->role === 'Admin Unit' && $this->unit_id && $asset->unit_id === $this->unit_id) {
+        // Unit admin can only update assets in their unit
+        if ($this->role === 'unit' && $this->unit_id && $asset->unit_id === $this->unit_id) {
             return true;
         }
 
@@ -182,13 +182,13 @@ class User extends Authenticatable
      */
     public function canDeleteAsset(Asset $asset): bool
     {
-        // Super Admin and Admin Holding can delete all assets
-        if (in_array($this->role, ['Super Admin', 'Admin Holding'])) {
+        // Super Admin and Admin can delete all assets
+        if (in_array($this->role, ['super-admin', 'admin'])) {
             return true;
         }
 
-        // Admin Unit can only delete assets in their unit
-        if ($this->role === 'Admin Unit' && $this->unit_id && $asset->unit_id === $this->unit_id) {
+        // Unit admin can only delete assets in their unit
+        if ($this->role === 'unit' && $this->unit_id && $asset->unit_id === $this->unit_id) {
             return true;
         }
 
@@ -201,18 +201,18 @@ class User extends Authenticatable
      */
     public function canViewLoan(AssetLoan $loan): bool
     {
-        // Super Admin and Admin Holding can view all loans
-        if (in_array($this->role, ['Super Admin', 'Admin Holding'])) {
+        // Super Admin and Admin can view all loans
+        if (in_array($this->role, ['super-admin', 'admin'])) {
             return true;
         }
 
-        // Admin Unit can only view loans for assets in their unit
-        if ($this->role === 'Admin Unit' && $this->unit_id && $loan->asset->unit_id === $this->unit_id) {
+        // Unit admin can only view loans for assets in their unit
+        if ($this->role === 'unit' && $this->unit_id && $loan->asset->unit_id === $this->unit_id) {
             return true;
         }
 
         // User can only view their own loans
-        if ($this->role === 'User' && $loan->borrower_id === $this->id) {
+        if ($this->role === 'user' && $loan->borrower_id === $this->id) {
             return true;
         }
 
@@ -224,16 +224,16 @@ class User extends Authenticatable
      */
     public function canProcessLoanReturn(AssetLoan $loan): bool
     {
-        // Super Admin and Admin Holding can process all returns
-        if (in_array($this->role, ['Super Admin', 'Admin Holding'])) {
+        // Super Admin and Admin can process all returns
+        if (in_array($this->role, ['super-admin', 'admin'])) {
             return true;
         }
 
-        // ✅ VALIDASI UNTUK ADMIN UNIT
-        // Admin Unit HANYA BOLEH process return untuk:
+        // ✅ VALIDASI UNTUK UNIT ADMIN
+        // Unit admin HANYA BOLEH process return untuk:
         // 1. Asset ada di unit mereka (asset milik unit mereka)
         // 2. DAN borrower juga dari unit mereka (peminjaman internal dalam unit yang sama)
-        if ($this->role === 'Admin Unit' && $this->unit_id) {
+        if ($this->role === 'unit' && $this->unit_id) {
             $assetBelongsToUserUnit = $loan->asset->unit_id === $this->unit_id;
             $borrowerFromSameUnit = $loan->borrower &&
                                     $loan->borrower->unit_id === $this->unit_id;
@@ -250,13 +250,13 @@ class User extends Authenticatable
      */
     public function canValidateMaintenance(Maintenance $maintenance): bool
     {
-        // Super Admin and Admin Holding can validate all maintenance records
-        if (in_array($this->role, ['Super Admin', 'Admin Holding'])) {
+        // Super Admin and Admin can validate all maintenance records
+        if (in_array($this->role, ['super-admin', 'admin'])) {
             return true;
         }
 
-        // Admin Unit can only validate maintenance for assets in their unit
-        if ($this->role === 'Admin Unit' && $this->unit_id && $maintenance->asset && $maintenance->asset->unit_id === $this->unit_id) {
+        // Unit admin can only validate maintenance for assets in their unit
+        if ($this->role === 'unit' && $this->unit_id && $maintenance->asset && $maintenance->asset->unit_id === $this->unit_id) {
             return true;
         }
 
@@ -268,13 +268,13 @@ class User extends Authenticatable
      */
     public function canCompleteMaintenance(Maintenance $maintenance): bool
     {
-        // Super Admin and Admin Holding can complete all maintenance records
-        if (in_array($this->role, ['Super Admin', 'Admin Holding'])) {
+        // Super Admin and Admin can complete all maintenance records
+        if (in_array($this->role, ['super-admin', 'admin'])) {
             return true;
         }
 
-        // Admin Unit can only complete maintenance for assets in their unit
-        if ($this->role === 'Admin Unit' && $this->unit_id && $maintenance->asset && $maintenance->asset->unit_id === $this->unit_id) {
+        // Unit admin can only complete maintenance for assets in their unit
+        if ($this->role === 'unit' && $this->unit_id && $maintenance->asset && $maintenance->asset->unit_id === $this->unit_id) {
             return true;
         }
 
@@ -286,13 +286,13 @@ class User extends Authenticatable
      */
     public function canCreateMaintenance(Asset $asset): bool
     {
-        // Super Admin and Admin Holding can create maintenance for all assets
-        if (in_array($this->role, ['Super Admin', 'Admin Holding'])) {
+        // Super Admin and Admin can create maintenance for all assets
+        if (in_array($this->role, ['super-admin', 'admin'])) {
             return true;
         }
 
-        // Admin Unit can only create maintenance for assets in their unit
-        if ($this->role === 'Admin Unit' && $this->unit_id && $asset->unit_id === $this->unit_id) {
+        // Unit admin can only create maintenance for assets in their unit
+        if ($this->role === 'unit' && $this->unit_id && $asset->unit_id === $this->unit_id) {
             return true;
         }
 
@@ -308,8 +308,8 @@ class User extends Authenticatable
             return $this->unit->name;
         }
 
-        return $this->role === 'Super Admin' || $this->role === 'Admin Holding' 
-            ? 'Semua Unit' 
+        return $this->role === 'super-admin' || $this->role === 'admin'
+            ? 'Semua Unit'
             : 'Unit tidak ditentukan';
     }
 
@@ -318,7 +318,7 @@ class User extends Authenticatable
      */
     public function isSuperAdmin(): bool
     {
-        return $this->role === 'Super Admin';
+        return $this->role === 'super-admin';
     }
 
     /**
@@ -326,7 +326,7 @@ class User extends Authenticatable
      */
     public function isAdminHolding(): bool
     {
-        return $this->role === 'Admin Holding';
+        return $this->role === 'admin';
     }
 
     /**
@@ -334,7 +334,7 @@ class User extends Authenticatable
      */
     public function isAdminUnit(): bool
     {
-        return $this->role === 'Admin Unit';
+        return $this->role === 'unit';
     }
 
     /**
@@ -342,7 +342,7 @@ class User extends Authenticatable
      */
     public function isRegularUser(): bool
     {
-        return $this->role === 'User';
+        return $this->role === 'user';
     }
 
     /**
@@ -350,7 +350,7 @@ class User extends Authenticatable
      */
     public function isAuditor(): bool
     {
-        return $this->role === 'Auditor';
+        return $this->role === 'auditor';
     }
 
     /**
@@ -358,7 +358,7 @@ class User extends Authenticatable
      */
     public function isAdmin(): bool
     {
-        return in_array($this->role, ['Super Admin', 'Admin Holding', 'Admin Unit']);
+        return in_array($this->role, ['super-admin', 'admin', 'unit']);
     }
 
     /**
@@ -382,7 +382,7 @@ class User extends Authenticatable
      */
     public function scopeApprovers($query)
     {
-        return $query->whereIn('role', ['Super Admin', 'Admin Holding', 'Admin Unit']);
+        return $query->whereIn('role', ['super-admin', 'admin', 'unit']);
     }
 
     /**
@@ -438,12 +438,12 @@ class User extends Authenticatable
     public function getPermissionsSummary(): array
     {
         return [
-            'can_view_all_assets' => in_array($this->role, ['Super Admin', 'Admin Holding']),
-            'can_manage_assets' => in_array($this->role, ['Super Admin', 'Admin Holding', 'Admin Unit']),
-            'can_borrow_assets' => $this->role === 'User',
-            'can_approve_loans' => in_array($this->role, ['Super Admin', 'Admin Holding', 'Admin Unit']),
-            'can_view_reports' => in_array($this->role, ['Super Admin', 'Admin Holding']),
-            'unit_restricted' => in_array($this->role, ['Admin Unit', 'User']),
+            'can_view_all_assets' => in_array($this->role, ['super-admin', 'admin']),
+            'can_manage_assets' => in_array($this->role, ['super-admin', 'admin', 'unit']),
+            'can_borrow_assets' => $this->role === 'user',
+            'can_approve_loans' => in_array($this->role, ['super-admin', 'admin', 'unit']),
+            'can_view_reports' => in_array($this->role, ['super-admin', 'admin']),
+            'unit_restricted' => in_array($this->role, ['unit', 'user']),
             'unit_id' => $this->unit_id,
             'unit_name' => $this->getUnitName(),
         ];

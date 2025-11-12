@@ -42,7 +42,7 @@ const AssetRequestValidationModal: React.FC<AssetRequestValidationModalProps> = 
   const fetchAvailableAssets = async () => {
     try {
       const token = localStorage.getItem('auth_token');
-      const response = await fetch('http://localhost:8000/api/asset-requests-available-assets', {
+      const response = await fetch('https://assetmanagementga.arjunaconnect.com/api/asset-requests-available-assets', {
         headers: {
           'Authorization': `Bearer ${token}`,
         },
@@ -107,7 +107,7 @@ const AssetRequestValidationModal: React.FC<AssetRequestValidationModalProps> = 
         formData.append('loan_photo', loanPhoto);
       }
 
-      const response = await fetch(`http://localhost:8000/api/asset-requests/${request.id}/approve`, {
+      const response = await fetch(`https://assetmanagementga.arjunaconnect.com/api/asset-requests/${request.id}/approve`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -139,7 +139,7 @@ const AssetRequestValidationModal: React.FC<AssetRequestValidationModalProps> = 
     setIsProcessing(true);
     try {
       const token = localStorage.getItem('auth_token');
-      const response = await fetch(`http://localhost:8000/api/asset-requests/${request.id}/reject`, {
+      const response = await fetch(`https://assetmanagementga.arjunaconnect.com/api/asset-requests/${request.id}/reject`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -169,7 +169,7 @@ const AssetRequestValidationModal: React.FC<AssetRequestValidationModalProps> = 
     setIsProcessing(true);
     try {
       const token = localStorage.getItem('auth_token');
-      const response = await fetch(`http://localhost:8000/api/asset-requests/${request.id}/return`, {
+      const response = await fetch(`https://assetmanagementga.arjunaconnect.com/api/asset-requests/${request.id}/return`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -197,7 +197,7 @@ const AssetRequestValidationModal: React.FC<AssetRequestValidationModalProps> = 
     setIsProcessing(true);
     try {
       const token = localStorage.getItem('auth_token');
-      const response = await fetch(`http://localhost:8000/api/asset-requests/${request.id}/confirm-return`, {
+      const response = await fetch(`https://assetmanagementga.arjunaconnect.com/api/asset-requests/${request.id}/confirm-return`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -229,7 +229,7 @@ const AssetRequestValidationModal: React.FC<AssetRequestValidationModalProps> = 
     setIsProcessing(true);
     try {
       const token = localStorage.getItem('auth_token');
-      const response = await fetch(`http://localhost:8000/api/asset-requests/${request.id}/reject-return`, {
+      const response = await fetch(`https://assetmanagementga.arjunaconnect.com/api/asset-requests/${request.id}/reject-return`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -256,11 +256,11 @@ const AssetRequestValidationModal: React.FC<AssetRequestValidationModalProps> = 
   };
 
   const canValidate =
-    (currentUser?.role === 'Super Admin' || currentUser?.role === 'Admin Holding') &&
+    (currentUser?.role === 'super-admin' || currentUser?.role === 'admin') &&
     request.status === 'PENDING';
 
   const canReturn =
-    currentUser?.role === 'Admin Unit' &&
+    currentUser?.role === 'unit' &&
     request.status === 'APPROVED' &&
     request.loan_status === 'ACTIVE' &&
     request.requester_unit_id === currentUser?.unit_id;
@@ -277,7 +277,7 @@ const AssetRequestValidationModal: React.FC<AssetRequestValidationModalProps> = 
   // });
 
   const canConfirmReturn =
-    (currentUser?.role === 'Super Admin' || currentUser?.role === 'Admin Holding') &&
+    (currentUser?.role === 'super-admin' || currentUser?.role === 'admin') &&
     request.loan_status === 'PENDING_RETURN';
 
   // Show return form if user clicks return button
@@ -300,11 +300,11 @@ const AssetRequestValidationModal: React.FC<AssetRequestValidationModalProps> = 
       <div className="mb-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
         <h4 className="font-semibold text-gray-700 mb-3">Informasi Request</h4>
         <div className="grid grid-cols-2 gap-4 text-sm">
-          <div className={currentUser?.role === 'Admin Unit' ? 'col-span-2' : ''}>
+          <div className={currentUser?.role === 'unit' ? 'col-span-2' : ''}>
             <span className="font-medium text-gray-600">Unit Pemohon:</span>
             <p className="text-gray-900 mt-1">{request.requester_unit?.name || request.requester?.name || 'N/A'}</p>
           </div>
-          {currentUser?.role !== 'Admin Unit' && (
+          {currentUser?.role !== 'unit' && (
             <div>
               <span className="font-medium text-gray-600">Nama Pemohon:</span>
               <p className="text-gray-900 mt-1">{request.requester?.name || 'N/A'}</p>
@@ -447,7 +447,7 @@ const AssetRequestValidationModal: React.FC<AssetRequestValidationModalProps> = 
               <span className="font-medium text-gray-600">Foto Asset:</span>
               <div className="mt-2">
                 <img
-                  src={`http://localhost:8000/storage/${request.loan_photo_path}`}
+                  src={`https://assetmanagementga.arjunaconnect.com/storage/${request.loan_photo_path}`}
                   alt="Foto asset yang dipinjamkan"
                   className="w-full max-w-md h-64 object-cover rounded-lg border border-gray-300"
                   onError={(e) => {
@@ -497,7 +497,7 @@ const AssetRequestValidationModal: React.FC<AssetRequestValidationModalProps> = 
               <span className="font-medium text-gray-600">Foto Bukti Pengembalian:</span>
               <div className="mt-2">
                 <img
-                  src={`http://localhost:8000/storage/${request.return_proof_photo_path}`}
+                  src={`https://assetmanagementga.arjunaconnect.com/storage/${request.return_proof_photo_path}`}
                   alt="Bukti pengembalian"
                   className="w-full max-w-md h-48 object-cover rounded border"
                   onError={(e) => {
@@ -769,7 +769,7 @@ const AssetRequestValidationModal: React.FC<AssetRequestValidationModalProps> = 
       )}
 
       {/* Debug Info - Hanya untuk development
-      {currentUser?.role === 'Admin Unit' && !canReturn && request.status === 'APPROVED' && (
+      {currentUser?.role === 'unit' && !canReturn && request.status === 'APPROVED' && (
         <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
           <p className="text-sm text-yellow-800 font-medium">
             ℹ️ Informasi: Tombol pengembalian tidak muncul

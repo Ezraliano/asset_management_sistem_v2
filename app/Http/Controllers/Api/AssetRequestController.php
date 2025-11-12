@@ -34,7 +34,7 @@ class AssetRequestController extends Controller
             ]);
 
             // Filter by role
-            if ($user->role === 'Admin Unit' && $user->unit_id) {
+            if ($user->role === 'unit' && $user->unit_id) {
                 $query->where('requester_unit_id', $user->unit_id);
             }
 
@@ -82,7 +82,7 @@ class AssetRequestController extends Controller
             $user = Auth::user();
 
             // Validate: Admin Unit must have a unit
-            if ($user->role === 'Admin Unit') {
+            if ($user->role === 'unit') {
                 if (!$user->unit_id) {
                     return response()->json([
                         'success' => false,
@@ -156,7 +156,7 @@ class AssetRequestController extends Controller
             $user = Auth::user();
 
             // Authorization check
-            if (!in_array($user->role, ['Super Admin', 'Admin Holding'])) {
+            if (!in_array($user->role, ['super-admin', 'admin'])) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Unauthorized to approve asset requests'
@@ -249,7 +249,7 @@ class AssetRequestController extends Controller
             $user = Auth::user();
 
             // Authorization check
-            if (!in_array($user->role, ['Super Admin', 'Admin Holding'])) {
+            if (!in_array($user->role, ['super-admin', 'admin'])) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Unauthorized to reject asset requests'
@@ -313,7 +313,7 @@ class AssetRequestController extends Controller
             ])->findOrFail($id);
 
             // Authorization: Admin Unit can only see their own unit's requests
-            if ($user->role === 'Admin Unit' && $user->unit_id) {
+            if ($user->role === 'unit' && $user->unit_id) {
                 if ($assetRequest->requester_unit_id !== $user->unit_id) {
                     return response()->json([
                         'success' => false,
@@ -357,14 +357,14 @@ class AssetRequestController extends Controller
                 ->findOrFail($id);
 
             // Authorization: Only Admin Unit from requester unit can return
-            if ($user->role === 'Admin Unit') {
+            if ($user->role === 'unit') {
                 if (!$user->unit_id || $assetRequest->requester_unit_id !== $user->unit_id) {
                     return response()->json([
                         'success' => false,
                         'message' => 'Unauthorized to return this asset'
                     ], Response::HTTP_FORBIDDEN);
                 }
-            } else if (!in_array($user->role, ['Super Admin', 'Admin Holding'])) {
+            } else if (!in_array($user->role, ['super-admin', 'admin'])) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Unauthorized to return this asset'
@@ -441,7 +441,7 @@ class AssetRequestController extends Controller
             $user = Auth::user();
 
             // Authorization check
-            if (!in_array($user->role, ['Super Admin', 'Admin Holding'])) {
+            if (!in_array($user->role, ['super-admin', 'admin'])) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Unauthorized to confirm asset return'
@@ -513,7 +513,7 @@ class AssetRequestController extends Controller
             $user = Auth::user();
 
             // Authorization check
-            if (!in_array($user->role, ['Super Admin', 'Admin Holding'])) {
+            if (!in_array($user->role, ['super-admin', 'admin'])) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Unauthorized to reject asset return'
@@ -570,7 +570,7 @@ class AssetRequestController extends Controller
             $user = Auth::user();
 
             // Authorization check
-            if (!in_array($user->role, ['Super Admin', 'Admin Holding'])) {
+            if (!in_array($user->role, ['super-admin', 'admin'])) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Unauthorized to view pending returns'
@@ -617,7 +617,7 @@ class AssetRequestController extends Controller
             ->where('loan_status', 'ACTIVE');
 
             // Filter by role
-            if ($user->role === 'Admin Unit' && $user->unit_id) {
+            if ($user->role === 'unit' && $user->unit_id) {
                 $query->where('requester_unit_id', $user->unit_id);
             }
 
@@ -648,7 +648,7 @@ class AssetRequestController extends Controller
             $user = Auth::user();
 
             // Authorization check
-            if (!in_array($user->role, ['Super Admin', 'Admin Holding'])) {
+            if (!in_array($user->role, ['super-admin', 'admin'])) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Unauthorized to view available assets'

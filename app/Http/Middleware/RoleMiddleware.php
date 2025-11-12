@@ -38,7 +38,7 @@ class RoleMiddleware
         $userRole = strtolower($user->role);
 
         // Super Admin (or Administrator) has access to everything
-        if (in_array($userRole, ['super admin', 'administrator'])) {
+        if (in_array($userRole, ['super-admin', 'administrator'])) {
             return $next($request);
         }
 
@@ -67,8 +67,8 @@ class RoleMiddleware
      */
     private function checkUnitPermission(Request $request, Closure $next, $user)
     {
-        // Hanya perlu validasi unit untuk Admin Unit dan User
-        if (!in_array($user->role, ['Admin Unit', 'User'])) {
+        // Hanya perlu validasi unit untuk unit admin dan user
+        if (!in_array($user->role, ['unit', 'user'])) {
             return $next($request);
         }
 
