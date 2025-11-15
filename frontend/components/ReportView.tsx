@@ -143,6 +143,13 @@ const ReportView: React.FC<ReportViewProps> = ({ user }) => {
     const [selectedUnit, setSelectedUnit] = useState<string>('all');
     const [units, setUnits] = useState<Unit[]>([]);
 
+    // Date range filter states
+    const [filterMode, setFilterMode] = useState<'single' | 'range'>('single');
+    const [fromMonth, setFromMonth] = useState<string>('1');
+    const [fromYear, setFromYear] = useState<string>(String(new Date().getFullYear()));
+    const [toMonth, setToMonth] = useState<string>(String(new Date().getMonth() + 1));
+    const [toYear, setToYear] = useState<string>(String(new Date().getFullYear()));
+
     // Fetch units on component mount
     useEffect(() => {
         const fetchUnits = async () => {
@@ -225,13 +232,31 @@ const ReportView: React.FC<ReportViewProps> = ({ user }) => {
             console.log(`Exporting ${reportKey} report...`);
 
             let response;
-            switch (reportKey) {
-                case 'full_asset': {
-                    response = await getFullAssetReport({
+
+            // Tentukan parameter yang akan dikirim ke API berdasarkan filter mode
+            const getApiParams = () => {
+                if (filterMode === 'range') {
+                    return {
+                        from_month: fromMonth,
+                        from_year: fromYear,
+                        to_month: toMonth,
+                        to_year: toYear,
+                        unit_id: selectedUnit !== 'all' ? selectedUnit : undefined
+                    };
+                } else {
+                    return {
                         month: selectedMonth,
                         year: selectedYear,
                         unit_id: selectedUnit !== 'all' ? selectedUnit : undefined
-                    });
+                    };
+                }
+            };
+
+            const apiParams = getApiParams();
+
+            switch (reportKey) {
+                case 'full_asset': {
+                    response = await getFullAssetReport(apiParams as any);
                     let reportData = getDataFromResponse(response);
                     console.log('Full Asset Data:', reportData); // Debug log
 
@@ -273,11 +298,7 @@ const ReportView: React.FC<ReportViewProps> = ({ user }) => {
                     break;
                 }
                 case 'maintenance': {
-                    response = await getMaintenanceReport({
-                        month: selectedMonth,
-                        year: selectedYear,
-                        unit_id: selectedUnit !== 'all' ? selectedUnit : undefined
-                    });
+                    response = await getMaintenanceReport(apiParams as any);
                     let reportData = getDataFromResponse(response);
                     console.log('Maintenance Data:', reportData); // Debug log
 
@@ -315,11 +336,7 @@ const ReportView: React.FC<ReportViewProps> = ({ user }) => {
                     break;
                 }
                 case 'repair': {
-                    response = await getRepairReport({
-                        month: selectedMonth,
-                        year: selectedYear,
-                        unit_id: selectedUnit !== 'all' ? selectedUnit : undefined
-                    });
+                    response = await getRepairReport(apiParams as any);
                     let reportData = getDataFromResponse(response);
                     console.log('Repair Data:', reportData); // Debug log
 
@@ -357,11 +374,7 @@ const ReportView: React.FC<ReportViewProps> = ({ user }) => {
                     break;
                 }
                 case 'loan': {
-                    response = await getLoanReport({
-                        month: selectedMonth,
-                        year: selectedYear,
-                        unit_id: selectedUnit !== 'all' ? selectedUnit : undefined
-                    });
+                    response = await getLoanReport(apiParams as any);
                     let reportData = getDataFromResponse(response);
                     console.log('Loan Data:', reportData); // Debug log
 
@@ -401,11 +414,7 @@ const ReportView: React.FC<ReportViewProps> = ({ user }) => {
                     break;
                 }
                 case 'damage': {
-                    response = await getDamageReport({
-                        month: selectedMonth,
-                        year: selectedYear,
-                        unit_id: selectedUnit !== 'all' ? selectedUnit : undefined
-                    });
+                    response = await getDamageReport(apiParams as any);
                     let reportData = getDataFromResponse(response);
                     console.log('Damage Data:', reportData); // Debug log
 
@@ -441,11 +450,7 @@ const ReportView: React.FC<ReportViewProps> = ({ user }) => {
                     break;
                 }
                 case 'sale': {
-                    response = await getSaleReport({
-                        month: selectedMonth,
-                        year: selectedYear,
-                        unit_id: selectedUnit !== 'all' ? selectedUnit : undefined
-                    });
+                    response = await getSaleReport(apiParams as any);
                     let reportData = getDataFromResponse(response);
                     console.log('Sale Data:', reportData); // Debug log
 
@@ -483,11 +488,7 @@ const ReportView: React.FC<ReportViewProps> = ({ user }) => {
                     break;
                 }
                 case 'loss': {
-                    response = await getLossReport({
-                        month: selectedMonth,
-                        year: selectedYear,
-                        unit_id: selectedUnit !== 'all' ? selectedUnit : undefined
-                    });
+                    response = await getLossReport(apiParams as any);
                     let reportData = getDataFromResponse(response);
                     console.log('Loss Data:', reportData); // Debug log
 
@@ -618,7 +619,34 @@ const ReportView: React.FC<ReportViewProps> = ({ user }) => {
         <div className="space-y-6">
             <div className="flex flex-col gap-4">
                 <h1 className="text-4xl font-bold text-dark-text">{t('reports.title')}</h1>
+
+                {/* Filter Mode Toggle */}
+                <div className="flex gap-2">
+                    <button
+                        onClick={() => setFilterMode('single')}
+                        className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                            filterMode === 'single'
+                                ? 'bg-primary text-white'
+                                : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                        }`}
+                    >
+                        Filter Tunggal
+                    </button>
+                    <button
+                        onClick={() => setFilterMode('range')}
+                        className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                            filterMode === 'range'
+                                ? 'bg-primary text-white'
+                                : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                        }`}
+                    >
+                        Filter Range Periode
+                    </button>
+                </div>
+
+                {/* Filter Controls */}
                 <div className="flex flex-col sm:flex-row sm:flex-wrap gap-3">
+                    {/* Unit Filter - Always visible */}
                     <div className="flex flex-col sm:flex-row sm:items-center gap-2 w-full sm:w-auto">
                         <label htmlFor="unit-select" className="text-sm font-medium text-gray-700 whitespace-nowrap">Unit:</label>
                         <select
@@ -635,29 +663,82 @@ const ReportView: React.FC<ReportViewProps> = ({ user }) => {
                             ))}
                         </select>
                     </div>
-                    <div className="flex flex-col sm:flex-row sm:items-center gap-2 w-full sm:w-auto">
-                        <label htmlFor="month-select" className="text-sm font-medium text-gray-700 whitespace-nowrap">Bulan:</label>
-                        <select
-                            id="month-select"
-                            value={selectedMonth}
-                            onChange={(e) => setSelectedMonth(e.target.value)}
-                            className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary bg-white shadow-sm w-full sm:w-auto"
-                        >
-                            {Array.from({ length: 12 }, (_, i) => (
-                                <option key={i + 1} value={i + 1}>{new Date(0, i).toLocaleString('id-ID', { month: 'long' })}</option>
-                            ))}
-                        </select>
-                    </div>
-                    <div className="flex flex-col sm:flex-row sm:items-center gap-2 w-full sm:w-auto">
-                        <label htmlFor="year-select" className="text-sm font-medium text-gray-700 whitespace-nowrap">Tahun:</label>
-                        <input
-                            type="number"
-                            id="year-select"
-                            value={selectedYear}
-                            onChange={(e) => setSelectedYear(e.target.value)}
-                            className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary bg-white shadow-sm w-full sm:w-auto"
-                        />
-                    </div>
+
+                    {/* Single Month/Year Filter */}
+                    {filterMode === 'single' && (
+                        <>
+                            <div className="flex flex-col sm:flex-row sm:items-center gap-2 w-full sm:w-auto">
+                                <label htmlFor="month-select" className="text-sm font-medium text-gray-700 whitespace-nowrap">Bulan:</label>
+                                <select
+                                    id="month-select"
+                                    value={selectedMonth}
+                                    onChange={(e) => setSelectedMonth(e.target.value)}
+                                    className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary bg-white shadow-sm w-full sm:w-auto"
+                                >
+                                    {Array.from({ length: 12 }, (_, i) => (
+                                        <option key={i + 1} value={i + 1}>{new Date(0, i).toLocaleString('id-ID', { month: 'long' })}</option>
+                                    ))}
+                                </select>
+                            </div>
+                            <div className="flex flex-col sm:flex-row sm:items-center gap-2 w-full sm:w-auto">
+                                <label htmlFor="year-select" className="text-sm font-medium text-gray-700 whitespace-nowrap">Tahun:</label>
+                                <input
+                                    type="number"
+                                    id="year-select"
+                                    value={selectedYear}
+                                    onChange={(e) => setSelectedYear(e.target.value)}
+                                    className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary bg-white shadow-sm w-full sm:w-auto"
+                                />
+                            </div>
+                        </>
+                    )}
+
+                    {/* Date Range Filter */}
+                    {filterMode === 'range' && (
+                        <>
+                            <div className="flex flex-col sm:flex-row sm:items-center gap-2 w-full sm:w-auto">
+                                <label className="text-sm font-medium text-gray-700 whitespace-nowrap">Dari:</label>
+                                <div className="flex gap-1 w-full sm:w-auto">
+                                    <select
+                                        value={fromMonth}
+                                        onChange={(e) => setFromMonth(e.target.value)}
+                                        className="flex-1 sm:flex-initial px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary bg-white shadow-sm"
+                                    >
+                                        {Array.from({ length: 12 }, (_, i) => (
+                                            <option key={i + 1} value={i + 1}>{new Date(0, i).toLocaleString('id-ID', { month: 'short' })}</option>
+                                        ))}
+                                    </select>
+                                    <input
+                                        type="number"
+                                        value={fromYear}
+                                        onChange={(e) => setFromYear(e.target.value)}
+                                        className="flex-1 sm:flex-initial px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary bg-white shadow-sm w-20"
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="flex flex-col sm:flex-row sm:items-center gap-2 w-full sm:w-auto">
+                                <label className="text-sm font-medium text-gray-700 whitespace-nowrap">Hingga:</label>
+                                <div className="flex gap-1 w-full sm:w-auto">
+                                    <select
+                                        value={toMonth}
+                                        onChange={(e) => setToMonth(e.target.value)}
+                                        className="flex-1 sm:flex-initial px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary bg-white shadow-sm"
+                                    >
+                                        {Array.from({ length: 12 }, (_, i) => (
+                                            <option key={i + 1} value={i + 1}>{new Date(0, i).toLocaleString('id-ID', { month: 'short' })}</option>
+                                        ))}
+                                    </select>
+                                    <input
+                                        type="number"
+                                        value={toYear}
+                                        onChange={(e) => setToYear(e.target.value)}
+                                        className="flex-1 sm:flex-initial px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary bg-white shadow-sm w-20"
+                                    />
+                                </div>
+                            </div>
+                        </>
+                    )}
                 </div>
             </div>
             <p className="text-lg text-medium-text">{t('reports.description')}</p>
