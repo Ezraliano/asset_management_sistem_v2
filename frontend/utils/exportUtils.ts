@@ -1,5 +1,6 @@
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
+import * as XLSX from 'xlsx';
 
 export const exportToCsv = (filename: string, headers: string[], data: any[][]) => {
     const csvContent = [
@@ -157,4 +158,52 @@ export const exportToPdf = (filename: string, title: string, headers: string[], 
     });
 
     doc.save(filename);
+};
+
+export const exportToExcel = (filename: string, title: string, headers: string[], data: any[][]) => {
+    // Buat workbook dan worksheet baru
+    const workbook = XLSX.utils.book_new();
+
+    // Prepare data dengan headers di baris pertama
+    const worksheetData = [headers, ...data];
+
+    // Buat worksheet dari data
+    const worksheet = XLSX.utils.aoa_to_sheet(worksheetData);
+
+    // Styling untuk header row (opsional tapi membuat lebih rapi)
+    // Set column widths agar data terlihat lebih bagus
+    const columnWidths = headers.map((header, index) => {
+        // Hitung lebar berdasarkan header dan data
+        let maxLength = header.length;
+        data.forEach(row => {
+            const cellValue = row[index] ? String(row[index]) : '';
+            maxLength = Math.max(maxLength, cellValue.length);
+        });
+        // Tambahkan padding
+        return { wch: Math.min(maxLength + 2, 50) };
+    });
+
+    worksheet['!cols'] = columnWidths;
+
+    // Freeze header row
+    worksheet['!freeze'] = { xSplit: 0, ySplit: 1 };
+
+    // Tambahkan worksheet ke workbook
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Report');
+
+    // Style header row (membuat background warna biru)
+    // Catatan: styling kompleks memerlukan pro version, jadi kita gunakan format dasar
+    for (let i = 0; i < headers.length; i++) {
+        const cellAddress = XLSX.utils.encode_col(i) + '1';
+        if (worksheet[cellAddress]) {
+            worksheet[cellAddress].s = {
+                font: { bold: true, color: { rgb: 'FFFFFF' } },
+                fill: { fgColor: { rgb: '428BCA' } },
+                alignment: { horizontal: 'center', vertical: 'center' }
+            };
+        }
+    }
+
+    // Save file
+    XLSX.writeFile(workbook, filename);
 };

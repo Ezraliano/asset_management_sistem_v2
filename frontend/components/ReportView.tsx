@@ -13,14 +13,14 @@ import {
     getAuditReport,
     getUnits
 } from '../services/api';
-import { exportToCsv, exportToPdf } from '../utils/exportUtils';
+import { exportToCsv, exportToPdf, exportToExcel } from '../utils/exportUtils';
 import { Unit, User } from '../types';
 
 interface ReportCardProps {
     title: string;
     description: string;
     isLoading?: boolean;
-    onExport: (format: 'CSV' | 'PDF') => void;
+    onExport: (format: 'CSV' | 'PDF' | 'EXCEL') => void;
 }
 
 const ReportCard: React.FC<ReportCardProps> = ({ title, description, isLoading, onExport }) => {
@@ -39,16 +39,23 @@ const ReportCard: React.FC<ReportCardProps> = ({ title, description, isLoading, 
                 <h3 className="text-xl font-bold text-dark-text">{title}</h3>
                 <p className="text-medium-text mt-2">{description}</p>
             </div>
-            <div className="mt-6 flex space-x-3">
-                <button 
-                    onClick={() => onExport('CSV')} 
+            <div className="mt-6 flex flex-col sm:flex-row gap-2 sm:gap-3">
+                <button
+                    onClick={() => onExport('EXCEL')}
+                    disabled={isLoading}
+                    className="flex-1 flex items-center justify-center bg-green-600 text-white px-4 py-2 rounded-lg shadow hover:bg-green-700 transition-colors disabled:bg-gray-400 disabled:cursor-wait"
+                >
+                    {buttonContent('Ekspor Excel')}
+                </button>
+                <button
+                    onClick={() => onExport('CSV')}
                     disabled={isLoading}
                     className="flex-1 flex items-center justify-center bg-secondary text-white px-4 py-2 rounded-lg shadow hover:bg-green-600 transition-colors disabled:bg-gray-400 disabled:cursor-wait"
                 >
                     {buttonContent(t('reports.export_csv'))}
                 </button>
-                 <button 
-                    onClick={() => onExport('PDF')} 
+                 <button
+                    onClick={() => onExport('PDF')}
                     disabled={isLoading}
                     className="flex-1 flex items-center justify-center bg-blue-600 text-white px-4 py-2 rounded-lg shadow hover:bg-blue-700 transition-colors disabled:bg-gray-400 disabled:cursor-wait"
                  >
@@ -204,7 +211,7 @@ const ReportView: React.FC<ReportViewProps> = ({ user }) => {
         ? allReports.filter(report => report.key === 'audit')
         : allReports;
 
-    const handleExport = async (reportKey: string, format: 'CSV' | 'PDF') => {
+    const handleExport = async (reportKey: string, format: 'CSV' | 'PDF' | 'EXCEL') => {
         setLoadingReport(reportKey);
         const reportInfo = allReports.find(r => r.key === reportKey);
         const reportTitle = reportInfo ? reportInfo.title : 'Report';
@@ -212,7 +219,8 @@ const ReportView: React.FC<ReportViewProps> = ({ user }) => {
         try {
             let headers: string[] = [];
             let data: any[][] = [];
-            let filename = `${reportKey}_report_${new Date().toISOString().split('T')[0]}.${format === 'PDF' ? 'pdf' : 'csv'}`;
+            let extension = format === 'PDF' ? 'pdf' : format === 'EXCEL' ? 'xlsx' : 'csv';
+            let filename = `${reportKey}_report_${new Date().toISOString().split('T')[0]}.${extension}`;
 
             console.log(`Exporting ${reportKey} report...`);
 
@@ -586,6 +594,9 @@ const ReportView: React.FC<ReportViewProps> = ({ user }) => {
 
             if (format === 'PDF') {
                 exportToPdf(filename, reportTitle, headers, data);
+            }
+            else if (format === 'EXCEL') {
+                exportToExcel(filename, reportTitle, headers, data);
             }
             else {
                 exportToCsv(filename, headers, data);
