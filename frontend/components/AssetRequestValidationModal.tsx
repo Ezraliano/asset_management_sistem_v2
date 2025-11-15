@@ -42,7 +42,7 @@ const AssetRequestValidationModal: React.FC<AssetRequestValidationModalProps> = 
   const fetchAvailableAssets = async () => {
     try {
       const token = localStorage.getItem('auth_token');
-      const response = await fetch('https://assetmanagementga.arjunaconnect.com/api/asset-requests-available-assets', {
+      const response = await fetch('http://localhost:8000/api/asset-requests-available-assets', {
         headers: {
           'Authorization': `Bearer ${token}`,
         },
@@ -107,7 +107,7 @@ const AssetRequestValidationModal: React.FC<AssetRequestValidationModalProps> = 
         formData.append('loan_photo', loanPhoto);
       }
 
-      const response = await fetch(`https://assetmanagementga.arjunaconnect.com/api/asset-requests/${request.id}/approve`, {
+      const response = await fetch(`http://localhost:8000/api/asset-requests/${request.id}/approve`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -139,7 +139,7 @@ const AssetRequestValidationModal: React.FC<AssetRequestValidationModalProps> = 
     setIsProcessing(true);
     try {
       const token = localStorage.getItem('auth_token');
-      const response = await fetch(`https://assetmanagementga.arjunaconnect.com/api/asset-requests/${request.id}/reject`, {
+      const response = await fetch(`http://localhost:8000/api/asset-requests/${request.id}/reject`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -169,7 +169,7 @@ const AssetRequestValidationModal: React.FC<AssetRequestValidationModalProps> = 
     setIsProcessing(true);
     try {
       const token = localStorage.getItem('auth_token');
-      const response = await fetch(`https://assetmanagementga.arjunaconnect.com/api/asset-requests/${request.id}/return`, {
+      const response = await fetch(`http://localhost:8000/api/asset-requests/${request.id}/return`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -197,7 +197,7 @@ const AssetRequestValidationModal: React.FC<AssetRequestValidationModalProps> = 
     setIsProcessing(true);
     try {
       const token = localStorage.getItem('auth_token');
-      const response = await fetch(`https://assetmanagementga.arjunaconnect.com/api/asset-requests/${request.id}/confirm-return`, {
+      const response = await fetch(`http://localhost:8000/api/asset-requests/${request.id}/confirm-return`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -229,7 +229,7 @@ const AssetRequestValidationModal: React.FC<AssetRequestValidationModalProps> = 
     setIsProcessing(true);
     try {
       const token = localStorage.getItem('auth_token');
-      const response = await fetch(`https://assetmanagementga.arjunaconnect.com/api/asset-requests/${request.id}/reject-return`, {
+      const response = await fetch(`http://localhost:8000/api/asset-requests/${request.id}/reject-return`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -447,7 +447,7 @@ const AssetRequestValidationModal: React.FC<AssetRequestValidationModalProps> = 
               <span className="font-medium text-gray-600">Foto Asset:</span>
               <div className="mt-2">
                 <img
-                  src={`https://assetmanagementga.arjunaconnect.com/storage/${request.loan_photo_path}`}
+                  src={`http://localhost:8000/storage/${request.loan_photo_path}`}
                   alt="Foto asset yang dipinjamkan"
                   className="w-full max-w-md h-64 object-cover rounded-lg border border-gray-300"
                   onError={(e) => {
@@ -497,7 +497,7 @@ const AssetRequestValidationModal: React.FC<AssetRequestValidationModalProps> = 
               <span className="font-medium text-gray-600">Foto Bukti Pengembalian:</span>
               <div className="mt-2">
                 <img
-                  src={`https://assetmanagementga.arjunaconnect.com/storage/${request.return_proof_photo_path}`}
+                  src={`http://localhost:8000/storage/${request.return_proof_photo_path}`}
                   alt="Bukti pengembalian"
                   className="w-full max-w-md h-48 object-cover rounded border"
                   onError={(e) => {

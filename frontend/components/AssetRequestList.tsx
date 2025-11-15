@@ -25,7 +25,7 @@ const AssetRequestList: React.FC<AssetRequestListProps> = ({ currentUser }) => {
     setLoading(true);
     try {
       const token = localStorage.getItem('auth_token');
-      let url = 'https://assetmanagementga.arjunaconnect.com/api/asset-requests';
+      let url = 'http://localhost:8000/api/asset-requests';
 
       if (statusFilter !== 'ALL') {
         url += `?status=${statusFilter}`;
@@ -77,7 +77,7 @@ const AssetRequestList: React.FC<AssetRequestListProps> = ({ currentUser }) => {
     setReturnLoading(true);
     try {
       const token = localStorage.getItem('auth_token');
-      const response = await fetch(`https://assetmanagementga.arjunaconnect.com/api/asset-requests/${selectedRequest.id}/return`, {
+      const response = await fetch(`http://localhost:8000/api/asset-requests/${selectedRequest.id}/return`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,

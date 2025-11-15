@@ -66,7 +66,7 @@ const AddMaintenanceForm: React.FC<AddMaintenanceFormProps> = ({ asset, onSucces
       formData.append('status', status);
 
       const token = localStorage.getItem('auth_token');
-      const response = await fetch('https://assetmanagementga.arjunaconnect.com/api/maintenances', {
+      const response = await fetch('http://localhost:8000/api/maintenances', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,

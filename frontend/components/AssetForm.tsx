@@ -284,9 +284,6 @@ const handleSubmit = async (e: React.FormEvent) => {
         <h2 className="text-2xl font-bold text-dark-text">
           {asset ? t('asset_form.edit_title') : t('asset_form.add_title')}
         </h2>
-        {onClose && (
-          <button type="button" onClick={onClose} className="text-gray-500 hover:text-gray-700 text-2xl font-bold" disabled={loading}>✕</button>
-        )}
       </div>
 
       {error && (

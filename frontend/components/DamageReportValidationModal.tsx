@@ -54,7 +54,7 @@ const DamageReportValidationModal: React.FC<DamageReportValidationModalProps> = 
     setIsProcessing(true);
     try {
       const token = localStorage.getItem('auth_token');
-      const response = await fetch(`https://assetmanagementga.arjunaconnect.com/api/incident-reports/${report.id}/status`, {
+      const response = await fetch(`http://localhost:8000/api/incident-reports/${report.id}/status`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -86,7 +86,7 @@ const DamageReportValidationModal: React.FC<DamageReportValidationModalProps> = 
     setIsProcessing(true);
     try {
       const token = localStorage.getItem('auth_token');
-      const response = await fetch(`https://assetmanagementga.arjunaconnect.com/api/incident-reports/${report.id}/status`, {
+      const response = await fetch(`http://localhost:8000/api/incident-reports/${report.id}/status`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -133,16 +133,8 @@ const DamageReportValidationModal: React.FC<DamageReportValidationModalProps> = 
 
   return (
     <div className="space-y-4">
-      <div className="flex justify-between items-start">
+      <div>
         <h2 className="text-2xl font-bold text-gray-900">Detail Laporan Kerusakan</h2>
-        <button
-          onClick={onClose}
-          className="text-gray-400 hover:text-gray-600 transition-colors"
-        >
-          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
-          </svg>
-        </button>
       </div>
 
       <div className="space-y-4">
@@ -197,10 +189,10 @@ const DamageReportValidationModal: React.FC<DamageReportValidationModalProps> = 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">Foto Bukti</label>
             <img
-              src={`https://assetmanagementga.arjunaconnect.com/storage/${report.evidence_photo_path}`}
+              src={`http://localhost:8000/api/storage/${report.evidence_photo_path}`}
               alt="Bukti kerusakan"
               className="max-w-full h-auto rounded-lg border border-gray-300 shadow-sm cursor-pointer hover:shadow-md transition-shadow"
-              onClick={() => window.open(`https://assetmanagementga.arjunaconnect.com/storage/${report.evidence_photo_path}`, '_blank')}
+              onClick={() => window.open(`http://localhost:8000/storage/${report.evidence_photo_path}`, '_blank')}
               onError={(e) => {
                 (e.target as HTMLImageElement).src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="400" height="300"%3E%3Crect fill="%23ddd" width="400" height="300"/%3E%3Ctext fill="%23999" x="50%25" y="50%25" text-anchor="middle" dy=".3em"%3EGambar tidak tersedia%3C/text%3E%3C/svg%3E';
               }}

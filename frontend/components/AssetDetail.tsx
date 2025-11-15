@@ -906,10 +906,10 @@ const AssetDetail: React.FC<AssetDetailProps> = ({ assetId, navigateTo }) => {
                                             <span className="text-xs font-medium text-gray-500">Foto Bukti:</span>
                                             <div className="mt-2">
                                                 <img
-                                                    src={`https://assetmanagementga.arjunaconnect.com/storage/${maint.photo_proof}`}
+                                                    src={`http://localhost:8000/storage/${maint.photo_proof}`}
                                                     alt="Bukti Perbaikan/Pemeliharaan"
                                                     className="max-w-xs rounded-lg border border-gray-300 shadow-sm hover:shadow-md transition-shadow cursor-pointer"
-                                                    onClick={() => window.open(`https://assetmanagementga.arjunaconnect.com/storage/${maint.photo_proof}`, '_blank')}
+                                                    onClick={() => window.open(`http://localhost:8000/storage/${maint.photo_proof}`, '_blank')}
                                                 />
                                             </div>
                                         </div>

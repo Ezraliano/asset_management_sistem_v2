@@ -257,7 +257,7 @@ const AssetSaleDetail: React.FC<AssetSaleDetailProps> = ({ saleId, user, navigat
               Dokumen bukti penjualan telah diunggah
             </div>
             <a
-              href={`https://assetmanagementga.arjunaconnect.com/storage/${sale.sale_proof_path}`}
+              href={`http://localhost:8000/storage/${sale.sale_proof_path}`}
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
