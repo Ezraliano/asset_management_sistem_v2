@@ -70,6 +70,26 @@ class AuthController extends Controller
         ]);
     }
 
+    public function verifyToken(Request $request)
+    {
+        // ✅ PERBAIKAN: Endpoint untuk verify token validity
+        // Authenticate menggunakan Sanctum middleware otomatis memvalidasi token
+        if (!$request->user()) {
+            return response()->json([
+                'success' => false,
+                'valid' => false,
+                'message' => 'Token is invalid or expired',
+            ], 401);
+        }
+
+        return response()->json([
+            'success' => true,
+            'valid' => true,
+            'message' => 'Token is valid',
+            'user_id' => $request->user()->id,
+        ]);
+    }
+
     public function index(Request $request)
     {
         // Get all users with their unit information

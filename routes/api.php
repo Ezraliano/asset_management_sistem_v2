@@ -32,6 +32,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
     // Routes for ALL authenticated users
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::get('/user', [AuthController::class, 'user']);
+    Route::get('/verify-token', [AuthController::class, 'verifyToken']); // ✅ PERBAIKAN: Token verification endpoint
     Route::get('/dashboard/stats', [DashboardController::class, 'stats']);
     
     // Group for Laporan & Reports

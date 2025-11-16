@@ -16,26 +16,49 @@ import BulkTransaction from './components/BulkTransaction';
 import InventoryAuditSetup from './components/InventoryAuditSetup';
 import InventoryAudit from './components/InventoryAudit';
 import Login from './components/Login';
+import SessionExpiryModal from './components/SessionExpiryModal';
+import AutoLogoutWarning from './components/AutoLogoutWarning';
 import { LanguageProvider } from './hooks/useTranslation';
-import { getCurrentUser, startTokenTimeoutChecker, stopTokenTimeoutChecker } from './services/api';
+import { getCurrentUser, startTokenTimeoutChecker, stopTokenTimeoutChecker, extendSession, SESSION_EVENTS } from './services/api';
 
 const AppContent: React.FC = () => {
   const [user, setUser] = useState<User | null>(null);
   const [view, setView] = useState<View>({ type: 'DASHBOARD' });
   const [isSidebarOpen, setSidebarOpen] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [showSessionExpiryModal, setShowSessionExpiryModal] = useState(false);
+  const [sessionTimeRemaining, setSessionTimeRemaining] = useState<number>(0);
+  const [showAutoLogoutWarning, setShowAutoLogoutWarning] = useState(false);
 
   // Check if user is already logged in on app start
   useEffect(() => {
     const checkAuth = async () => {
       const token = localStorage.getItem('auth_token');
-      if (token) {
+      const tokenExpiration = localStorage.getItem('token_expiration');
+
+      if (token && tokenExpiration) {
+        // Check if token has already expired before making API call
+        const expirationMs = parseInt(tokenExpiration, 10);
+        const currentTime = Date.now();
+        const timeRemaining = expirationMs - currentTime;
+
+        // If token has already expired, clear it immediately
+        if (timeRemaining <= 0) {
+          console.warn('Token already expired on app start');
+          localStorage.removeItem('auth_token');
+          localStorage.removeItem('token_expiration');
+          setLoading(false);
+          return;
+        }
+
+        // Token is still valid, verify with backend
         const currentUser = await getCurrentUser();
         if (currentUser) {
           setUser(currentUser);
           // Start token timeout checker if token exists
           startTokenTimeoutChecker();
         } else {
+          // Backend rejected the token (invalid/expired on server)
           localStorage.removeItem('auth_token');
           localStorage.removeItem('token_expiration');
         }
@@ -64,8 +87,56 @@ const AppContent: React.FC = () => {
     // Clear stored data
     localStorage.removeItem('auth_token');
     localStorage.removeItem('token_expiration');
+    setShowSessionExpiryModal(false);
+    setShowAutoLogoutWarning(false);
     setUser(null);
   };
+
+  const handleExtendSession = async () => {
+    const success = await extendSession();
+    if (success) {
+      setShowSessionExpiryModal(false);
+      setShowAutoLogoutWarning(false);
+      // Reset and restart the checker
+      startTokenTimeoutChecker();
+    }
+  };
+
+  // Listen for session expiring warning event
+  useEffect(() => {
+    const handleSessionExpiringWarning = (event: Event) => {
+      const customEvent = event as CustomEvent;
+      const timeRemaining = customEvent.detail?.timeRemaining || 0;
+      setSessionTimeRemaining(timeRemaining);
+      setShowSessionExpiryModal(true);
+    };
+
+    window.addEventListener(SESSION_EVENTS.EXPIRING_WARNING, handleSessionExpiringWarning);
+
+    return () => {
+      window.removeEventListener(SESSION_EVENTS.EXPIRING_WARNING, handleSessionExpiringWarning);
+    };
+  }, []);
+
+  // Listen for session expired event
+  useEffect(() => {
+    const handleSessionExpired = () => {
+      setShowSessionExpiryModal(false);
+      setShowAutoLogoutWarning(true);
+      // Auto-logout after 5 seconds (AutoLogoutWarning countdown)
+      const logoutTimer = setTimeout(() => {
+        handleLogout();
+      }, 5000);
+
+      return () => clearTimeout(logoutTimer);
+    };
+
+    window.addEventListener(SESSION_EVENTS.EXPIRED, handleSessionExpired);
+
+    return () => {
+      window.removeEventListener(SESSION_EVENTS.EXPIRED, handleSessionExpired);
+    };
+  }, [handleLogout]);
 
   if (loading) {
     return (
@@ -129,13 +200,20 @@ const AppContent: React.FC = () => {
 
   return (
     <div className="flex h-screen bg-gray-100 font-sans text-dark-text">
-      <Header 
+      <SessionExpiryModal
+        isOpen={showSessionExpiryModal}
+        timeRemaining={sessionTimeRemaining}
+        onExtendSession={handleExtendSession}
+        onLogout={handleLogout}
+      />
+      <AutoLogoutWarning isVisible={showAutoLogoutWarning} />
+      <Header
         user={user}
         onLogout={handleLogout}
-        isSidebarOpen={isSidebarOpen} 
-        setSidebarOpen={setSidebarOpen} 
-        navigateTo={navigateTo} 
-        currentView={view} 
+        isSidebarOpen={isSidebarOpen}
+        setSidebarOpen={setSidebarOpen}
+        navigateTo={navigateTo}
+        currentView={view}
       />
       <main className="flex-1 p-4 md:p-8 overflow-y-auto transition-all duration-300 lg:ml-64">
         {renderView()}

@@ -6,6 +6,13 @@ const API_BASE_URL = 'http://localhost:8000/api';
 // Token timeout checker interval
 let tokenTimeoutInterval: NodeJS.Timeout | null = null;
 
+// Custom events for session management
+export const SESSION_EVENTS = {
+  EXPIRING_WARNING: 'sessionExpiringWarning',
+  EXPIRED: 'sessionExpired',
+  EXTEND: 'sessionExtended',
+};
+
 // Function to check and handle token timeout
 export const startTokenTimeoutChecker = (): void => {
   // Clear any existing interval
@@ -13,29 +20,35 @@ export const startTokenTimeoutChecker = (): void => {
     clearInterval(tokenTimeoutInterval);
   }
 
-  // Check token every minute (60000ms)
-  tokenTimeoutInterval = setInterval(() => {
+  // Check token every 30 seconds (30000ms) - More frequent checks for production
+  tokenTimeoutInterval = setInterval(async () => {
     const expirationTime = localStorage.getItem('token_expiration');
-    if (!expirationTime) return;
+    const token = localStorage.getItem('auth_token');
+
+    if (!expirationTime || !token) {
+      handleTokenExpiration();
+      return;
+    }
 
     const expirationMs = parseInt(expirationTime, 10);
     const currentTime = Date.now();
     const timeRemaining = expirationMs - currentTime;
 
-    // If token has expired or will expire in less than 1 minute
-    if (timeRemaining <= 0) {
-      console.warn('Token has expired');
-      handleTokenExpiration();
+    // CRITICAL: If token has expired or will expire in less than 10 seconds
+    if (timeRemaining <= 10 * 1000) {
+      console.warn('Token has expired or will expire very soon');
+      // Verify token with backend before auto-logout
+      await verifyTokenValidity();
     }
     // If token will expire in 5 minutes, show warning
     else if (timeRemaining <= 5 * 60 * 1000) {
       console.warn('Token will expire soon in', Math.floor(timeRemaining / 1000), 'seconds');
       // Emit custom event for UI components to handle
-      window.dispatchEvent(new CustomEvent('tokenExpiringWarning', {
+      window.dispatchEvent(new CustomEvent(SESSION_EVENTS.EXPIRING_WARNING, {
         detail: { timeRemaining }
       }));
     }
-  }, 60000); // Check every minute
+  }, 30000); // Check every 30 seconds
 };
 
 // Function to stop the timeout checker
@@ -46,12 +59,90 @@ export const stopTokenTimeoutChecker = (): void => {
   }
 };
 
+// Function to verify token validity with backend
+export const verifyTokenValidity = async (): Promise<boolean> => {
+  try {
+    const token = localStorage.getItem('auth_token');
+    if (!token) return false;
+
+    const response = await fetch(`${API_BASE_URL}/verify-token`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      console.warn('Token verification failed with status:', response.status);
+      if (response.status === 401) {
+        handleTokenExpiration();
+      }
+      return false;
+    }
+
+    const data = await response.json();
+    console.log('Token is still valid');
+    return data.valid === true || data.success === true;
+  } catch (error) {
+    console.error('Token verification error:', error);
+    // On network error, assume token might still be valid
+    return true;
+  }
+};
+
 // Function to handle token expiration
 export const handleTokenExpiration = (): void => {
   stopTokenTimeoutChecker();
   localStorage.removeItem('auth_token');
   localStorage.removeItem('token_expiration');
-  window.location.href = '/';
+
+  // Emit session expired event
+  window.dispatchEvent(new CustomEvent(SESSION_EVENTS.EXPIRED));
+
+  // Redirect to login page after 5 seconds (to allow modal to show)
+  setTimeout(() => {
+    window.location.href = '/';
+  }, 5000);
+};
+
+// Function to extend session (refresh token expiration time)
+export const extendSession = async (): Promise<boolean> => {
+  try {
+    const token = localStorage.getItem('auth_token');
+    if (!token) return false;
+
+    // Call verify-token endpoint to refresh session
+    const response = await fetch(`${API_BASE_URL}/verify-token`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      return false;
+    }
+
+    // Reset token expiration time to 1 hour from now
+    const tokenTimeout = 60 * 60; // 60 minutes
+    const expirationTime = Date.now() + (tokenTimeout * 1000);
+    localStorage.setItem('token_expiration', expirationTime.toString());
+
+    console.log('Session extended for 1 hour');
+
+    // Emit session extended event
+    window.dispatchEvent(new CustomEvent(SESSION_EVENTS.EXTEND));
+
+    // Restart the timeout checker
+    startTokenTimeoutChecker();
+
+    return true;
+  } catch (error) {
+    console.error('Failed to extend session:', error);
+    return false;
+  }
 };
 
 // Function to get remaining token time in seconds
