@@ -41,6 +41,8 @@ class IncidentReport extends Model
 
     /**
      * Accessor untuk get file URL yang accessible
+     * Generate full accessible URL yang respects APP_URL from .env
+     * Works di local dan production without hardcoding domain
      */
     public function getEvidencePhotoUrlAttribute()
     {
@@ -48,7 +50,8 @@ class IncidentReport extends Model
             return null;
         }
 
-        return \App\Helpers\FileHelper::getAccessibleFileUrl($this->evidence_photo_path, 'public');
+        // Use Storage::disk() to respect APP_URL from .env
+        return \Illuminate\Support\Facades\Storage::disk('public')->url($this->evidence_photo_path);
     }
 
     public function reporter(): BelongsTo

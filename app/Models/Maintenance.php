@@ -48,6 +48,8 @@ class Maintenance extends Model
 
     /**
      * Accessor untuk photo proof URL
+     * Generate full accessible URL yang respects APP_URL from .env
+     * Works di local dan production without hardcoding domain
      */
     public function getPhotoProofUrlAttribute(): ?string
     {
@@ -55,7 +57,8 @@ class Maintenance extends Model
             return null;
         }
 
-        return \App\Helpers\FileHelper::getAccessibleFileUrl($this->photo_proof, 'public');
+        // Use Storage::disk() to respect APP_URL from .env
+        return \Illuminate\Support\Facades\Storage::disk('public')->url($this->photo_proof);
     }
 
     public function unit(): BelongsTo

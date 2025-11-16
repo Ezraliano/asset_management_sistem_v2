@@ -51,7 +51,9 @@ class AssetSale extends Model
     }
 
     /**
-     * Get full URL for sale proof file dengan FileHelper
+     * Get full URL for sale proof file
+     * Generate full accessible URL yang respects APP_URL from .env
+     * Works di local dan production without hardcoding domain
      */
     public function getSaleProofUrlAttribute(): ?string
     {
@@ -59,7 +61,8 @@ class AssetSale extends Model
             return null;
         }
 
-        return \App\Helpers\FileHelper::getAccessibleFileUrl($this->sale_proof_path, 'public');
+        // Use Storage::disk() to respect APP_URL from .env
+        return \Illuminate\Support\Facades\Storage::disk('public')->url($this->sale_proof_path);
     }
 
     /**

@@ -74,6 +74,8 @@ class AssetLoan extends Model
 
     /**
      * Accessor untuk loan proof photo URL
+     * Generate full accessible URL yang respects APP_URL from .env
+     * Works di local dan production without hardcoding domain
      */
     public function getLoanProofPhotoUrlAttribute(): ?string
     {
@@ -81,11 +83,14 @@ class AssetLoan extends Model
             return null;
         }
 
-        return \App\Helpers\FileHelper::getAccessibleFileUrl($this->loan_proof_photo_path, 'public');
+        // Use Storage::disk() to respect APP_URL from .env
+        return \Illuminate\Support\Facades\Storage::disk('public')->url($this->loan_proof_photo_path);
     }
 
     /**
      * Accessor untuk return proof photo URL
+     * Generate full accessible URL yang respects APP_URL from .env
+     * Works di local dan production without hardcoding domain
      */
     public function getReturnProofPhotoUrlAttribute(): ?string
     {
@@ -93,6 +98,7 @@ class AssetLoan extends Model
             return null;
         }
 
-        return \App\Helpers\FileHelper::getAccessibleFileUrl($this->return_proof_photo_path, 'public');
+        // Use Storage::disk() to respect APP_URL from .env
+        return \Illuminate\Support\Facades\Storage::disk('public')->url($this->return_proof_photo_path);
     }
 }
