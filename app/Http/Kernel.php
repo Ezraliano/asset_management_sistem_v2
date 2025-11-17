@@ -67,5 +67,7 @@ class Kernel extends HttpKernel
         // ✅ TAMBAHKAN MIDDLEWARE CUSTOM KITA
         'role' => \App\Http\Middleware\RoleMiddleware::class,
         'unit.permission' => \App\Http\Middleware\UnitPermissionMiddleware::class,
+        'sso.auth' => \App\Http\Middleware\SSOAuthMiddleware::class,
+        'sso.role' => \App\Http\Middleware\SSORoleMiddleware::class,
     ];
 }

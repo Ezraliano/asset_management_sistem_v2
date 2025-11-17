@@ -38,6 +38,26 @@ export interface User {
   unit_id?: number | null;
   unit?: Unit;
 }
+export interface AuthResponse {
+  success: boolean;
+  user: User;
+  token: string;
+  token_timeout?: number;
+  sso_session_id?: string;
+}
+
+export interface LoginCredentials {
+  email: string;
+  password: string;
+}
+
+export interface SSOLoginResponse {
+  success: boolean;
+  user?: User;
+  token?: string;
+  sso_session_id?: string;
+  message?: string;
+}
 
 export interface Asset {
   id: number;

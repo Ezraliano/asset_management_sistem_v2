@@ -13,6 +13,7 @@ use App\Http\Controllers\Api\AssetLoanController;
 use App\Http\Controllers\Api\UnitController;
 use App\Http\Controllers\Api\AssetSaleController;
 use App\Http\Controllers\Api\AssetRequestController;
+use App\Http\Controllers\Api\AuthSSOController;
 use App\Http\Controllers\Api\ReportController;
 use App\Http\Controllers\Api\DepreciationScheduleController;
 use App\Http\Controllers\Api\InventoryAuditController;
@@ -25,14 +26,26 @@ use App\Http\Controllers\Api\UserController;
 */
 
 // Public routes
-Route::post('/login', [AuthController::class, 'login']);
+Route::prefix('auth')->group(function () {
+    // SSO Login (POST credentials ke SSO server)
+    Route::post('sso/login', [AuthSSOController::class, 'loginViaSSO']);
+    
+    // Fallback local login  
+    Route::post('login', [AuthSSOController::class, 'login']);
+    
+    // Common routes
+    Route::get('check', [AuthSSOController::class, 'checkAuth']);
+    Route::post('logout', [AuthSSOController::class, 'logout'])->middleware('auth:sanctum');
+    Route::get('user', [AuthSSOController::class, 'user'])->middleware('auth:sanctum');
+});
+
 
 // Protected routes
 Route::middleware(['auth:sanctum'])->group(function () {
     // Routes for ALL authenticated users
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::get('/user', [AuthController::class, 'user']);
-    Route::get('/verify-token', [AuthController::class, 'verifyToken']); // ✅ PERBAIKAN: Token verification endpoint
+    Route::get('/verify-token', [AuthController::class, 'verifyToken']);
     Route::get('/dashboard/stats', [DashboardController::class, 'stats']);
     
     // Group for Laporan & Reports
@@ -214,7 +227,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
     });
 
     // User Management Routes - Only Super Admin & Admin Holding
-    Route::middleware('role:Super Admin,Admin Holding')->group(function () {
+    Route::middleware('role:super-admin,admin')->group(function () {
         Route::get('/users', [UserController::class, 'index']);
         Route::post('/users', [UserController::class, 'store']);
         Route::get('/users/{id}', [UserController::class, 'show']);

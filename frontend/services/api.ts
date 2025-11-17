@@ -1,7 +1,7 @@
 // api.ts - PERBAIKAN RESPONSE HANDLING
-import { Asset, AssetMovement, Maintenance, User, DamageReport, LossReport, DashboardStats, AssetLoan, AssetLoanStatus, Unit, AssetSale, IncidentReport, AssetRequest, InventoryAudit } from '../types';
+import {SSOLoginResponse, Asset, AssetMovement, Maintenance, User, DamageReport, LossReport, DashboardStats, AssetLoan, AssetLoanStatus, Unit, AssetSale, IncidentReport, AssetRequest, InventoryAudit } from '../types';
 
-const API_BASE_URL = 'https://assetmanagementga.arjunaconnect.com/api';
+const API_BASE_URL = 'http://127.0.0.1:8000/api';
 
 // Token timeout checker interval
 let tokenTimeoutInterval: NodeJS.Timeout | null = null;
@@ -13,17 +13,18 @@ export const SESSION_EVENTS = {
   EXTEND: 'sessionExtended',
 };
 
-// Function to check and handle token timeout
+// ✅ PERBAIKAN: Enhanced token checker
 export const startTokenTimeoutChecker = (): void => {
   // Clear any existing interval
   if (tokenTimeoutInterval) {
     clearInterval(tokenTimeoutInterval);
   }
 
-  // Check token every 30 seconds (30000ms) - More frequent checks for production
+  // Check token every 30 seconds
   tokenTimeoutInterval = setInterval(async () => {
     const expirationTime = localStorage.getItem('token_expiration');
     const token = localStorage.getItem('auth_token');
+    const ssoSessionId = localStorage.getItem('sso_session_id');
 
     if (!expirationTime || !token) {
       handleTokenExpiration();
@@ -34,16 +35,29 @@ export const startTokenTimeoutChecker = (): void => {
     const currentTime = Date.now();
     const timeRemaining = expirationMs - currentTime;
 
-    // CRITICAL: If token has expired or will expire in less than 10 seconds
+    // CRITICAL: Token expired atau akan expired dalam 10 detik
     if (timeRemaining <= 10 * 1000) {
       console.warn('Token has expired or will expire very soon');
-      // Verify token with backend before auto-logout
+      
+      // Untuk SSO user, bisa tambahkan validasi SSO session di sini
+      if (ssoSessionId) {
+        // Optional: Validasi SSO session dengan backend
+        const ssoValid = await validateSSOSession();
+        if (!ssoValid) {
+          console.warn('SSO session invalid, logging out');
+          handleTokenExpiration();
+          return;
+        }
+      }
+      
+      // Verify token dengan backend
       await verifyTokenValidity();
     }
-    // If token will expire in 5 minutes, show warning
+    // WARNING: Token akan expired dalam 5 menit
     else if (timeRemaining <= 5 * 60 * 1000) {
       console.warn('Token will expire soon in', Math.floor(timeRemaining / 1000), 'seconds');
-      // Emit custom event for UI components to handle
+      
+      // Emit custom event untuk UI components
       window.dispatchEvent(new CustomEvent(SESSION_EVENTS.EXPIRING_WARNING, {
         detail: { timeRemaining }
       }));
@@ -94,13 +108,19 @@ export const verifyTokenValidity = async (): Promise<boolean> => {
 // Function to handle token expiration
 export const handleTokenExpiration = (): void => {
   stopTokenTimeoutChecker();
+  
+  const ssoSessionId = localStorage.getItem('sso_session_id');
+  
+  // Clear semua storage items
   localStorage.removeItem('auth_token');
   localStorage.removeItem('token_expiration');
+  localStorage.removeItem('sso_session_id');
+  localStorage.removeItem('user');
 
   // Emit session expired event
   window.dispatchEvent(new CustomEvent(SESSION_EVENTS.EXPIRED));
 
-  // Redirect to login page after 5 seconds (to allow modal to show)
+  // Redirect ke login page
   setTimeout(() => {
     window.location.href = '/';
   }, 5000);
@@ -253,17 +273,107 @@ export const loginUser = async (username: string, password: string): Promise<Use
   }
 };
 
-export const logoutUser = async (): Promise<void> => {
+// export const logoutUser = async (): Promise<void> => {
+//   try {
+//     stopTokenTimeoutChecker();
+//     await apiRequest('/logout', { method: 'POST' });
+//   } catch (error) {
+//     console.error('Logout error:', error);
+//   } finally {
+//     localStorage.removeItem('auth_token');
+//     localStorage.removeItem('token_expiration');
+//   }
+// };
+// export const logoutUser = async (): Promise<void> => {
+//   try {
+//     stopTokenTimeoutChecker();
+//     await apiRequest('/logout', { method: 'POST' });
+//   } catch (error) {
+//     console.error('Logout error:', error);
+//   } finally {
+//     localStorage.removeItem('auth_token');
+//     localStorage.removeItem('token_expiration');
+//   }
+// };
+// ==================== SSO AUTH API ====================
+
+/**
+ * Login via SSO backend (menggantikan login lokal)
+ */
+export const loginViaSSO = async (credentials: { email: string; password: string }): Promise<SSOLoginResponse> => {
   try {
-    stopTokenTimeoutChecker();
-    await apiRequest('/logout', { method: 'POST' });
-  } catch (error) {
-    console.error('Logout error:', error);
-  } finally {
-    localStorage.removeItem('auth_token');
-    localStorage.removeItem('token_expiration');
+    const data = await apiRequest('/auth/sso/login', {
+      method: 'POST',
+      body: JSON.stringify(credentials),
+    });
+
+    if (data.success && data.token) {
+      // Save token dan user data
+      localStorage.setItem('auth_token', data.token);
+      localStorage.setItem('user', JSON.stringify(data.user));
+
+      // Set token timeout
+      const tokenTimeout = data.token_timeout || 3600;
+      const expirationTime = Date.now() + (tokenTimeout * 1000);
+      localStorage.setItem('token_expiration', expirationTime.toString());
+
+      // Save SSO session ID jika ada
+      if (data.sso_session_id) {
+        localStorage.setItem('sso_session_id', data.sso_session_id);
+      }
+
+      // Start timeout checker
+      startTokenTimeoutChecker();
+
+      return {
+        success: true,
+        user: data.user,
+        token: data.token,
+        sso_session_id: data.sso_session_id
+      };
+    }
+
+    return {
+      success: false,
+      message: data.message || 'Login failed'
+    };
+  } catch (error: any) {
+    console.error('SSO login error:', error);
+    return {
+      success: false,
+      message: error.message || 'Login failed'
+    };
   }
 };
+
+export const validateSSOSession = async (): Promise<boolean> => {
+  try {
+    const token = localStorage.getItem('auth_token');
+    const ssoSessionId = localStorage.getItem('sso_session_id');
+    
+    if (!token || !ssoSessionId) return false;
+
+    const response = await fetch(`${API_BASE_URL}/auth/sso/validate-session`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ sso_session_id: ssoSessionId }),
+    });
+
+    if (!response.ok) {
+      return false;
+    }
+
+    const data = await response.json();
+    return data.valid === true;
+  } catch (error) {
+    console.error('SSO session validation error:', error);
+    return false;
+  }
+};
+
 
 export const getCurrentUser = async (): Promise<User | null> => {
   try {

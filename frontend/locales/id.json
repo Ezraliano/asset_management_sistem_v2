@@ -14,11 +14,12 @@
   "login": {
     "title": "Selamat Datang Kembali!",
     "description": "Silakan masuk untuk melanjutkan",
-    "username": "Nama Pengguna",
+    "email": "Email",
     "password": "Kata Sandi",
     "login_button": "Masuk",
     "logging_in": "Masuk...",
-    "error": "Nama pengguna atau kata sandi tidak valid."
+    "error": "Email atau kata sandi tidak valid.",
+    "sso_info": "Sistem terhubung dengan Single Sign-On"
   },
   "dashboard": {
     "title": "Dasbor",
