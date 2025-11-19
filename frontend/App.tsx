@@ -87,6 +87,7 @@ const AppContent: React.FC = () => {
     // Clear stored data
     localStorage.removeItem('auth_token');
     localStorage.removeItem('token_expiration');
+    localStorage.removeItem('sso_session_id');
     setShowSessionExpiryModal(false);
     setShowAutoLogoutWarning(false);
     setUser(null);
