@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { View, User } from '../types';
-import { DashboardIcon, AssetIcon, SwitchHorizontalIcon, AuditIcon, BulkIcon, QRIcon, ReportIcon, UserIcon, MenuIcon, XIcon, LogoutIcon, SellIcon } from './icons';
+import { DashboardIcon, AssetIcon, SwitchHorizontalIcon, AuditIcon, BulkIcon, QRIcon, ReportIcon, UserIcon, MenuIcon, XIcon, LogoutIcon } from './icons';
 import { useTranslation } from '../hooks/useTranslation';
 import Restricted from './Restricted';
 
@@ -62,7 +62,7 @@ const Header: React.FC<HeaderProps> = ({ user, onLogout, isSidebarOpen, setSideb
                         <NavItem icon={<DashboardIcon />} label={t('sidebar.dashboard')} isActive={getIsActive('DASHBOARD')} onClick={() => navigateTo({ type: 'DASHBOARD' })} />
                         
 
-                        <Restricted user={user} allowedRoles={['admin', 'unit']}>
+                        <Restricted user={user} allowedRoles={['super-admin', 'admin', 'unit']}>
                             <NavItem icon={<AssetIcon />} label={t('sidebar.assets')} isActive={getIsActive('ASSET_LIST') || getIsActive('ASSET_DETAIL')} onClick={() => navigateTo({ type: 'ASSET_LIST' })} />
                         </Restricted>
 
@@ -70,27 +70,24 @@ const Header: React.FC<HeaderProps> = ({ user, onLogout, isSidebarOpen, setSideb
                             <NavItem icon={<SwitchHorizontalIcon />} label={t('Peminjaman Asset')} isActive={currentView.type === 'ASSET_LENDING'} onClick={() => navigateTo({ type: 'ASSET_LENDING' })} />
                         </Restricted>
 
-                        <Restricted user={user} allowedRoles={['super-admin', 'admin', 'unit']}>
-                            <NavItem icon={<SellIcon />} label="Penjualan Aset" isActive={getIsActive('ASSET_SALES') || getIsActive('ASSET_SALE_DETAIL')} onClick={() => navigateTo({ type: 'ASSET_SALES' })} />
-                        </Restricted>
 
-                        <Restricted user={user} allowedRoles={['admin', 'auditor']}>
+                        <Restricted user={user} allowedRoles={['super-admin', 'admin', 'auditor']}>
                             <NavItem icon={<AuditIcon />} label={t('sidebar.inventory_audit')} isActive={getIsActive('INVENTORY_AUDIT_SETUP') || getIsActive('INVENTORY_AUDIT_SESSION')} onClick={() => navigateTo({ type: 'INVENTORY_AUDIT_SETUP' })} />
                         </Restricted>
 
-                        <Restricted user={user} allowedRoles={['admin', 'unit']}>
+                        <Restricted user={user} allowedRoles={['super-admin', 'admin', 'unit']}>
                             <NavItem icon={<BulkIcon />} label={t('sidebar.bulk_transaction')} isActive={getIsActive('BULK_TRANSACTION')} onClick={() => navigateTo({ type: 'BULK_TRANSACTION' })} />
                         </Restricted>
 
-                        <Restricted user={user} allowedRoles={['admin', 'unit']}>
+                        <Restricted user={user} allowedRoles={['super-admin', 'admin', 'unit']}>
                             <NavItem icon={<QRIcon />} label={t('sidebar.scan_qr')} isActive={getIsActive('QR_SCANNER')} onClick={() => navigateTo({ type: 'QR_SCANNER' })} />
                         </Restricted>
 
-                        <Restricted user={user} allowedRoles={['admin', 'auditor']}>
+                        <Restricted user={user} allowedRoles={['super-admin', 'admin', 'auditor']}>
                             <NavItem icon={<ReportIcon />} label={t('sidebar.reports')} isActive={getIsActive('REPORTS')} onClick={() => navigateTo({ type: 'REPORTS' })} />
                         </Restricted>
 
-                        <Restricted user={user} allowedRoles={['admin']}>
+                        <Restricted user={user} allowedRoles={['super-admin', 'admin']}>
                             <NavItem icon={<UserIcon />} label={t('sidebar.users')} isActive={getIsActive('USERS')} onClick={() => navigateTo({ type: 'USERS' })} />
                         </Restricted>
                     </ul>
