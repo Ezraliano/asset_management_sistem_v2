@@ -1,7 +1,7 @@
 // api.ts - PERBAIKAN RESPONSE HANDLING
 import {SSOLoginResponse, Asset, AssetMovement, Maintenance, User, DamageReport, LossReport, DashboardStats, AssetLoan, AssetLoanStatus, Unit, AssetSale, IncidentReport, AssetRequest, InventoryAudit } from '../types';
 
-const API_BASE_URL = 'http://127.0.0.1:8000/api';
+const API_BASE_URL = 'https://assetmanagementga.arjunaconnect.com/api';
 
 // Token timeout checker interval
 let tokenTimeoutInterval: NodeJS.Timeout | null = null;
