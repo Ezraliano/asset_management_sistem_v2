@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { View, User } from '../types';
-import { DashboardIcon, AssetIcon, SwitchHorizontalIcon, AuditIcon, BulkIcon, QRIcon, ReportIcon, UserIcon, MenuIcon, XIcon, LogoutIcon, SellIcon } from './icons';
+import { DashboardIcon, AssetIcon, SwitchHorizontalIcon, AuditIcon, BulkIcon, QRIcon, ReportIcon, UserIcon, MenuIcon, XIcon, LogoutIcon } from './icons';
 import { useTranslation } from '../hooks/useTranslation';
 import Restricted from './Restricted';
 
@@ -70,9 +70,6 @@ const Header: React.FC<HeaderProps> = ({ user, onLogout, isSidebarOpen, setSideb
                             <NavItem icon={<SwitchHorizontalIcon />} label={t('Peminjaman Asset')} isActive={currentView.type === 'ASSET_LENDING'} onClick={() => navigateTo({ type: 'ASSET_LENDING' })} />
                         </Restricted>
 
-                        <Restricted user={user} allowedRoles={['super-admin', 'admin', 'unit']}>
-                            <NavItem icon={<SellIcon />} label="Penjualan Aset" isActive={getIsActive('ASSET_SALES') || getIsActive('ASSET_SALE_DETAIL')} onClick={() => navigateTo({ type: 'ASSET_SALES' })} />
-                        </Restricted>
 
                         <Restricted user={user} allowedRoles={['super-admin', 'admin', 'auditor']}>
                             <NavItem icon={<AuditIcon />} label={t('sidebar.inventory_audit')} isActive={getIsActive('INVENTORY_AUDIT_SETUP') || getIsActive('INVENTORY_AUDIT_SESSION')} onClick={() => navigateTo({ type: 'INVENTORY_AUDIT_SETUP' })} />

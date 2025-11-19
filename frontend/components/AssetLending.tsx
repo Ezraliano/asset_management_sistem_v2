@@ -444,16 +444,6 @@ const AssetLending: React.FC = () => {
               >
                 Peminjaman
               </button>
-              <button
-                onClick={() => setViewMode('REQUESTS')}
-                className={`flex-1 sm:flex-none px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium rounded-md transition-colors whitespace-nowrap ${
-                  viewMode === 'REQUESTS'
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                }`}
-              >
-                Antar Unit
-              </button>
             </div>
           )}
         </div>
