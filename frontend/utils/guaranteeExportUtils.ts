@@ -17,6 +17,7 @@ interface GuaranteeExportData {
 
 interface GuaranteeLoanExportData {
   id: number;
+  guarantee_id: number;
   spk_number: string;
   cif_number: string;
   guarantee_name: string;
@@ -27,6 +28,11 @@ interface GuaranteeLoanExportData {
   expected_return_date: string | null;
   actual_return_date: string | null;
   status: string;
+  // Guarantee relationship data
+  guarantee?: {
+    guarantee_name: string;
+    status: string;
+  };
 }
 
 interface GuaranteeSettlementExportData {
@@ -274,13 +280,13 @@ export const exportGuaranteeLoanToPdf = (
     (index + 1).toString(),
     item.spk_number,
     item.cif_number,
-    item.guarantee_name,
+    item.guarantee?.guarantee_name || item.guarantee_name || '',
     item.borrower_name,
     item.borrower_contact,
     item.reason,
     formatDate(item.loan_date),
     formatDate(item.expected_return_date),
-    getLoanStatusLabel(item.status),
+    getGuaranteeStatusFromLoan(item),
   ]);
 
   (doc as any).autoTable({
@@ -369,14 +375,14 @@ export const exportGuaranteeLoanToExcel = (
     index + 1,
     item.spk_number,
     item.cif_number,
-    item.guarantee_name,
+    item.guarantee?.guarantee_name || item.guarantee_name || '',
     item.borrower_name,
     item.borrower_contact,
     item.reason,
     formatDate(item.loan_date),
     formatDate(item.expected_return_date),
     formatDate(item.actual_return_date),
-    getLoanStatusLabel(item.status),
+    getGuaranteeStatusFromLoan(item),
   ]);
 
   const worksheetData = [headers, ...tableData];
@@ -574,12 +580,28 @@ const getStatusLabel = (status: string): string => {
   return labels[status] || status;
 };
 
-const getLoanStatusLabel = (status: string): string => {
+/**
+ * Get guarantee status label from loan data
+ * Shows guarantee status (Dipinjam/Dikembalikan) instead of loan status
+ */
+const getGuaranteeStatusFromLoan = (item: GuaranteeLoanExportData): string => {
+  const guaranteeStatus = item.guarantee?.status?.toLowerCase();
+
+  // If guarantee status is available from relationship, use it
+  if (guaranteeStatus === 'dipinjam') {
+    return 'Dipinjam';
+  } else if (guaranteeStatus === 'available') {
+    return 'Tersedia';
+  } else if (guaranteeStatus === 'lunas') {
+    return 'Lunas';
+  }
+
+  // Fallback to loan status if guarantee status not available
   const labels: Record<string, string> = {
-    active: 'Aktif',
+    active: 'Dipinjam',
     returned: 'Dikembalikan',
   };
-  return labels[status] || status;
+  return labels[item.status] || item.status;
 };
 
 const getSettlementStatusLabel = (status: string): string => {

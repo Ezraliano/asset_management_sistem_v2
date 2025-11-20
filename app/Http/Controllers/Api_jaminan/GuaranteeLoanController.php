@@ -18,7 +18,7 @@ class GuaranteeLoanController extends Controller
     public function index(Request $request)
     {
         try {
-            $query = GuaranteeLoan::query();
+            $query = GuaranteeLoan::with('guarantee');
 
             // Filter berdasarkan status
             if ($request->has('status') && $request->status !== '') {
@@ -181,10 +181,11 @@ class GuaranteeLoanController extends Controller
 
             // Jika status berubah menjadi 'returned' dan actual_return_date diisi
             if (isset($validated['status']) && $validated['status'] === 'returned' && isset($validated['actual_return_date'])) {
-                // Update status jaminan menjadi 'lunas'
+                // Update status jaminan kembali ke 'available' setelah dikembalikan
+                // Status 'lunas' hanya diberikan ketika ada settlement yang disetujui
                 $guarantee = Guarantee::find($loan->guarantee_id);
                 if ($guarantee) {
-                    $guarantee->update(['status' => 'lunas']);
+                    $guarantee->update(['status' => 'available']);
                 }
             }
 
@@ -364,10 +365,11 @@ class GuaranteeLoanController extends Controller
                 'actual_return_date' => $validated['actual_return_date']
             ]);
 
-            // Update status jaminan menjadi 'lunas'
+            // Update status jaminan kembali ke 'available' setelah dikembalikan
+            // Status 'lunas' hanya diberikan ketika ada settlement yang disetujui
             $guarantee = Guarantee::find($loan->guarantee_id);
             if ($guarantee) {
-                $guarantee->update(['status' => 'lunas']);
+                $guarantee->update(['status' => 'available']);
             }
 
             return response()->json([

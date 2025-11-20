@@ -62,10 +62,15 @@ const GuaranteeReportExport: React.FC<GuaranteeReportExportProps> = ({
       if (selectedReport === 'income') {
         filename = `Laporan_Jaminan_Masuk_${today}`;
         const response = await getGuarantees({ per_page: 1000 });
-        const guarantees: Guarantee[] = response.guarantees || [];
+        const allGuarantees: Guarantee[] = response.guarantees || [];
+
+        // Filter hanya jaminan dengan status 'available' (tersedia)
+        const guarantees = allGuarantees.filter(
+          (guarantee) => guarantee.status && guarantee.status.toLowerCase() === 'available'
+        );
 
         if (guarantees.length === 0) {
-          setError('Tidak ada data jaminan untuk diekspor');
+          setError('Tidak ada data jaminan dengan status tersedia untuk diekspor');
           setLoading(false);
           return;
         }
