@@ -6,6 +6,7 @@ import Modal from './Modal';
 import GuaranteeInputForm from './GuaranteeInputForm';
 import GuaranteeLoaning from './GuaranteeLoaning';
 import GuaranteeSettlement from './GuaranteeSettlement';
+import GuaranteeReturn from './GuaranteeReturn';
 
 interface GuaranteeDetailProps {
   guaranteeId: string;
@@ -26,7 +27,9 @@ const GuaranteeDetail: React.FC<GuaranteeDetailProps> = ({ guaranteeId, navigate
   const [isEditModalOpen, setEditModalOpen] = useState(false);
   const [isLoanModalOpen, setLoanModalOpen] = useState(false);
   const [isSettlementModalOpen, setSettlementModalOpen] = useState(false);
+  const [isReturnModalOpen, setReturnModalOpen] = useState(false);
   const [selectedLoanForSettlement, setSelectedLoanForSettlement] = useState<any | null>(null);
+  const [selectedLoanForReturn, setSelectedLoanForReturn] = useState<any | null>(null);
   const [successMessage, setSuccessMessage] = useState('');
 
   const fetchLoanHistory = useCallback(async (gId: number) => {
@@ -140,6 +143,16 @@ const GuaranteeDetail: React.FC<GuaranteeDetailProps> = ({ guaranteeId, navigate
     }, 1000);
   };
 
+  const handleReturnSuccess = async () => {
+    setReturnModalOpen(false);
+    setSelectedLoanForReturn(null);
+    setSuccessMessage('Jaminan berhasil dikembalikan');
+    setTimeout(() => {
+      setSuccessMessage('');
+      fetchGuaranteeDetail();
+    }, 1000);
+  };
+
   const openSettlementModal = (loan: any) => {
     setSelectedLoanForSettlement(loan);
     setSettlementModalOpen(true);
@@ -148,6 +161,16 @@ const GuaranteeDetail: React.FC<GuaranteeDetailProps> = ({ guaranteeId, navigate
   const closeSettlementModal = () => {
     setSettlementModalOpen(false);
     setSelectedLoanForSettlement(null);
+  };
+
+  const openReturnModal = (loan: any) => {
+    setSelectedLoanForReturn(loan);
+    setReturnModalOpen(true);
+  };
+
+  const closeReturnModal = () => {
+    setReturnModalOpen(false);
+    setSelectedLoanForReturn(null);
   };
 
   const getTypeColor = (type: string) => {
@@ -480,6 +503,10 @@ const GuaranteeDetail: React.FC<GuaranteeDetailProps> = ({ guaranteeId, navigate
                             <span className="font-medium text-gray-900">Alasan:</span>
                             <span className="ml-2 text-gray-700">{loan.reason || 'N/A'}</span>
                           </div>
+                          <div className="flex items-center mb-2">
+                            <span className="font-medium text-gray-900">Lokasi Jaminan:</span>
+                            <span className="ml-2 text-gray-700">{loan.file_location || 'N/A'}</span>
+                          </div>
                           <div className="text-sm text-gray-600">
                             <div><strong>Tanggal Peminjaman:</strong> {formatDate(loan.loan_date)}</div>
                             <div><strong>Tanggal Rencana Kembali:</strong> {loan.expected_return_date ? formatDate(loan.expected_return_date) : 'Belum ditentukan'}</div>
@@ -487,6 +514,18 @@ const GuaranteeDetail: React.FC<GuaranteeDetailProps> = ({ guaranteeId, navigate
                               <div><strong>Tanggal Pengembalian:</strong> {formatDate(loan.actual_return_date)}</div>
                             )}
                           </div>
+                          {/* Button untuk return jaminan - hanya jika status masih active */}
+                          {loan.status === 'active' && !loan.actual_return_date && (
+                            <div className="mt-3 flex gap-2">
+                              <button
+                                onClick={() => openReturnModal(loan)}
+                                className="flex items-center justify-center text-xs font-medium bg-blue-500 text-white px-3 py-1.5 rounded hover:bg-blue-600 transition-colors"
+                              >
+                                <span className="mr-1">↩️</span>
+                                <span>Kembalikan</span>
+                              </button>
+                            </div>
+                          )}
                         </div>
                         <div className="text-sm text-gray-500 whitespace-nowrap">
                           {formatDateTime(loan.created_at)}
@@ -541,6 +580,10 @@ const GuaranteeDetail: React.FC<GuaranteeDetailProps> = ({ guaranteeId, navigate
                                settlement.settlement_status === 'approved' ? 'Disetujui' :
                                settlement.settlement_status === 'rejected' ? 'Ditolak' : settlement.settlement_status}
                             </span>
+                          </div>
+                          <div className="flex items-center mb-2">
+                            <span className="font-medium text-gray-900">Lokasi Jaminan:</span>
+                            <span className="ml-2 text-gray-700">{settlement.guarantee_name || 'N/A'}</span>
                           </div>
                           <div className="text-sm text-gray-600">
                             <div><strong>Tanggal Peminjaman:</strong> {formatDate(settlement.loan_date)}</div>
@@ -601,15 +644,33 @@ const GuaranteeDetail: React.FC<GuaranteeDetailProps> = ({ guaranteeId, navigate
         onClose={closeSettlementModal}
         title="Pelunasan Jaminan"
       >
-        {guarantee && selectedLoanForSettlement && (
+        {guarantee && (
           <GuaranteeSettlement
             guarantee={guarantee}
-            loanId={selectedLoanForSettlement.id}
-            borrowerName={selectedLoanForSettlement.borrower_name}
-            loanDate={selectedLoanForSettlement.loan_date}
-            expectedReturnDate={selectedLoanForSettlement.expected_return_date}
+            loanId={selectedLoanForSettlement?.id || null}
+            borrowerName={selectedLoanForSettlement?.borrower_name || undefined}
+            loanDate={selectedLoanForSettlement?.loan_date || undefined}
+            expectedReturnDate={selectedLoanForSettlement?.expected_return_date || undefined}
             onSuccess={handleSettlementSuccess}
             onClose={closeSettlementModal}
+          />
+        )}
+      </Modal>
+
+      {/* Modal Pengembalian */}
+      <Modal
+        isOpen={isReturnModalOpen}
+        onClose={closeReturnModal}
+        title="Pengembalian Jaminan"
+      >
+        {guarantee && selectedLoanForReturn && (
+          <GuaranteeReturn
+            guarantee={guarantee}
+            loanId={selectedLoanForReturn.id}
+            borrowerName={selectedLoanForReturn.borrower_name}
+            loanDate={selectedLoanForReturn.loan_date}
+            onSuccess={handleReturnSuccess}
+            onClose={closeReturnModal}
           />
         )}
       </Modal>

@@ -113,7 +113,7 @@ const GuaranteeSettlement: React.FC<GuaranteeSettlementProps> = ({
         return;
       }
 
-      setSuccessMessage('Pelunasan jaminan berhasil disimpan');
+      setSuccessMessage('Pelunasan jaminan berhasil disimpan dan disetujui');
       setTimeout(() => {
         onSuccess();
       }, 1000);
@@ -327,9 +327,9 @@ const GuaranteeSettlement: React.FC<GuaranteeSettlementProps> = ({
         </div>
 
         {/* Info */}
-        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-          <p className="text-sm text-yellow-700">
-            <strong>Catatan:</strong> Pelunasan akan dikirim dengan status "Pending" dan memerlukan persetujuan dari admin sebelum dianggap selesai.
+        <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+          <p className="text-sm text-green-700">
+            <strong>Catatan:</strong> Pelunasan akan langsung disetujui dan jaminan akan berubah status menjadi "Lunas".
           </p>
         </div>
 

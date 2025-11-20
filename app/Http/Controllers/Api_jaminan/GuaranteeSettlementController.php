@@ -94,14 +94,26 @@ class GuaranteeSettlementController extends Controller
                 'settlement_notes' => 'nullable|string',
             ]);
 
-            // Create guarantee settlement
+            // Create guarantee settlement with auto-approved status
             $settlement = GuaranteeSettlement::create(array_merge($validated, [
-                'settlement_status' => 'pending',
+                'settlement_status' => 'approved',
             ]));
+
+            // Update guarantee loan status to returned
+            $loan = GuaranteeLoan::find($validated['loan_id']);
+            if ($loan) {
+                $loan->update(['status' => 'returned']);
+            }
+
+            // Update guarantee status to lunas
+            $guarantee = Guarantee::find($validated['guarantee_id']);
+            if ($guarantee) {
+                $guarantee->update(['status' => 'lunas']);
+            }
 
             return response()->json([
                 'success' => true,
-                'message' => 'Pelunasan jaminan berhasil disimpan',
+                'message' => 'Pelunasan jaminan berhasil disimpan dan disetujui',
                 'data' => $settlement
             ], Response::HTTP_CREATED);
         } catch (ValidationException $e) {
