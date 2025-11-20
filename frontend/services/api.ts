@@ -284,17 +284,17 @@ export const loginUser = async (username: string, password: string): Promise<Use
 //     localStorage.removeItem('token_expiration');
 //   }
 // };
-// export const logoutUser = async (): Promise<void> => {
-//   try {
-//     stopTokenTimeoutChecker();
-//     await apiRequest('/logout', { method: 'POST' });
-//   } catch (error) {
-//     console.error('Logout error:', error);
-//   } finally {
-//     localStorage.removeItem('auth_token');
-//     localStorage.removeItem('token_expiration');
-//   }
-// };
+export const logoutUser = async (): Promise<void> => {
+  try {
+    stopTokenTimeoutChecker();
+    await apiRequest('/logout', { method: 'POST' });
+  } catch (error) {
+    console.error('Logout error:', error);
+  } finally {
+    localStorage.removeItem('auth_token');
+    localStorage.removeItem('token_expiration');
+  }
+};
 // ==================== SSO AUTH API ====================
 
 /**

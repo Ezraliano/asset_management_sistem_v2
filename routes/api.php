@@ -36,7 +36,6 @@ Route::prefix('auth')->group(function () {
     
     // Common routes
     Route::get('check', [AuthSSOController::class, 'checkAuth']);
-    Route::post('logout', [AuthSSOController::class, 'logout'])->middleware('auth:sanctum');
     Route::get('user', [AuthSSOController::class, 'user'])->middleware('auth:sanctum');
 });
 
@@ -44,7 +43,8 @@ Route::prefix('auth')->group(function () {
 // Protected routes
 Route::middleware(['auth:sanctum'])->group(function () {
     // Routes for ALL authenticated users
-    Route::post('/logout', [AuthController::class, 'logout']);
+    // Route::post('/logout', [AuthController::class, 'logout']);
+    Route::post('logout', [AuthSSOController::class, 'logout'])->middleware('auth:sanctum');
     Route::get('/user', [AuthController::class, 'user']);
     Route::get('/verify-token', [AuthController::class, 'verifyToken']);
     Route::get('/dashboard/stats', [DashboardController::class, 'stats']);

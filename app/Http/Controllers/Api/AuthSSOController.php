@@ -40,12 +40,6 @@ class AuthSSOController extends Controller
         $ssoUrl = config('sso.server_url');
 
         try {
-            Log::info('Mencoba kirim ke SSO server', [
-                'sso_url' => $ssoUrl,
-                'app_id' => config('sso.app_id')
-            ]);
-
-            // Kirim credentials ke SSO server
             $response = Http::timeout(10)
                 ->post("{$ssoUrl}/api/sso/login", [
                     'email' => $request->email,
@@ -54,103 +48,91 @@ class AuthSSOController extends Controller
                     'redirect_uri' => url('/') // Untuk internal use
                 ]);
 
-            Log::info('SSO Response Status', [
-                'status' => $response->status(),
-                'successful' => $response->successful()
-            ]);
-
-            if ($response->successful()) {
-                $ssoData = $response->json();
-
-                Log::info('SSO Response Data', [
-                    'success' => $ssoData['success'] ?? false,
-                    'has_redirect_url' => isset($ssoData['redirect_url']),
-                    'has_sso_session_id' => isset($ssoData['sso_session_id']),
-                    'message' => $ssoData['message'] ?? 'No message'
-                ]);
-
-                if ($ssoData['success'] ?? false) {
-                    $ssoSessionId = $ssoData['sso_session_id'] ?? null;
-
-                    if (!$ssoSessionId) {
-                        Log::warning('No SSO session ID received');
-                        return response()->json([
-                            'success' => false,
-                            'message' => 'No session ID received from SSO'
-                        ], 401);
-                    }
-
-                    Log::info('SSO Session Received', [
-                        'session_id' => $ssoSessionId
-                    ]);
-
-                    // Karena SSO server tidak provide user info langsung,
-                    // kita akan create user lokal berdasarkan email
-                    $localUser = $this->createOrUpdateLocalUser($request->email, $ssoSessionId);
-
-                    if (!$localUser) {
-                        Log::error('Failed to create local user');
-                        return response()->json([
-                            'success' => false,
-                            'message' => 'Failed to create user account'
-                        ], 500);
-                    }
-
-                    // Generate token untuk aplikasi ini
-                    $token = $localUser->createToken('api-token')->plainTextToken;
-
-                    Log::info('SSO login successful', [
-                        'user_id' => $localUser->id,
-                        'email' => $localUser->email,
-                        'local_role' => $localUser->role
-                    ]);
-
-                    return response()->json([
-                        'success' => true,
-                        'user' => [
-                            'id' => $localUser->id,
-                            'name' => $localUser->name,
-                            'username' => $localUser->username,
-                            'email' => $localUser->email,
-                            'role' => $localUser->role,
-                            'unit_id' => $localUser->unit_id,
-                        ],
-                        'token' => $token,
-                        'token_timeout' => config('sanctum.expiration', 3600),
-                        'sso_session_id' => $ssoSessionId
-                    ]);
-                } else {
-                    Log::warning('SSO authentication failed', [
-                        'message' => $ssoData['message'] ?? 'Unknown error'
-                    ]);
-                    return response()->json([
-                        'success' => false,
-                        'message' => $ssoData['message'] ?? 'SSO authentication failed'
-                    ], 401);
-                }
+            if (!$response->successful()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'SSO server error'
+                ], $response->status());
             }
 
-            // Handle SSO server errors
-            Log::error('SSO server error', [
-                'status' => $response->status(),
-                'body' => $response->body()
+            $ssoData = $response->json();
+
+            if (!($ssoData['success'] ?? false)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => $ssoData['message'] ?? 'SSO authentication failed'
+                ], 401);
+            }
+
+            $ssoSessionId = $ssoData['sso_session_id'] ?? null;
+
+            if (!$ssoSessionId) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'No SSO session ID received'
+                ], 401);
+            }
+
+            // STEP 2 — Ambil USER INFO dari SSO (role, name, username, dsb)
+            $infoResponse = Http::timeout(10)->post("{$ssoUrl}/api/sso/user-by-session", [
+                'sso_session_id' => $ssoSessionId,
+                'app_id' => config('sso.app_id')
             ]);
 
+            if (!$infoResponse->successful()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Failed to fetch user info from SSO'
+                ], 500);
+            }
+
+            $infoData = $infoResponse->json();
+
+            if (!($infoData['success'] ?? false)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'SSO user info retrieval failed'
+                ], 500);
+            }
+
+            $userInfo = $infoData['data'];
+
+            // STEP 3 — Sinkron ke user lokal lengkap dengan role
+            $localUser = User::updateOrCreate(
+                ['email' => $userInfo['email']],
+                [
+                    'name' => $userInfo['name'],
+                    'username' => $userInfo['username'] ?? $userInfo['email'],
+                    'role' => $userInfo['role']['slug'] ?? 'user',
+                    'password' => bcrypt('sso-' . $userInfo['email']),
+                ]
+            );
+
+            // STEP 4 — Generate token lokal
+            $token = $localUser->createToken('api-token')->plainTextToken;
+
             return response()->json([
-                'success' => false,
-                'message' => 'SSO server error: ' . $response->status()
-            ], $response->status());
+                'success' => true,
+                'user' => [
+                    'id' => $localUser->id,
+                    'name' => $localUser->name,
+                    'username' => $localUser->username,
+                    'email' => $localUser->email,
+                    'role' => $localUser->role,
+                ],
+                'token' => $token,
+                'sso_session_id' => $ssoSessionId,
+            ]);
         } catch (\Exception $e) {
-            Log::error('SSO login error: ' . $e->getMessage(), [
-                'exception' => $e
-            ]);
+            Log::error('SSO login error: ' . $e->getMessage());
 
             return response()->json([
                 'success' => false,
-                'message' => 'SSO service unavailable: ' . $e->getMessage()
+                'message' => 'SSO service unavailable'
             ], 503);
         }
     }
+
 
     /**
      * Create or update local user berdasarkan email dari SSO
@@ -298,6 +280,8 @@ class AuthSSOController extends Controller
      */
     public function logout(Request $request)
     {
+        $request->user()->currentAccessToken()->delete();
+        
         $ssoSessionId = $request->input('sso_session_id');
         $logoutAll = $request->input('logout_all', false);
 
