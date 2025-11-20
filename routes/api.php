@@ -20,6 +20,7 @@ use App\Http\Controllers\Api\InventoryAuditController;
 use App\Http\Controllers\Api\UserController;
 use App\Http\Controllers\Api_jaminan\GuaranteeController;
 use App\Http\Controllers\Api_jaminan\GuaranteeLoanController;
+use App\Http\Controllers\Api_jaminan\GuaranteeSettlementController;
 
 /*
 |--------------------------------------------------------------------------
@@ -251,6 +252,14 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::get('/guarantee-loans/by-guarantee/{guaranteeId}', [GuaranteeLoanController::class, 'getByGuaranteeId']);
         Route::get('/guarantee-loans/by-status/{status}', [GuaranteeLoanController::class, 'getByStatus']);
         Route::put('/guarantee-loans/{id}/return', [GuaranteeLoanController::class, 'returnLoan']);
+
+        // Guarantee Settlement Routes
+        Route::apiResource('guarantee-settlements', GuaranteeSettlementController::class);
+        Route::get('/guarantee-settlements/stats', [GuaranteeSettlementController::class, 'getStats']);
+        Route::get('/guarantee-settlements/by-guarantee/{guaranteeId}', [GuaranteeSettlementController::class, 'getByGuaranteeId']);
+        Route::get('/guarantee-settlements/by-status/{status}', [GuaranteeSettlementController::class, 'getByStatus']);
+        Route::put('/guarantee-settlements/{id}/approve', [GuaranteeSettlementController::class, 'approve']);
+        Route::put('/guarantee-settlements/{id}/reject', [GuaranteeSettlementController::class, 'reject']);
     });
 });
 

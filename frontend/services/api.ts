@@ -2304,9 +2304,26 @@ export const getGuaranteeLoansByStatus = async (status: 'active' | 'returned'): 
  */
 export const getGuaranteeLoansForGuarantee = async (guaranteeId: number): Promise<any[]> => {
   try {
+    console.log('API Call: GET /guarantee-loans/by-guarantee/' + guaranteeId);
     const response = await apiRequest(`/guarantee-loans/by-guarantee/${guaranteeId}`);
-    const result = handleApiResponse<any>(response);
-    return result.data || [];
+    console.log('API Response for loans:', response);
+
+    // Handle response with {success, data} structure
+    if (response && typeof response === 'object') {
+      if ('success' in response && response.success) {
+        // Return data array or empty array if data is empty
+        return Array.isArray(response.data) ? response.data : [];
+      } else if (Array.isArray(response)) {
+        // If response is directly an array
+        return response;
+      } else if ('data' in response && Array.isArray(response.data)) {
+        // If response has data property that is an array
+        return response.data;
+      }
+    }
+
+    console.warn('Unexpected loan response format:', response);
+    return [];
   } catch (error) {
     console.error('Error fetching guarantee loans for guarantee:', error);
     return [];
@@ -2323,6 +2340,149 @@ export const getGuaranteeLoanStats = async (): Promise<any | null> => {
     return result.data || null;
   } catch (error) {
     console.error('Error fetching guarantee loan stats:', error);
+    return null;
+  }
+};
+
+/**
+ * Get guarantee settlements by guarantee ID
+ */
+export const getGuaranteeSettlementsForGuarantee = async (guaranteeId: number): Promise<any[]> => {
+  try {
+    console.log('API Call: GET /guarantee-settlements/by-guarantee/' + guaranteeId);
+    const response = await apiRequest(`/guarantee-settlements/by-guarantee/${guaranteeId}`);
+    console.log('API Response for settlements:', response);
+
+    // Handle response with {success, data} structure
+    if (response && typeof response === 'object') {
+      if ('success' in response && response.success) {
+        // Return data array or empty array if data is empty
+        return Array.isArray(response.data) ? response.data : [];
+      } else if (Array.isArray(response)) {
+        // If response is directly an array
+        return response;
+      } else if ('data' in response && Array.isArray(response.data)) {
+        // If response has data property that is an array
+        return response.data;
+      }
+    }
+
+    console.warn('Unexpected settlement response format:', response);
+    return [];
+  } catch (error) {
+    console.error('Error fetching guarantee settlements for guarantee:', error);
+    return [];
+  }
+};
+
+/**
+ * Get guarantee settlement by ID
+ */
+export const getGuaranteeSettlementById = async (settlementId: number): Promise<any | null> => {
+  try {
+    const response = await apiRequest(`/guarantee-settlements/${settlementId}`);
+    const result = handleApiResponse<any>(response);
+    return result.data || null;
+  } catch (error) {
+    console.error('Error fetching guarantee settlement:', error);
+    return null;
+  }
+};
+
+/**
+ * Create guarantee settlement
+ */
+export const createGuaranteeSettlement = async (data: any): Promise<any | null> => {
+  try {
+    const response = await apiRequest('/guarantee-settlements', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+    const result = handleApiResponse<any>(response);
+    return result.data || null;
+  } catch (error) {
+    console.error('Error creating guarantee settlement:', error);
+    throw error;
+  }
+};
+
+/**
+ * Update guarantee settlement
+ */
+export const updateGuaranteeSettlement = async (settlementId: number, data: any): Promise<any | null> => {
+  try {
+    const response = await apiRequest(`/guarantee-settlements/${settlementId}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+    const result = handleApiResponse<any>(response);
+    return result.data || null;
+  } catch (error) {
+    console.error('Error updating guarantee settlement:', error);
+    throw error;
+  }
+};
+
+/**
+ * Approve guarantee settlement
+ */
+export const approveGuaranteeSettlement = async (settlementId: number, data: any): Promise<any | null> => {
+  try {
+    const response = await apiRequest(`/guarantee-settlements/${settlementId}/approve`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+    const result = handleApiResponse<any>(response);
+    return result.data || null;
+  } catch (error) {
+    console.error('Error approving guarantee settlement:', error);
+    throw error;
+  }
+};
+
+/**
+ * Reject guarantee settlement
+ */
+export const rejectGuaranteeSettlement = async (settlementId: number, data: any): Promise<any | null> => {
+  try {
+    const response = await apiRequest(`/guarantee-settlements/${settlementId}/reject`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+    const result = handleApiResponse<any>(response);
+    return result.data || null;
+  } catch (error) {
+    console.error('Error rejecting guarantee settlement:', error);
+    throw error;
+  }
+};
+
+/**
+ * Delete guarantee settlement
+ */
+export const deleteGuaranteeSettlement = async (settlementId: number): Promise<boolean> => {
+  try {
+    const response = await apiRequest(`/guarantee-settlements/${settlementId}`, {
+      method: 'DELETE',
+    });
+    const result = handleApiResponse<any>(response);
+    return result.success || false;
+  } catch (error) {
+    console.error('Error deleting guarantee settlement:', error);
+    throw error;
+  }
+};
+
+/**
+ * Get guarantee settlement statistics
+ */
+export const getGuaranteeSettlementStats = async (): Promise<any | null> => {
+  try {
+    const response = await apiRequest('/guarantee-settlements/stats');
+    const result = handleApiResponse<any>(response);
+    return result.data || null;
+  } catch (error) {
+    console.error('Error fetching guarantee settlement stats:', error);
     return null;
   }
 };

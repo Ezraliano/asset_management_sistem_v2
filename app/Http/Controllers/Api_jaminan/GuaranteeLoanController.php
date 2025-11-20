@@ -256,16 +256,12 @@ class GuaranteeLoanController extends Controller
                 ->latest()
                 ->get();
 
-            if ($loans->isEmpty()) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Data peminjaman jaminan tidak ditemukan'
-                ], Response::HTTP_NOT_FOUND);
-            }
-
+            // Return empty array if no loans found (don't return 404)
             return response()->json([
                 'success' => true,
-                'message' => 'Data peminjaman jaminan berhasil diambil',
+                'message' => $loans->isEmpty()
+                    ? 'Belum ada data peminjaman jaminan'
+                    : 'Data peminjaman jaminan berhasil diambil',
                 'data' => $loans
             ]);
         } catch (\Exception $e) {
