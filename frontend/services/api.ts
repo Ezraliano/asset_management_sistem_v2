@@ -2474,6 +2474,48 @@ export const deleteGuaranteeSettlement = async (settlementId: number): Promise<b
 };
 
 /**
+ * Get all guarantee settlements with optional filtering
+ */
+export const getGuaranteeSettlements = async (params?: {
+  status?: string;
+  guarantee_id?: number;
+  spk_number?: string;
+  start_date?: string;
+  end_date?: string;
+  sort_by?: string;
+  sort_order?: 'asc' | 'desc';
+  per_page?: number;
+}): Promise<{ settlements: any[]; pagination: any }> => {
+  try {
+    const queryParams = new URLSearchParams();
+    if (params?.status) queryParams.append('status', params.status);
+    if (params?.guarantee_id) queryParams.append('guarantee_id', params.guarantee_id.toString());
+    if (params?.spk_number) queryParams.append('spk_number', params.spk_number);
+    if (params?.start_date) queryParams.append('start_date', params.start_date);
+    if (params?.end_date) queryParams.append('end_date', params.end_date);
+    if (params?.sort_by) queryParams.append('sort_by', params.sort_by);
+    if (params?.sort_order) queryParams.append('sort_order', params.sort_order);
+    if (params?.per_page) queryParams.append('per_page', params.per_page.toString());
+
+    const queryString = queryParams.toString();
+    const endpoint = queryString ? `/guarantee-settlements?${queryString}` : '/guarantee-settlements';
+
+    const response = await apiRequest(endpoint);
+    const handled = handleApiResponse<any>(response);
+
+    const settlementsData = Array.isArray(handled) ? handled : (Array.isArray(handled.data) ? handled.data : []);
+
+    return {
+      settlements: settlementsData,
+      pagination: handled.pagination || {}
+    };
+  } catch (error: any) {
+    console.error('Error fetching guarantee settlements:', error);
+    return { settlements: [], pagination: {} };
+  }
+};
+
+/**
  * Get guarantee settlement statistics
  */
 export const getGuaranteeSettlementStats = async (): Promise<any | null> => {

@@ -4,6 +4,7 @@ import { Asset, View, Guarantee } from '../types';
 import Modal from './Modal';
 import GuaranteeInputForm from './GuaranteeInputForm';
 import GuaranteeDetail from './GuaranteeDetail';
+import GuaranteeReportExport from './GuaranteeReportExport';
 import { PlusIcon, ViewIcon } from './icons';
 
 interface GuaranteeListProps {
@@ -16,6 +17,7 @@ const GuaranteeList: React.FC<GuaranteeListProps> = ({ navigateTo }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [isModalOpen, setModalOpen] = useState(false);
+  const [isReportExportOpen, setReportExportOpen] = useState(false);
   const [editingGuarantee, setEditingGuarantee] = useState<Guarantee | undefined>(undefined);
   const [viewingGuaranteeId, setViewingGuaranteeId] = useState<string | null>(null);
 
@@ -155,13 +157,35 @@ const GuaranteeList: React.FC<GuaranteeListProps> = ({ navigateTo }) => {
           <h1 className="text-3xl font-bold text-gray-800">Daftar Jaminan</h1>
           <p className="text-gray-600 mt-1">Kelola data jaminan aset perusahaan</p>
         </div>
-        <button
-          onClick={handleAddGuarantee}
-          className="bg-primary text-white px-6 py-2 rounded-lg hover:bg-primary-dark transition-colors font-medium flex items-center gap-2"
-        >
-          <PlusIcon />
-          Input Jaminan
-        </button>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => setReportExportOpen(true)}
+            className="bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700 transition-colors font-medium flex items-center gap-2"
+            title="Unduh laporan jaminan"
+          >
+            <svg
+              className="w-5 h-5"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
+              />
+            </svg>
+            Unduh Laporan
+          </button>
+          <button
+            onClick={handleAddGuarantee}
+            className="bg-primary text-white px-6 py-2 rounded-lg hover:bg-primary-dark transition-colors font-medium flex items-center gap-2"
+          >
+            <PlusIcon />
+            Input Jaminan
+          </button>
+        </div>
       </div>
 
       {/* Error Message */}
@@ -251,6 +275,12 @@ const GuaranteeList: React.FC<GuaranteeListProps> = ({ navigateTo }) => {
           onClose={handleCloseModal}
         />
       </Modal>
+
+      {/* Report Export Modal */}
+      <GuaranteeReportExport
+        isOpen={isReportExportOpen}
+        onClose={() => setReportExportOpen(false)}
+      />
     </div>
   );
 };
