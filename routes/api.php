@@ -18,6 +18,7 @@ use App\Http\Controllers\Api\ReportController;
 use App\Http\Controllers\Api\DepreciationScheduleController;
 use App\Http\Controllers\Api\InventoryAuditController;
 use App\Http\Controllers\Api\UserController;
+use App\Http\Controllers\Api_jaminan\GuaranteeController;
 
 /*
 |--------------------------------------------------------------------------
@@ -71,7 +72,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
     });
 
     // Group for Aset menu (Admin Holding, Admin Unit)
-    Route::middleware('role:admin,unit')->group(function () {
+    Route::middleware('role:super-admin,admin,unit')->group(function () {
         Route::apiResource('assets', AssetController::class);
         Route::get('/assets/{id}/depreciation', [AssetDepreciationController::class, 'show']);
         Route::get('/assets/{id}/depreciation-preview', [AssetDepreciationController::class, 'preview']);
@@ -234,6 +235,14 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::put('/users/{id}', [UserController::class, 'update']);
         Route::delete('/users/{id}', [UserController::class, 'destroy']);
         Route::get('/available-units', [UserController::class, 'getAvailableUnits']);
+    });
+
+    // Guarantee Routes - Super Admin, Admin Holding, Admin Unit
+    Route::middleware('role:super-admin,admin,unit')->group(function () {
+        Route::apiResource('guarantees', GuaranteeController::class);
+        Route::get('/guarantees/stats', [GuaranteeController::class, 'getStats']);
+        Route::get('/guarantees/by-type/{type}', [GuaranteeController::class, 'getByType']);
+        Route::get('/guarantees/by-spk/{spkNumber}', [GuaranteeController::class, 'getBySpk']);
     });
 });
 

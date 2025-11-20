@@ -1,7 +1,7 @@
 // api.ts - PERBAIKAN RESPONSE HANDLING
-import {SSOLoginResponse, Asset, AssetMovement, Maintenance, User, DamageReport, LossReport, DashboardStats, AssetLoan, AssetLoanStatus, Unit, AssetSale, IncidentReport, AssetRequest, InventoryAudit } from '../types';
+import {SSOLoginResponse, Asset, AssetMovement, Maintenance, User, DamageReport, LossReport, DashboardStats, AssetLoan, AssetLoanStatus, Unit, AssetSale, IncidentReport, AssetRequest, InventoryAudit, Guarantee, GuaranteeFormData, GuaranteeStats, PaginatedResponse } from '../types';
 
-const API_BASE_URL = 'https://assetmanagementga.arjunaconnect.com/api';
+const API_BASE_URL = 'http://127.0.0.1:8000/api';
 
 // Token timeout checker interval
 let tokenTimeoutInterval: NodeJS.Timeout | null = null;
@@ -1997,5 +1997,157 @@ export const deleteInventoryAudit = async (auditId: number): Promise<boolean> =>
   } catch (error) {
     console.error('Delete inventory audit error:', error);
     throw error;
+  }
+};
+
+// ==================== GUARANTEE API ====================
+
+/**
+ * Get all guarantees with optional filtering and pagination
+ */
+export const getGuarantees = async (params?: {
+  guarantee_type?: string;
+  spk_number?: string;
+  cif_number?: string;
+  start_date?: string;
+  end_date?: string;
+  sort_by?: string;
+  sort_order?: 'asc' | 'desc';
+  per_page?: number;
+  page?: number;
+}): Promise<{ guarantees: Guarantee[]; pagination: any }> => {
+  try {
+    const queryParams = new URLSearchParams();
+    if (params?.guarantee_type) queryParams.append('guarantee_type', params.guarantee_type);
+    if (params?.spk_number) queryParams.append('spk_number', params.spk_number);
+    if (params?.cif_number) queryParams.append('cif_number', params.cif_number);
+    if (params?.start_date) queryParams.append('start_date', params.start_date);
+    if (params?.end_date) queryParams.append('end_date', params.end_date);
+    if (params?.sort_by) queryParams.append('sort_by', params.sort_by);
+    if (params?.sort_order) queryParams.append('sort_order', params.sort_order);
+    if (params?.per_page) queryParams.append('per_page', params.per_page.toString());
+    if (params?.page) queryParams.append('page', params.page.toString());
+
+    const queryString = queryParams.toString();
+    const endpoint = queryString ? `/guarantees?${queryString}` : '/guarantees';
+
+    const response = await apiRequest(endpoint);
+    const handled = handleApiResponse<any>(response);
+
+    // Backend returns { success, data: [...], pagination: {...} }
+    // Handle both array and pagination structure
+    const guaranteesData = Array.isArray(handled) ? handled : (Array.isArray(handled.data) ? handled.data : []);
+
+    return {
+      guarantees: guaranteesData,
+      pagination: handled.pagination || {}
+    };
+  } catch (error: any) {
+    console.error('Error fetching guarantees:', error);
+    return { guarantees: [], pagination: {} };
+  }
+};
+
+/**
+ * Get single guarantee by ID
+ */
+export const getGuaranteeById = async (id: number): Promise<Guarantee | null> => {
+  try {
+    const response = await apiRequest(`/guarantees/${id}`);
+    return handleApiResponse<Guarantee>(response);
+  } catch (error) {
+    console.error('Error fetching guarantee by ID:', error);
+    return null;
+  }
+};
+
+/**
+ * Create new guarantee
+ */
+export const addGuarantee = async (data: GuaranteeFormData): Promise<Guarantee | null> => {
+  try {
+    const response = await apiRequest('/guarantees', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+    const result = handleApiResponse<any>(response);
+    return result.data || result;
+  } catch (error: any) {
+    console.error('Error adding guarantee:', error);
+    throw error;
+  }
+};
+
+/**
+ * Update existing guarantee
+ */
+export const updateGuarantee = async (id: number, data: Partial<GuaranteeFormData>): Promise<Guarantee | null> => {
+  try {
+    const response = await apiRequest(`/guarantees/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+    const result = handleApiResponse<any>(response);
+    return result.data || result;
+  } catch (error: any) {
+    console.error('Error updating guarantee:', error);
+    throw error;
+  }
+};
+
+/**
+ * Delete guarantee
+ */
+export const deleteGuarantee = async (id: number): Promise<boolean> => {
+  try {
+    await apiRequest(`/guarantees/${id}`, {
+      method: 'DELETE',
+    });
+    return true;
+  } catch (error) {
+    console.error('Error deleting guarantee:', error);
+    throw error;
+  }
+};
+
+/**
+ * Get guarantees by type (BPKB, SHM, SHGB)
+ */
+export const getGuaranteesByType = async (type: 'BPKB' | 'SHM' | 'SHGB'): Promise<Guarantee[]> => {
+  try {
+    const response = await apiRequest(`/guarantees/by-type/${type}`);
+    const result = handleApiResponse<any>(response);
+    return result.data || [];
+  } catch (error) {
+    console.error('Error fetching guarantees by type:', error);
+    return [];
+  }
+};
+
+/**
+ * Get guarantees by SPK number
+ */
+export const getGuaranteesBySpk = async (spkNumber: string): Promise<Guarantee[]> => {
+  try {
+    const response = await apiRequest(`/guarantees/by-spk/${spkNumber}`);
+    const result = handleApiResponse<any>(response);
+    return result.data || [];
+  } catch (error) {
+    console.error('Error fetching guarantees by SPK:', error);
+    return [];
+  }
+};
+
+/**
+ * Get guarantee statistics
+ */
+export const getGuaranteeStats = async (): Promise<GuaranteeStats | null> => {
+  try {
+    const response = await apiRequest('/guarantees/stats');
+    const result = handleApiResponse<any>(response);
+    return result.data || null;
+  } catch (error) {
+    console.error('Error fetching guarantee stats:', error);
+    return null;
   }
 };

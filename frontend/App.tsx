@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useEffect } from 'react';
-import { View, User } from './types';
+import { View, User, AppMode } from './types';
 import Header from './components/Header';
 import Dashboard from './components/Dashboard';
 import AssetLending from './components/AssetLending';
@@ -18,11 +18,13 @@ import InventoryAudit from './components/InventoryAudit';
 import Login from './components/Login';
 import SessionExpiryModal from './components/SessionExpiryModal';
 import AutoLogoutWarning from './components/AutoLogoutWarning';
+import GuaranteeList from './components/GuaranteeList';
 import { LanguageProvider } from './hooks/useTranslation';
 import { getCurrentUser, startTokenTimeoutChecker, stopTokenTimeoutChecker, extendSession, SESSION_EVENTS } from './services/api';
 
 const AppContent: React.FC = () => {
   const [user, setUser] = useState<User | null>(null);
+  const [appMode, setAppMode] = useState<AppMode>('asset');
   const [view, setView] = useState<View>({ type: 'DASHBOARD' });
   const [isSidebarOpen, setSidebarOpen] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -193,8 +195,42 @@ const AppContent: React.FC = () => {
               navigateTo={navigateTo}
             />
           );
+      case 'GUARANTEE_DASHBOARD':
+          return (
+            <div className="space-y-6">
+              <div className="bg-white rounded-lg shadow p-6">
+                <h1 className="text-3xl font-bold text-gray-800 mb-2">Dashboard Jaminan Asset</h1>
+                <p className="text-gray-600">Kelola data jaminan asuransi untuk semua aset perusahaan</p>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="bg-white rounded-lg shadow p-6">
+                  <div className="text-4xl font-bold text-green-600">0</div>
+                  <p className="text-gray-600 mt-2">Jaminan Aktif</p>
+                </div>
+                <div className="bg-white rounded-lg shadow p-6">
+                  <div className="text-4xl font-bold text-yellow-600">0</div>
+                  <p className="text-gray-600 mt-2">Jaminan Kadaluarsa</p>
+                </div>
+                <div className="bg-white rounded-lg shadow p-6">
+                  <div className="text-4xl font-bold text-red-600">0</div>
+                  <p className="text-gray-600 mt-2">Jaminan Diklaim</p>
+                </div>
+              </div>
+            </div>
+          );
+      case 'GUARANTEE_LIST':
+          return <GuaranteeList navigateTo={navigateTo} />;
       default:
         return <Dashboard navigateTo={navigateTo} />;
+    }
+  };
+
+  const handleSwitchMode = (newMode: AppMode) => {
+    setAppMode(newMode);
+    if (newMode === 'guarantee') {
+      setView({ type: 'GUARANTEE_DASHBOARD' });
+    } else {
+      setView({ type: 'DASHBOARD' });
     }
   };
 
@@ -214,6 +250,8 @@ const AppContent: React.FC = () => {
         setSidebarOpen={setSidebarOpen}
         navigateTo={navigateTo}
         currentView={view}
+        appMode={appMode}
+        onSwitchMode={handleSwitchMode}
       />
       <main className="flex-1 p-4 md:p-8 overflow-y-auto transition-all duration-300 lg:ml-64">
         {renderView()}

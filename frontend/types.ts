@@ -312,6 +312,78 @@ export interface DashboardStats {
   assets_by_location: ChartData[];
 }
 
+export type AppMode = 'asset' | 'guarantee';
+
+// Legacy - Kept for backward compatibility
+export interface AssetGuarantee {
+  id: number;
+  asset_id: number;
+  guarantor_name: string;
+  guarantee_date: string;
+  expiration_date: string;
+  coverage_type: string;
+  description?: string;
+  status: 'ACTIVE' | 'EXPIRED' | 'CLAIMED' | 'CANCELLED';
+  created_at: string;
+  updated_at: string;
+  asset?: Asset;
+}
+
+// New Guarantee Interface - Jaminan Asset
+export type GuaranteeType = 'BPKB' | 'SHM' | 'SHGB';
+
+export interface Guarantee {
+  id: number;
+  spk_number: string;
+  cif_number: string;
+  spk_name: string;
+  credit_period: string;
+  guarantee_name: string;
+  guarantee_type: GuaranteeType;
+  guarantee_number: string;
+  file_location: string;
+  input_date: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface GuaranteeFormData {
+  spk_number: string;
+  cif_number: string;
+  spk_name: string;
+  credit_period: string;
+  guarantee_name: string;
+  guarantee_type: GuaranteeType;
+  guarantee_number: string;
+  file_location: string;
+  input_date: string;
+}
+
+export interface GuaranteeStats {
+  total: number;
+  by_type: {
+    BPKB: number;
+    SHM: number;
+    SHGB: number;
+  };
+  total_spk: number;
+  latest_input: string;
+}
+
+export interface PaginatedResponse<T> {
+  success: boolean;
+  message: string;
+  data: T[];
+  pagination: {
+    total: number;
+    per_page: number;
+    current_page: number;
+    last_page: number;
+    from: number | null;
+    to: number | null;
+  };
+}
+
 export type View =
   | { type: 'DASHBOARD' }
   | { type: 'ASSET_LIST' }
@@ -325,4 +397,6 @@ export type View =
   | { type: 'BULK_TRANSACTION' }
   | { type: 'REPORTS' }
   | { type: 'INVENTORY_AUDIT_SETUP' }
-  | { type: 'INVENTORY_AUDIT_SESSION', unitId: number, unitName: string, auditId: number, mode: 'camera' | 'manual' };
+  | { type: 'INVENTORY_AUDIT_SESSION', unitId: number, unitName: string, auditId: number, mode: 'camera' | 'manual' }
+  | { type: 'GUARANTEE_DASHBOARD' }
+  | { type: 'GUARANTEE_LIST' };
