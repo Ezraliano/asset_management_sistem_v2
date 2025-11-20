@@ -14,15 +14,6 @@ return new class extends Migration
         Schema::connection('mysql_jaminan')->create('guarantee_settlements', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('guarantee_id');
-            $table->unsignedBigInteger('loan_id');
-            $table->string('spk_number');
-            $table->string('cif_number');
-            $table->string('guarantee_name');
-            $table->enum('guarantee_type', ['BPKB', 'SHM', 'SHGB']);
-            $table->string('borrower_name');
-            $table->string('borrower_contact');
-            $table->date('loan_date');
-            $table->date('expected_return_date')->nullable();
             $table->date('settlement_date');
             $table->text('settlement_notes')->nullable();
             $table->enum('settlement_status', ['pending', 'approved', 'rejected'])->default('pending');
@@ -36,15 +27,8 @@ return new class extends Migration
                 ->on('guarantees')
                 ->onDelete('cascade');
 
-            $table->foreign('loan_id')
-                ->references('id')
-                ->on('guarantee_loans')
-                ->onDelete('cascade');
-
             // Indexes untuk performa query
             $table->index('guarantee_id');
-            $table->index('loan_id');
-            $table->index('spk_number');
             $table->index('settlement_date');
             $table->index('settlement_status');
         });

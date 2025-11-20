@@ -1,14 +1,16 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Guarantee } from '../types';
 
-interface GuaranteeSettlementProps {
+interface SettlementRevisionProps {
   guarantee: Guarantee;
+  previousSettlement: any;
   onSuccess: () => void;
   onClose: () => void;
 }
 
-const GuaranteeSettlement: React.FC<GuaranteeSettlementProps> = ({
+const SettlementRevision: React.FC<SettlementRevisionProps> = ({
   guarantee,
+  previousSettlement,
   onSuccess,
   onClose
 }) => {
@@ -17,8 +19,8 @@ const GuaranteeSettlement: React.FC<GuaranteeSettlementProps> = ({
   const [successMessage, setSuccessMessage] = useState('');
   const [formData, setFormData] = useState({
     guarantee_id: guarantee.id.toString(),
-    settlement_date: new Date().toISOString().split('T')[0],
-    settlement_notes: '',
+    settlement_date: previousSettlement.settlement_date || new Date().toISOString().split('T')[0],
+    settlement_notes: previousSettlement.settlement_notes || '',
   });
 
   const [validationErrors, setValidationErrors] = useState<Record<string, string[]>>({});
@@ -91,18 +93,18 @@ const GuaranteeSettlement: React.FC<GuaranteeSettlementProps> = ({
         if (data?.errors) {
           setValidationErrors(data.errors);
         }
-        setError(data?.message || `Gagal menyimpan pelunasan jaminan (${response.status})`);
+        setError(data?.message || `Gagal menyimpan pengajuan ulang pelunasan jaminan (${response.status})`);
         setLoading(false);
         return;
       }
 
-      setSuccessMessage('Pelunasan jaminan berhasil disimpan, menunggu persetujuan');
+      setSuccessMessage('Pengajuan ulang pelunasan jaminan berhasil disimpan, menunggu persetujuan');
       setTimeout(() => {
         onSuccess();
       }, 1000);
     } catch (err: any) {
       console.error('Error:', err);
-      setError(err.message || 'Terjadi kesalahan saat menyimpan pelunasan jaminan');
+      setError(err.message || 'Terjadi kesalahan saat menyimpan pengajuan ulang pelunasan jaminan');
       setLoading(false);
     }
   };
@@ -111,7 +113,7 @@ const GuaranteeSettlement: React.FC<GuaranteeSettlementProps> = ({
     <div className="space-y-6 max-h-screen overflow-y-auto">
       {/* Header */}
       <div className="flex items-center justify-between sticky top-0 bg-white z-10 pb-4">
-        <h2 className="text-2xl font-bold text-gray-800">Form Pelunasan Jaminan</h2>
+        <h2 className="text-2xl font-bold text-gray-800">Revisi Pelunasan Jaminan</h2>
         <button
           onClick={onClose}
           className="text-gray-500 hover:text-gray-700 text-2xl"
@@ -158,6 +160,15 @@ const GuaranteeSettlement: React.FC<GuaranteeSettlementProps> = ({
               </span>
             </p>
           </div>
+        </div>
+      </div>
+
+      {/* Info Pengajuan Sebelumnya */}
+      <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
+        <p className="text-sm text-orange-600 font-medium mb-3">Catatan Penolakan Sebelumnya</p>
+        <div className="text-sm text-gray-700">
+          <p><strong>Alasan Penolakan:</strong> {previousSettlement.settlement_remarks || '-'}</p>
+          <p className="mt-2"><strong>Tanggal Pengajuan Sebelumnya:</strong> {new Date(previousSettlement.created_at).toLocaleDateString('id-ID')}</p>
         </div>
       </div>
 
@@ -223,7 +234,7 @@ const GuaranteeSettlement: React.FC<GuaranteeSettlementProps> = ({
         {/* Info */}
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
           <p className="text-sm text-blue-700">
-            <strong>Catatan:</strong> Pelunasan akan disimpan dengan status "Menunggu Persetujuan". Admin harus melakukan validasi untuk menyetujui atau menolak pelunasan ini.
+            <strong>Catatan:</strong> Pengajuan ulang akan disimpan dengan status "Menunggu Persetujuan". Admin harus melakukan validasi untuk menyetujui atau menolak pengajuan ulang ini.
           </p>
         </div>
 
@@ -234,7 +245,7 @@ const GuaranteeSettlement: React.FC<GuaranteeSettlementProps> = ({
             disabled={loading}
             className="flex-1 bg-primary text-white px-6 py-2 rounded-lg hover:bg-primary-dark transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {loading ? 'Menyimpan...' : 'Simpan Pelunasan'}
+            {loading ? 'Menyimpan...' : 'Kirim Pengajuan Ulang'}
           </button>
           <button
             type="button"
@@ -250,4 +261,4 @@ const GuaranteeSettlement: React.FC<GuaranteeSettlementProps> = ({
   );
 };
 
-export default GuaranteeSettlement;
+export default SettlementRevision;

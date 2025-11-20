@@ -7,6 +7,8 @@ import GuaranteeInputForm from './GuaranteeInputForm';
 import GuaranteeLoaning from './GuaranteeLoaning';
 import GuaranteeSettlement from './GuaranteeSettlement';
 import GuaranteeReturn from './GuaranteeReturn';
+import SettlementValidation from './SettlementValidation';
+import SettlementRevision from './SettlementRevision';
 
 interface GuaranteeDetailProps {
   guaranteeId: string;
@@ -28,8 +30,11 @@ const GuaranteeDetail: React.FC<GuaranteeDetailProps> = ({ guaranteeId, navigate
   const [isLoanModalOpen, setLoanModalOpen] = useState(false);
   const [isSettlementModalOpen, setSettlementModalOpen] = useState(false);
   const [isReturnModalOpen, setReturnModalOpen] = useState(false);
-  const [selectedLoanForSettlement, setSelectedLoanForSettlement] = useState<any | null>(null);
+  const [isValidationModalOpen, setValidationModalOpen] = useState(false);
   const [selectedLoanForReturn, setSelectedLoanForReturn] = useState<any | null>(null);
+  const [selectedSettlementForValidation, setSelectedSettlementForValidation] = useState<any | null>(null);
+  const [selectedSettlementForRevision, setSelectedSettlementForRevision] = useState<any | null>(null);
+  const [isRevisionModalOpen, setRevisionModalOpen] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
 
   const fetchLoanHistory = useCallback(async (gId: number) => {
@@ -135,7 +140,6 @@ const GuaranteeDetail: React.FC<GuaranteeDetailProps> = ({ guaranteeId, navigate
 
   const handleSettlementSuccess = async () => {
     setSettlementModalOpen(false);
-    setSelectedLoanForSettlement(null);
     setSuccessMessage('Pelunasan jaminan berhasil disimpan');
     setTimeout(() => {
       setSuccessMessage('');
@@ -151,16 +155,6 @@ const GuaranteeDetail: React.FC<GuaranteeDetailProps> = ({ guaranteeId, navigate
       setSuccessMessage('');
       fetchGuaranteeDetail();
     }, 1000);
-  };
-
-  const openSettlementModal = (loan: any) => {
-    setSelectedLoanForSettlement(loan);
-    setSettlementModalOpen(true);
-  };
-
-  const closeSettlementModal = () => {
-    setSettlementModalOpen(false);
-    setSelectedLoanForSettlement(null);
   };
 
   const openReturnModal = (loan: any) => {
@@ -441,7 +435,7 @@ const GuaranteeDetail: React.FC<GuaranteeDetailProps> = ({ guaranteeId, navigate
               {/* Pelunasan Button - Selalu tersedia, bisa dengan atau tanpa loan history */}
               {guarantee && (
                 <button
-                  onClick={() => openSettlementModal(loanHistory.length > 0 ? loanHistory[loanHistory.length - 1] : null)}
+                  onClick={() => setSettlementModalOpen(true)}
                   className="flex items-center justify-center text-sm font-medium bg-green-50 text-green-700 px-4 py-2 rounded-lg shadow-sm hover:bg-green-100 border border-green-200 transition-colors"
                 >
                   <span className="mr-2">✅</span>
@@ -564,10 +558,6 @@ const GuaranteeDetail: React.FC<GuaranteeDetailProps> = ({ guaranteeId, navigate
                       <div className="flex justify-between items-start mb-2">
                         <div className="flex-1">
                           <div className="flex items-center mb-2">
-                            <span className="font-medium text-gray-900">Peminjam:</span>
-                            <span className="ml-2 text-gray-700">{settlement.borrower_name || 'N/A'}</span>
-                          </div>
-                          <div className="flex items-center mb-2">
                             <span className="font-medium text-gray-900">Status Pelunasan:</span>
                             <span className={`ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
                               settlement.settlement_status === 'approved'
@@ -583,10 +573,9 @@ const GuaranteeDetail: React.FC<GuaranteeDetailProps> = ({ guaranteeId, navigate
                           </div>
                           <div className="flex items-center mb-2">
                             <span className="font-medium text-gray-900">Lokasi Jaminan:</span>
-                            <span className="ml-2 text-gray-700">{settlement.guarantee_name || 'N/A'}</span>
+                            <span className="ml-2 text-gray-700">{guarantee?.file_location || 'N/A'}</span>
                           </div>
                           <div className="text-sm text-gray-600">
-                            <div><strong>Tanggal Peminjaman:</strong> {formatDate(settlement.loan_date)}</div>
                             <div><strong>Tanggal Pelunasan:</strong> {formatDate(settlement.settlement_date)}</div>
                             {settlement.settlement_notes && (
                               <div><strong>Catatan:</strong> {settlement.settlement_notes}</div>
@@ -596,8 +585,34 @@ const GuaranteeDetail: React.FC<GuaranteeDetailProps> = ({ guaranteeId, navigate
                             )}
                           </div>
                         </div>
-                        <div className="text-sm text-gray-500 whitespace-nowrap">
-                          {formatDateTime(settlement.created_at)}
+                        <div className="flex flex-col items-end gap-2">
+                          <div className="text-sm text-gray-500 whitespace-nowrap">
+                            {formatDateTime(settlement.created_at)}
+                          </div>
+                          {settlement.settlement_status === 'pending' && (
+                            <button
+                              onClick={() => {
+                                setSelectedSettlementForValidation(settlement);
+                                setValidationModalOpen(true);
+                              }}
+                              className="px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 transition-colors font-medium"
+                              title="Validasi pelunasan jaminan"
+                            >
+                              Validasi
+                            </button>
+                          )}
+                          {settlement.settlement_status === 'rejected' && (
+                            <button
+                              onClick={() => {
+                                setSelectedSettlementForRevision(settlement);
+                                setRevisionModalOpen(true);
+                              }}
+                              className="px-3 py-1 bg-orange-600 text-white text-sm rounded hover:bg-orange-700 transition-colors font-medium"
+                              title="Revisi dan kirim ulang pelunasan jaminan"
+                            >
+                              Revisi
+                            </button>
+                          )}
                         </div>
                       </div>
                     </li>
@@ -641,18 +656,14 @@ const GuaranteeDetail: React.FC<GuaranteeDetailProps> = ({ guaranteeId, navigate
       {/* Modal Pelunasan */}
       <Modal
         isOpen={isSettlementModalOpen}
-        onClose={closeSettlementModal}
+        onClose={() => setSettlementModalOpen(false)}
         title="Pelunasan Jaminan"
       >
         {guarantee && (
           <GuaranteeSettlement
             guarantee={guarantee}
-            loanId={selectedLoanForSettlement?.id || null}
-            borrowerName={selectedLoanForSettlement?.borrower_name || undefined}
-            loanDate={selectedLoanForSettlement?.loan_date || undefined}
-            expectedReturnDate={selectedLoanForSettlement?.expected_return_date || undefined}
             onSuccess={handleSettlementSuccess}
-            onClose={closeSettlementModal}
+            onClose={() => setSettlementModalOpen(false)}
           />
         )}
       </Modal>
@@ -671,6 +682,65 @@ const GuaranteeDetail: React.FC<GuaranteeDetailProps> = ({ guaranteeId, navigate
             loanDate={selectedLoanForReturn.loan_date}
             onSuccess={handleReturnSuccess}
             onClose={closeReturnModal}
+          />
+        )}
+      </Modal>
+
+      {/* Modal Validasi Pelunasan */}
+      <Modal
+        isOpen={isValidationModalOpen}
+        onClose={() => {
+          setValidationModalOpen(false);
+          setSelectedSettlementForValidation(null);
+        }}
+        title="Validasi Pelunasan Jaminan"
+      >
+        {selectedSettlementForValidation && guarantee && (
+          <SettlementValidation
+            settlement={selectedSettlementForValidation}
+            guarantee={guarantee}
+            onSuccess={() => {
+              setValidationModalOpen(false);
+              setSelectedSettlementForValidation(null);
+              // Refresh guarantee detail dan settlement history
+              if (guarantee?.id) {
+                fetchGuaranteeDetail();
+                fetchSettlementHistory(guarantee.id);
+              }
+            }}
+            onClose={() => {
+              setValidationModalOpen(false);
+              setSelectedSettlementForValidation(null);
+            }}
+          />
+        )}
+      </Modal>
+
+      {/* Modal Revisi Pelunasan */}
+      <Modal
+        isOpen={isRevisionModalOpen}
+        onClose={() => {
+          setRevisionModalOpen(false);
+          setSelectedSettlementForRevision(null);
+        }}
+        title="Revisi Pelunasan Jaminan"
+      >
+        {selectedSettlementForRevision && guarantee && (
+          <SettlementRevision
+            guarantee={guarantee}
+            previousSettlement={selectedSettlementForRevision}
+            onSuccess={() => {
+              setRevisionModalOpen(false);
+              setSelectedSettlementForRevision(null);
+              // Refresh settlement history
+              if (guarantee?.id) {
+                fetchSettlementHistory(guarantee.id);
+              }
+            }}
+            onClose={() => {
+              setRevisionModalOpen(false);
+              setSelectedSettlementForRevision(null);
+            }}
           />
         )}
       </Modal>

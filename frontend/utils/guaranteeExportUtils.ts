@@ -31,14 +31,18 @@ interface GuaranteeLoanExportData {
 
 interface GuaranteeSettlementExportData {
   id: number;
-  spk_number: string;
-  cif_number: string;
-  guarantee_name: string;
-  borrower_name: string;
-  loan_date: string;
+  guarantee_id: number;
   settlement_date: string;
   settlement_notes?: string;
   settlement_status: string;
+  settled_by?: string;
+  settlement_remarks?: string;
+  // Data jaminan akan di-join saat export
+  guarantee?: {
+    spk_number: string;
+    cif_number: string;
+    guarantee_name: string;
+  };
 }
 
 /**
@@ -430,22 +434,20 @@ export const exportGuaranteeSettlementToPdf = (
     'No SPK',
     'No CIF',
     'Nama Jaminan',
-    'Nama Peminjam',
-    'Tgl Peminjaman',
     'Tgl Pelunasan',
     'Status Pelunasan',
+    'Validator',
     'Catatan',
   ];
 
   const tableData = data.map((item, index) => [
     (index + 1).toString(),
-    item.spk_number,
-    item.cif_number,
-    item.guarantee_name,
-    item.borrower_name,
-    formatDate(item.loan_date),
+    item.guarantee?.spk_number || '',
+    item.guarantee?.cif_number || '',
+    item.guarantee?.guarantee_name || '',
     formatDate(item.settlement_date),
     getSettlementStatusLabel(item.settlement_status),
+    item.settled_by || '',
     item.settlement_notes || '',
   ]);
 
@@ -474,14 +476,13 @@ export const exportGuaranteeSettlementToPdf = (
     },
     columnStyles: {
       0: { cellWidth: 30, halign: 'center' },
-      1: { cellWidth: 60 },
-      2: { cellWidth: 60 },
-      3: { cellWidth: 80 },
-      4: { cellWidth: 70 },
-      5: { cellWidth: 70 },
-      6: { cellWidth: 70 },
-      7: { cellWidth: 70 },
-      8: { cellWidth: 120 },
+      1: { cellWidth: 70 },
+      2: { cellWidth: 70 },
+      3: { cellWidth: 90 },
+      4: { cellWidth: 80 },
+      5: { cellWidth: 80 },
+      6: { cellWidth: 80 },
+      7: { cellWidth: 100 },
     },
     margin: {
       left: margin.left,
@@ -521,25 +522,23 @@ export const exportGuaranteeSettlementToExcel = (
     'No SPK',
     'No CIF',
     'Nama Jaminan',
-    'Nama Peminjam',
-    'Kontak Peminjam',
-    'Tanggal Peminjaman',
     'Tanggal Pelunasan',
     'Status Pelunasan',
+    'Validator',
     'Catatan Pelunasan',
+    'Keterangan Validasi',
   ];
 
   const tableData = data.map((item, index) => [
     index + 1,
-    item.spk_number,
-    item.cif_number,
-    item.guarantee_name,
-    item.borrower_name,
-    '', // borrower_contact - tidak ada di interface
-    formatDate(item.loan_date),
+    item.guarantee?.spk_number || '',
+    item.guarantee?.cif_number || '',
+    item.guarantee?.guarantee_name || '',
     formatDate(item.settlement_date),
     getSettlementStatusLabel(item.settlement_status),
+    item.settled_by || '',
     item.settlement_notes || '',
+    item.settlement_remarks || '',
   ]);
 
   const worksheetData = [headers, ...tableData];
@@ -553,8 +552,7 @@ export const exportGuaranteeSettlementToExcel = (
     { wch: 18 },
     { wch: 15 },
     { wch: 18 },
-    { wch: 18 },
-    { wch: 15 },
+    { wch: 25 },
     { wch: 25 },
   ];
   worksheet['!cols'] = columnWidths;

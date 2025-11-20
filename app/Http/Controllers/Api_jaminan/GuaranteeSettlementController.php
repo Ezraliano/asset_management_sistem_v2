@@ -19,7 +19,7 @@ class GuaranteeSettlementController extends Controller
     public function index(Request $request)
     {
         try {
-            $query = GuaranteeSettlement::query();
+            $query = GuaranteeSettlement::with('guarantee');
 
             // Filter berdasarkan status
             if ($request->has('status') && $request->status !== '') {
@@ -78,42 +78,21 @@ class GuaranteeSettlementController extends Controller
     public function store(Request $request)
     {
         try {
-            // Validasi input
+            // Validasi input - hanya settlement_date dan settlement_notes dari request
             $validated = $request->validate([
                 'guarantee_id' => 'required|exists:mysql_jaminan.guarantees,id',
-                'loan_id' => 'required|exists:mysql_jaminan.guarantee_loans,id',
-                'spk_number' => 'required|string|max:255',
-                'cif_number' => 'required|string|max:255',
-                'guarantee_name' => 'required|string|max:255',
-                'guarantee_type' => 'required|in:BPKB,SHM,SHGB',
-                'borrower_name' => 'required|string|max:255',
-                'borrower_contact' => 'required|string|max:255',
-                'loan_date' => 'required|date',
-                'expected_return_date' => 'nullable|date',
                 'settlement_date' => 'required|date',
                 'settlement_notes' => 'nullable|string',
             ]);
 
-            // Create guarantee settlement with auto-approved status
+            // Create guarantee settlement with pending status (waiting for approval/validation)
             $settlement = GuaranteeSettlement::create(array_merge($validated, [
-                'settlement_status' => 'approved',
+                'settlement_status' => 'pending',
             ]));
-
-            // Update guarantee loan status to returned
-            $loan = GuaranteeLoan::find($validated['loan_id']);
-            if ($loan) {
-                $loan->update(['status' => 'returned']);
-            }
-
-            // Update guarantee status to lunas
-            $guarantee = Guarantee::find($validated['guarantee_id']);
-            if ($guarantee) {
-                $guarantee->update(['status' => 'lunas']);
-            }
 
             return response()->json([
                 'success' => true,
-                'message' => 'Pelunasan jaminan berhasil disimpan dan disetujui',
+                'message' => 'Pelunasan jaminan berhasil disimpan, menunggu persetujuan',
                 'data' => $settlement
             ], Response::HTTP_CREATED);
         } catch (ValidationException $e) {
