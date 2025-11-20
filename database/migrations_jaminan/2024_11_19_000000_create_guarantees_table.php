@@ -22,6 +22,7 @@ return new class extends Migration
             $table->string('guarantee_number');
             $table->string('file_location');
             $table->date('input_date');
+            $table->enum('status', ['available', 'dipinjam', 'lunas'])->default('available');
             $table->timestamps();
 
             // Indexes untuk performa query
@@ -29,6 +30,7 @@ return new class extends Migration
             $table->index('cif_number');
             $table->index('guarantee_type');
             $table->index('input_date');
+            $table->index('status');
         });
     }
 

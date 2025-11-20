@@ -3,7 +3,8 @@ import { getAssets, getGuarantees } from '../services/api';
 import { Asset, View, Guarantee } from '../types';
 import Modal from './Modal';
 import GuaranteeInputForm from './GuaranteeInputForm';
-import { PlusIcon } from './icons';
+import GuaranteeDetail from './GuaranteeDetail';
+import { PlusIcon, ViewIcon } from './icons';
 
 interface GuaranteeListProps {
   navigateTo: (view: View) => void;
@@ -16,6 +17,7 @@ const GuaranteeList: React.FC<GuaranteeListProps> = ({ navigateTo }) => {
   const [error, setError] = useState('');
   const [isModalOpen, setModalOpen] = useState(false);
   const [editingGuarantee, setEditingGuarantee] = useState<Guarantee | undefined>(undefined);
+  const [viewingGuaranteeId, setViewingGuaranteeId] = useState<string | null>(null);
 
   // Fetch assets
   useEffect(() => {
@@ -94,6 +96,24 @@ const GuaranteeList: React.FC<GuaranteeListProps> = ({ navigateTo }) => {
     return colors[type] || 'bg-gray-100 text-gray-800';
   };
 
+  const getStatusColor = (status: string) => {
+    const colors: Record<string, string> = {
+      'available': 'bg-green-100 text-green-800',
+      'dipinjam': 'bg-yellow-100 text-yellow-800',
+      'lunas': 'bg-blue-100 text-blue-800',
+    };
+    return colors[status] || 'bg-gray-100 text-gray-800';
+  };
+
+  const getStatusLabel = (status: string) => {
+    const labels: Record<string, string> = {
+      'available': 'Tersedia',
+      'dipinjam': 'Dipinjam',
+      'lunas': 'Lunas',
+    };
+    return labels[status] || status;
+  };
+
   const formatDate = (dateString: string) => {
     try {
       return new Date(dateString).toLocaleDateString('id-ID', {
@@ -105,6 +125,16 @@ const GuaranteeList: React.FC<GuaranteeListProps> = ({ navigateTo }) => {
       return dateString;
     }
   };
+
+  // Show detail view if viewing a guarantee
+  if (viewingGuaranteeId) {
+    return (
+      <GuaranteeDetail
+        guaranteeId={viewingGuaranteeId}
+        navigateTo={() => setViewingGuaranteeId(null)}
+      />
+    );
+  }
 
   if (loading) {
     return (
@@ -163,6 +193,7 @@ const GuaranteeList: React.FC<GuaranteeListProps> = ({ navigateTo }) => {
                   <th className="px-6 py-3 text-left font-semibold text-gray-700">Tipe Jaminan</th>
                   <th className="px-6 py-3 text-left font-semibold text-gray-700">No Jaminan</th>
                   <th className="px-6 py-3 text-left font-semibold text-gray-700">Tanggal Input</th>
+                  <th className="px-6 py-3 text-left font-semibold text-gray-700">Status</th>
                   <th className="px-6 py-3 text-left font-semibold text-gray-700">Aksi</th>
                 </tr>
               </thead>
@@ -181,12 +212,27 @@ const GuaranteeList: React.FC<GuaranteeListProps> = ({ navigateTo }) => {
                     <td className="px-6 py-4 text-gray-900">{guarantee.guarantee_number}</td>
                     <td className="px-6 py-4 text-gray-900">{formatDate(guarantee.input_date)}</td>
                     <td className="px-6 py-4">
-                      <button
-                        onClick={() => handleEditGuarantee(guarantee)}
-                        className="text-primary hover:text-primary-dark font-medium text-sm"
-                      >
-                        Edit
-                      </button>
+                      <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(guarantee.status)}`}>
+                        {getStatusLabel(guarantee.status)}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="flex items-center gap-3">
+                        <button
+                          onClick={() => setViewingGuaranteeId(guarantee.id.toString())}
+                          className="text-blue-600 hover:text-blue-800 font-medium text-sm flex items-center gap-1"
+                          title="Lihat Detail"
+                        >
+                          <ViewIcon />
+                          Lihat
+                        </button>
+                        <button
+                          onClick={() => handleEditGuarantee(guarantee)}
+                          className="text-primary hover:text-primary-dark font-medium text-sm"
+                        >
+                          Edit
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}

@@ -34,6 +34,11 @@ class GuaranteeController extends Controller
                 $query->byCifNumber($request->cif_number);
             }
 
+            // Filter berdasarkan status
+            if ($request->has('status') && $request->status !== '') {
+                $query->byStatus($request->status);
+            }
+
             // Filter berdasarkan range tanggal
             if ($request->has('start_date') && $request->has('end_date')) {
                 $query->byDateRange($request->start_date, $request->end_date);
@@ -87,7 +92,13 @@ class GuaranteeController extends Controller
                 'guarantee_number' => 'required|string|max:255',
                 'file_location' => 'required|string|max:255',
                 'input_date' => 'required|date',
+                'status' => 'sometimes|in:available,dipinjam,lunas',
             ]);
+
+            // Set status default ke 'available' jika tidak ada
+            if (!isset($validated['status'])) {
+                $validated['status'] = 'available';
+            }
 
             // Create guarantee
             $guarantee = Guarantee::create($validated);
@@ -167,6 +178,7 @@ class GuaranteeController extends Controller
                 'guarantee_number' => 'sometimes|required|string|max:255',
                 'file_location' => 'sometimes|required|string|max:255',
                 'input_date' => 'sometimes|required|date',
+                'status' => 'sometimes|in:available,dipinjam,lunas',
             ]);
 
             // Update guarantee

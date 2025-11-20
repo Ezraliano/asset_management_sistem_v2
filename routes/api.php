@@ -19,6 +19,7 @@ use App\Http\Controllers\Api\DepreciationScheduleController;
 use App\Http\Controllers\Api\InventoryAuditController;
 use App\Http\Controllers\Api\UserController;
 use App\Http\Controllers\Api_jaminan\GuaranteeController;
+use App\Http\Controllers\Api_jaminan\GuaranteeLoanController;
 
 /*
 |--------------------------------------------------------------------------
@@ -243,6 +244,13 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::get('/guarantees/stats', [GuaranteeController::class, 'getStats']);
         Route::get('/guarantees/by-type/{type}', [GuaranteeController::class, 'getByType']);
         Route::get('/guarantees/by-spk/{spkNumber}', [GuaranteeController::class, 'getBySpk']);
+
+        // Guarantee Loan Routes
+        Route::apiResource('guarantee-loans', GuaranteeLoanController::class);
+        Route::get('/guarantee-loans/stats', [GuaranteeLoanController::class, 'getStats']);
+        Route::get('/guarantee-loans/by-guarantee/{guaranteeId}', [GuaranteeLoanController::class, 'getByGuaranteeId']);
+        Route::get('/guarantee-loans/by-status/{status}', [GuaranteeLoanController::class, 'getByStatus']);
+        Route::put('/guarantee-loans/{id}/return', [GuaranteeLoanController::class, 'returnLoan']);
     });
 });
 

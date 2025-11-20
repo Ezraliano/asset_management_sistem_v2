@@ -24,6 +24,7 @@ class Guarantee extends Model
         'guarantee_number',
         'file_location',
         'input_date',
+        'status',
     ];
 
     protected function casts(): array
@@ -73,5 +74,13 @@ class Guarantee extends Model
     public function scopeLatest($query)
     {
         return $query->orderBy('input_date', 'desc');
+    }
+
+    /**
+     * Scope untuk filter berdasarkan status
+     */
+    public function scopeByStatus($query, $status)
+    {
+        return $query->where('status', $status);
     }
 }

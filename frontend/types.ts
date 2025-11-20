@@ -332,6 +332,8 @@ export interface AssetGuarantee {
 // New Guarantee Interface - Jaminan Asset
 export type GuaranteeType = 'BPKB' | 'SHM' | 'SHGB';
 
+export type GuaranteeStatus = 'available' | 'dipinjam' | 'lunas';
+
 export interface Guarantee {
   id: number;
   spk_number: string;
@@ -343,6 +345,7 @@ export interface Guarantee {
   guarantee_number: string;
   file_location: string;
   input_date: string;
+  status: GuaranteeStatus;
   created_at: string;
   updated_at: string;
 }
@@ -357,6 +360,24 @@ export interface GuaranteeFormData {
   guarantee_number: string;
   file_location: string;
   input_date: string;
+}
+
+export interface GuaranteeLoan {
+  id: number;
+  guarantee_id: number;
+  spk_number: string;
+  cif_number: string;
+  guarantee_type: GuaranteeType;
+  file_location: string;
+  borrower_name: string;
+  borrower_contact: string;
+  reason: string;
+  loan_date: string;
+  expected_return_date: string | null;
+  actual_return_date: string | null;
+  status: 'active' | 'returned';
+  created_at: string;
+  updated_at: string;
 }
 
 export interface GuaranteeStats {

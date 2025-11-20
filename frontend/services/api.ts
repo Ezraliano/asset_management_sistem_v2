@@ -2151,3 +2151,178 @@ export const getGuaranteeStats = async (): Promise<GuaranteeStats | null> => {
     return null;
   }
 };
+
+// ==================== GUARANTEE LOAN API ====================
+
+/**
+ * Create new guarantee loan
+ */
+export const createGuaranteeLoan = async (loanData: {
+  guarantee_id: number;
+  spk_number: string;
+  cif_number: string;
+  guarantee_type: string;
+  file_location: string;
+  borrower_name: string;
+  borrower_contact: string;
+  reason: string;
+  loan_date: string;
+  expected_return_date?: string;
+}): Promise<any> => {
+  try {
+    const response = await apiRequest('/guarantee-loans', {
+      method: 'POST',
+      body: JSON.stringify(loanData),
+    });
+    return handleApiResponse<any>(response);
+  } catch (error: any) {
+    console.error('Error creating guarantee loan:', error);
+    throw error;
+  }
+};
+
+/**
+ * Get all guarantee loans with optional filtering
+ */
+export const getGuaranteeLoans = async (params?: {
+  status?: string;
+  guarantee_id?: number;
+  spk_number?: string;
+  start_date?: string;
+  end_date?: string;
+  sort_by?: string;
+  sort_order?: 'asc' | 'desc';
+  per_page?: number;
+}): Promise<{ loans: any[]; pagination: any }> => {
+  try {
+    const queryParams = new URLSearchParams();
+    if (params?.status) queryParams.append('status', params.status);
+    if (params?.guarantee_id) queryParams.append('guarantee_id', params.guarantee_id.toString());
+    if (params?.spk_number) queryParams.append('spk_number', params.spk_number);
+    if (params?.start_date) queryParams.append('start_date', params.start_date);
+    if (params?.end_date) queryParams.append('end_date', params.end_date);
+    if (params?.sort_by) queryParams.append('sort_by', params.sort_by);
+    if (params?.sort_order) queryParams.append('sort_order', params.sort_order);
+    if (params?.per_page) queryParams.append('per_page', params.per_page.toString());
+
+    const queryString = queryParams.toString();
+    const endpoint = queryString ? `/guarantee-loans?${queryString}` : '/guarantee-loans';
+
+    const response = await apiRequest(endpoint);
+    const handled = handleApiResponse<any>(response);
+
+    const loansData = Array.isArray(handled) ? handled : (Array.isArray(handled.data) ? handled.data : []);
+
+    return {
+      loans: loansData,
+      pagination: handled.pagination || {}
+    };
+  } catch (error: any) {
+    console.error('Error fetching guarantee loans:', error);
+    return { loans: [], pagination: {} };
+  }
+};
+
+/**
+ * Get guarantee loan by ID
+ */
+export const getGuaranteeLoanById = async (id: number): Promise<any | null> => {
+  try {
+    const response = await apiRequest(`/guarantee-loans/${id}`);
+    return handleApiResponse<any>(response);
+  } catch (error) {
+    console.error('Error fetching guarantee loan by ID:', error);
+    return null;
+  }
+};
+
+/**
+ * Update guarantee loan
+ */
+export const updateGuaranteeLoan = async (id: number, loanData: any): Promise<any | null> => {
+  try {
+    const response = await apiRequest(`/guarantee-loans/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(loanData),
+    });
+    return handleApiResponse<any>(response);
+  } catch (error: any) {
+    console.error('Error updating guarantee loan:', error);
+    throw error;
+  }
+};
+
+/**
+ * Return guarantee loan
+ */
+export const returnGuaranteeLoan = async (id: number, returnData: {
+  actual_return_date: string;
+}): Promise<any | null> => {
+  try {
+    const response = await apiRequest(`/guarantee-loans/${id}/return`, {
+      method: 'PUT',
+      body: JSON.stringify(returnData),
+    });
+    return handleApiResponse<any>(response);
+  } catch (error: any) {
+    console.error('Error returning guarantee loan:', error);
+    throw error;
+  }
+};
+
+/**
+ * Delete guarantee loan
+ */
+export const deleteGuaranteeLoan = async (id: number): Promise<boolean> => {
+  try {
+    await apiRequest(`/guarantee-loans/${id}`, {
+      method: 'DELETE',
+    });
+    return true;
+  } catch (error) {
+    console.error('Error deleting guarantee loan:', error);
+    throw error;
+  }
+};
+
+/**
+ * Get guarantee loans by status
+ */
+export const getGuaranteeLoansByStatus = async (status: 'active' | 'returned'): Promise<any[]> => {
+  try {
+    const response = await apiRequest(`/guarantee-loans/by-status/${status}`);
+    const result = handleApiResponse<any>(response);
+    return result.data || [];
+  } catch (error) {
+    console.error('Error fetching guarantee loans by status:', error);
+    return [];
+  }
+};
+
+/**
+ * Get guarantee loans by guarantee ID
+ */
+export const getGuaranteeLoansForGuarantee = async (guaranteeId: number): Promise<any[]> => {
+  try {
+    const response = await apiRequest(`/guarantee-loans/by-guarantee/${guaranteeId}`);
+    const result = handleApiResponse<any>(response);
+    return result.data || [];
+  } catch (error) {
+    console.error('Error fetching guarantee loans for guarantee:', error);
+    return [];
+  }
+};
+
+/**
+ * Get guarantee loan statistics
+ */
+export const getGuaranteeLoanStats = async (): Promise<any | null> => {
+  try {
+    const response = await apiRequest('/guarantee-loans/stats');
+    const result = handleApiResponse<any>(response);
+    return result.data || null;
+  } catch (error) {
+    console.error('Error fetching guarantee loan stats:', error);
+    return null;
+  }
+};
