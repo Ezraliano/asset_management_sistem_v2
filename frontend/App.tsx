@@ -120,7 +120,7 @@ const AppContent: React.FC = () => {
     return () => {
       window.removeEventListener(SESSION_EVENTS.EXPIRING_WARNING, handleSessionExpiringWarning);
     };
-  }, []);
+  }, [setSessionTimeRemaining, setShowSessionExpiryModal]);
 
   // Listen for session expired event
   useEffect(() => {

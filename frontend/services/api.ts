@@ -11,9 +11,9 @@ let lastActivityTime = Date.now();
 let activityListenersAdded = false;
 
 // Configuration constants
-const INACTIVITY_WARNING_TIME = 55 * 60 * 1000; // 55 menit - show warning
 const SESSION_TIMEOUT = 60 * 60 * 1000; // 60 menit - force logout
-const ACTIVITY_CHECK_INTERVAL = 1000; // Check aktivitas setiap 1 detik
+const ACTIVITY_CHECK_INTERVAL = 500; // Check aktivitas setiap 500ms untuk akurasi lebih baik
+const WARNING_TIME_THRESHOLD = 60 * 1000; // Show warning ketika tinggal 1 menit
 
 // Custom events for session management
 export const SESSION_EVENTS = {
@@ -73,7 +73,7 @@ export const startTokenTimeoutChecker = (): void => {
   // Add activity listeners
   addActivityListeners();
 
-  // Check token dan inactivity setiap 1 detik untuk akurasi lebih baik
+  // Check token dan inactivity setiap 500ms untuk akurasi lebih baik
   tokenTimeoutInterval = setInterval(async () => {
     const expirationTime = localStorage.getItem('token_expiration');
     const token = localStorage.getItem('auth_token');
@@ -119,16 +119,16 @@ export const startTokenTimeoutChecker = (): void => {
       // Verify token dengan backend
       await verifyTokenValidity();
     }
-    // WARNING: User tidak aktif dan token akan expired dalam 5 menit
-    else if (timeRemaining <= INACTIVITY_WARNING_TIME && inactivityDuration >= 5 * 60 * 1000) {
-      console.warn('[Session Monitor] Token will expire soon and user is inactive');
+    // WARNING: User tidak aktif dan token akan expired dalam 1 menit (60 detik)
+    else if (timeRemaining <= WARNING_TIME_THRESHOLD && inactivityDuration >= 5 * 60 * 1000) {
+      console.warn('[Session Monitor] Token will expire within 1 minute and user is inactive');
 
-      // Emit custom event untuk UI components
+      // Emit custom event untuk UI components - emit continuously untuk update real-time
       window.dispatchEvent(new CustomEvent(SESSION_EVENTS.EXPIRING_WARNING, {
         detail: { timeRemaining }
       }));
     }
-  }, ACTIVITY_CHECK_INTERVAL); // Check setiap 1 detik untuk akurasi
+  }, ACTIVITY_CHECK_INTERVAL); // Check setiap 500ms untuk akurasi lebih baik
 };
 
 // Function to stop the timeout checker
