@@ -18,7 +18,7 @@ return new class extends Migration
             $table->string('spk_name');
             $table->string('credit_period');
             $table->string('guarantee_name');
-            $table->enum('guarantee_type', ['BPKB', 'SHM', 'SHGB']);
+            $table->enum('guarantee_type', ['BPKB', 'SHM', 'SHGB', 'E-SHM']);
             $table->string('guarantee_number');
             $table->string('file_location');
             $table->date('input_date');

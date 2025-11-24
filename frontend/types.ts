@@ -330,7 +330,7 @@ export interface AssetGuarantee {
 }
 
 // New Guarantee Interface - Jaminan Asset
-export type GuaranteeType = 'BPKB' | 'SHM' | 'SHGB';
+export type GuaranteeType = 'BPKB' | 'SHM' | 'SHGB' | 'E-SHM';
 
 export type GuaranteeStatus = 'available' | 'dipinjam' | 'lunas';
 
@@ -413,6 +413,7 @@ export interface GuaranteeStats {
     BPKB: number;
     SHM: number;
     SHGB: number;
+    'E-SHM': number;
   };
   total_spk: number;
   latest_input: string;

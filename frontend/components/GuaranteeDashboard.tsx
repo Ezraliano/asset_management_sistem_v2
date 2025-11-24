@@ -1,8 +1,20 @@
 import React, { useState, useEffect } from 'react';
 import { getGuaranteeStats } from '../services/api';
+import { BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 interface GuaranteeDashboardProps {
   navigateTo?: (view: any) => void;
+}
+
+interface BarChartData {
+  name: string;
+  count: number;
+}
+
+interface DonutChartData {
+  [key: string]: string | number;
+  name: string;
+  value: number;
 }
 
 const GuaranteeDashboard: React.FC<GuaranteeDashboardProps> = ({ navigateTo }) => {
@@ -12,6 +24,8 @@ const GuaranteeDashboard: React.FC<GuaranteeDashboardProps> = ({ navigateTo }) =
     lunas: 0,
     total: 0,
   });
+  const [typeData, setTypeData] = useState<BarChartData[]>([]);
+  const [statusData, setStatusData] = useState<DonutChartData[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
@@ -22,12 +36,35 @@ const GuaranteeDashboard: React.FC<GuaranteeDashboardProps> = ({ navigateTo }) =
         const guaranteeStats = await getGuaranteeStats();
 
         if (guaranteeStats && guaranteeStats.by_status) {
+          const availableCount = guaranteeStats.by_status.available || 0;
+          const dipinjamCount = guaranteeStats.by_status.dipinjam || 0;
+          const lunasCount = guaranteeStats.by_status.lunas || 0;
+
           setStats({
-            available: guaranteeStats.by_status.available || 0,
-            dipinjam: guaranteeStats.by_status.dipinjam || 0,
-            lunas: guaranteeStats.by_status.lunas || 0,
+            available: availableCount,
+            dipinjam: dipinjamCount,
+            lunas: lunasCount,
             total: guaranteeStats.total || 0,
           });
+
+          // Prepare data untuk Bar Chart (Tipe Jaminan)
+          if (guaranteeStats.by_type) {
+            const typeChartData: BarChartData[] = [
+              { name: 'BPKB', count: guaranteeStats.by_type.BPKB || 0 },
+              { name: 'SHM', count: guaranteeStats.by_type.SHM || 0 },
+              { name: 'SHGB', count: guaranteeStats.by_type.SHGB || 0 },
+              { name: 'E-SHM', count: guaranteeStats.by_type['E-SHM'] || 0 },
+            ];
+            setTypeData(typeChartData);
+          }
+
+          // Prepare data untuk Donut Chart (Status Jaminan)
+          const statusChartData: DonutChartData[] = [
+            { name: 'Tersedia', value: availableCount },
+            { name: 'Dipinjam', value: dipinjamCount },
+            { name: 'Lunas', value: lunasCount },
+          ];
+          setStatusData(statusChartData);
         }
       } catch (err: any) {
         console.error('Error fetching guarantee stats:', err);
@@ -94,7 +131,7 @@ const GuaranteeDashboard: React.FC<GuaranteeDashboardProps> = ({ navigateTo }) =
             </div>
           </div>
           <div className="mt-4 pt-4 border-t border-gray-100">
-            <p className="text-xs text-gray-500">Jaminan siap dipinjamkan</p>
+            <p className="text-xs text-gray-500">Jaminan Yang Tersedia</p>
           </div>
         </div>
 
@@ -146,6 +183,84 @@ const GuaranteeDashboard: React.FC<GuaranteeDashboardProps> = ({ navigateTo }) =
             <p>{stats.available} tersedia</p>
             <p>{stats.dipinjam} dipinjam</p>
             <p>{stats.lunas} lunas</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Charts Section */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Bar Chart - Tipe Jaminan */}
+        <div className="bg-white rounded-lg shadow p-6">
+          <h2 className="text-xl font-bold text-gray-800 mb-4">Total Jaminan Berdasarkan Tipe</h2>
+          {typeData.length > 0 ? (
+            <ResponsiveContainer width="100%" height={300}>
+              <BarChart data={typeData}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                <XAxis dataKey="name" stroke="#666" />
+                <YAxis stroke="#666" />
+                <Tooltip
+                  contentStyle={{ backgroundColor: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: '6px' }}
+                  formatter={(value) => [`${value}`, 'Jumlah']}
+                />
+                <Bar dataKey="count" fill="#3b82f6" radius={[8, 8, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          ) : (
+            <div className="h-300 flex items-center justify-center text-gray-500">
+              Tidak ada data jaminan
+            </div>
+          )}
+          <div className="mt-4 pt-4 border-t border-gray-100">
+            <p className="text-xs text-gray-600">Data jaminan berdasarkan tipe: BPKB, SHM, SHGB, dan E-SHM</p>
+          </div>
+        </div>
+
+        {/* Donut Chart - Status Jaminan */}
+        <div className="bg-white rounded-lg shadow p-6">
+          <h2 className="text-xl font-bold text-gray-800 mb-4">Distribusi Status Jaminan</h2>
+          {statusData.length > 0 && statusData.some(d => d.value > 0) ? (
+            <ResponsiveContainer width="100%" height={300}>
+              <PieChart>
+                <Pie
+                  data={statusData}
+                  cx="50%"
+                  cy="50%"
+                  innerRadius={80}
+                  outerRadius={120}
+                  paddingAngle={5}
+                  dataKey="value"
+                  label={({ name, value }) => `${name}: ${value}`}
+                >
+                  <Cell fill="#10b981" />
+                  <Cell fill="#f59e0b" />
+                  <Cell fill="#3b82f6" />
+                </Pie>
+                <Tooltip
+                  contentStyle={{ backgroundColor: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: '6px' }}
+                  formatter={(value) => [`${value}`, 'Jumlah']}
+                />
+              </PieChart>
+            </ResponsiveContainer>
+          ) : (
+            <div className="h-300 flex items-center justify-center text-gray-500">
+              Tidak ada data status jaminan
+            </div>
+          )}
+          <div className="mt-6 pt-4 border-t border-gray-100">
+            <div className="grid grid-cols-3 gap-2 text-sm">
+              <div className="flex items-center gap-2">
+                <div className="w-3 h-3 rounded-full" style={{ backgroundColor: '#10b981' }}></div>
+                <span className="text-gray-600">Tersedia: {stats.available}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-3 h-3 rounded-full" style={{ backgroundColor: '#f59e0b' }}></div>
+                <span className="text-gray-600">Dipinjam: {stats.dipinjam}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-3 h-3 rounded-full" style={{ backgroundColor: '#3b82f6' }}></div>
+                <span className="text-gray-600">Lunas: {stats.lunas}</span>
+              </div>
+            </div>
           </div>
         </div>
       </div>

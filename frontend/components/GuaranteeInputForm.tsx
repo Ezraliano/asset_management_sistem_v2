@@ -143,7 +143,7 @@ const GuaranteeInputForm: React.FC<GuaranteeInputFormProps> = ({ guarantee, asse
       // Type-safe form data
       const submitData = {
         ...formData,
-        guarantee_type: formData.guarantee_type as 'BPKB' | 'SHM' | 'SHGB'
+        guarantee_type: formData.guarantee_type as 'BPKB' | 'SHM' | 'SHGB' | 'E-SHM'
       };
 
       if (guarantee) {
@@ -174,7 +174,7 @@ const GuaranteeInputForm: React.FC<GuaranteeInputFormProps> = ({ guarantee, asse
   const getFieldError = (field: keyof ValidationErrors): string | undefined => validationErrors[field];
   const hasErrors = (): boolean => Object.keys(validationErrors).length > 0 || !!error;
 
-  const guaranteeTypes = ['BPKB', 'SHM', 'SHGB'];
+  const guaranteeTypes = ['BPKB', 'SHM', 'SHGB', 'E-SHM'];
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
