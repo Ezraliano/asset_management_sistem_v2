@@ -103,7 +103,8 @@ export const exportGuaranteeIncomeToPdf = (
     'Atas Nama Jaminan',
     'Tipe Jaminan',
     'No Jaminan',
-    'Tgl Input',
+    'Lokasi Jaminan',
+    'Tgl Input Jaminan Masuk',
     'Status',
   ];
 
@@ -115,6 +116,7 @@ export const exportGuaranteeIncomeToPdf = (
     item.guarantee_name,
     item.guarantee_type,
     item.guarantee_number,
+    item.file_location || '',
     formatDate(item.input_date),
     getStatusLabel(item.status),
   ]);
@@ -144,15 +146,16 @@ export const exportGuaranteeIncomeToPdf = (
       fillColor: [245, 245, 245],
     },
     columnStyles: {
-      0: { cellWidth: 30, halign: 'center' },
-      1: { cellWidth: 70 },
-      2: { cellWidth: 60 },
-      3: { cellWidth: 90 },
-      4: { cellWidth: 90 },
-      5: { cellWidth: 70 },
-      6: { cellWidth: 70 },
-      7: { cellWidth: 70 },
-      8: { cellWidth: 60, halign: 'center' },
+      0: { cellWidth: 25, halign: 'center' },
+      1: { cellWidth: 60 },
+      2: { cellWidth: 50 },
+      3: { cellWidth: 70 },
+      4: { cellWidth: 70 },
+      5: { cellWidth: 60 },
+      6: { cellWidth: 60 },
+      7: { cellWidth: 65 },
+      8: { cellWidth: 60 },
+      9: { cellWidth: 50, halign: 'center' },
     },
     margin: {
       left: margin.left,
@@ -195,9 +198,9 @@ export const exportGuaranteeIncomeToExcel = (
     'Atas Nama Jaminan',
     'Tipe Jaminan',
     'No Jaminan',
-    'Tanggal Input',
+    'Lokasi Jaminan',
+    'Tgl Input Jaminan Masuk',
     'Status',
-    'Lokasi File',
   ];
 
   const tableData = data.map((item, index) => [
@@ -208,9 +211,9 @@ export const exportGuaranteeIncomeToExcel = (
     item.guarantee_name,
     item.guarantee_type,
     item.guarantee_number,
+    item.file_location || '',
     formatDate(item.input_date),
     getStatusLabel(item.status),
-    item.file_location || '',
   ]);
 
   const worksheetData = [headers, ...tableData];
@@ -225,9 +228,9 @@ export const exportGuaranteeIncomeToExcel = (
     { wch: 20 },
     { wch: 12 },
     { wch: 15 },
-    { wch: 18 },
-    { wch: 12 },
     { wch: 20 },
+    { wch: 20 },
+    { wch: 12 },
   ];
   worksheet['!cols'] = columnWidths;
   worksheet['!freeze'] = { xSplit: 0, ySplit: 1 };
@@ -787,41 +790,81 @@ export const exportGuaranteeDetailToPdf = async (
       doc.setTextColor(230, 126, 34);
       doc.setFont('Helvetica', 'bold');
       doc.text('Informasi Peminjaman', margin.left, yPosition);
-      yPosition += 7;
+      yPosition += 10;
 
-      doc.setFontSize(10);
-      doc.setTextColor(40, 40, 40);
-      doc.setFont('Helvetica', 'normal');
-
-      const loanInfo = [
-        ['Nama Peminjam', activeLoan.borrower_name],
-        ['Kontak Peminjam', activeLoan.borrower_contact],
-        ['Tanggal Peminjaman', formatDate(activeLoan.loan_date)],
-        ['Tanggal Kembali Ekspektasi', activeLoan.expected_return_date ? formatDate(activeLoan.expected_return_date) : 'Belum ditentukan'],
+      // Create table data for loan information
+      const loanTableHeaders = [
+        'Nama Peminjam',
+        'Kontak Peminjam',
+        'Tanggal Peminjaman',
+        'Tanggal Ekspektasi Kembali',
+        'Lokasi Jaminan',
+        'Alasan Peminjaman'
       ];
 
-      loanInfo.forEach((info) => {
-        doc.setFont('Helvetica', 'bold');
-        doc.text(info[0] + ':', margin.left, yPosition);
-        doc.setFont('Helvetica', 'normal');
-        const wrappedText = doc.splitTextToSize(info[1], pageWidth - margin.left - margin.right - 50);
-        doc.text(wrappedText, margin.left + 50, yPosition);
-        yPosition += 6;
+      const loanTableData = [
+        [
+          activeLoan.borrower_name || 'N/A',
+          activeLoan.borrower_contact || 'N/A',
+          formatDate(activeLoan.loan_date),
+          activeLoan.expected_return_date ? formatDate(activeLoan.expected_return_date) : 'Belum ditentukan',
+          guarantee.file_location || 'N/A',
+          activeLoan.reason || 'N/A'
+        ]
+      ];
+
+      // Create table using autoTable with landscape orientation adjustment
+      (doc as any).autoTable({
+        head: [loanTableHeaders],
+        body: loanTableData,
+        startY: yPosition,
+        styles: {
+          fontSize: 8,
+          cellPadding: 3,
+          lineColor: [200, 200, 200],
+          lineWidth: 0.1,
+          textColor: [40, 40, 40],
+          font: 'helvetica',
+          halign: 'left',
+          valign: 'middle',
+          overflow: 'linebreak',
+        },
+        headStyles: {
+          fillColor: [230, 126, 34],
+          textColor: 255,
+          fontStyle: 'bold',
+          fontSize: 9,
+        },
+        alternateRowStyles: {
+          fillColor: [245, 245, 245],
+        },
+        columnStyles: {
+          0: { cellWidth: 28 },
+          1: { cellWidth: 28 },
+          2: { cellWidth: 26 },
+          3: { cellWidth: 28 },
+          4: { cellWidth: 25 },
+          5: { cellWidth: 30 },
+        },
+        margin: {
+          left: margin.left,
+          right: margin.right,
+          top: 0,
+          bottom: 0,
+        },
+        showHead: 'firstPage',
+        theme: 'grid',
+        didDrawPage: (data: any) => {
+          // Handle page breaks if needed
+          if (data.pageNumber > 1) {
+            yPosition = margin.top;
+          }
+        },
       });
 
-      if (activeLoan.reason) {
-        yPosition += 2;
-        doc.setFont('Helvetica', 'bold');
-        doc.text('Alasan Peminjaman:', margin.left, yPosition);
-        yPosition += 5;
-        doc.setFont('Helvetica', 'normal');
-        const wrappedReason = doc.splitTextToSize(
-          activeLoan.reason,
-          pageWidth - margin.left - margin.right - 5
-        );
-        doc.text(wrappedReason, margin.left + 3, yPosition);
-        yPosition += wrappedReason.length * 5 + 3;
-      }
+      // Update yPosition after table
+      const finalY = (doc as any).lastAutoTable.finalY || yPosition + 30;
+      yPosition = finalY + 5;
     }
   }
 

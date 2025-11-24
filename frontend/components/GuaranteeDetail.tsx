@@ -556,54 +556,48 @@ const GuaranteeDetail: React.FC<GuaranteeDetailProps> = ({ guaranteeId, navigate
                   <p>Belum ada riwayat peminjaman</p>
                 </div>
               ) : (
-                <ul className="space-y-3">
-                  {loanHistory.map((loan) => (
-                    <li key={loan.id} className="p-4 bg-blue-50 rounded-lg border border-blue-200 hover:bg-blue-100 transition-colors">
-                      <div className="flex justify-between items-start mb-2">
-                        <div className="flex-1">
-                          <div className="flex items-center mb-2">
-                            <span className="font-medium text-gray-900">Peminjam:</span>
-                            <span className="ml-2 text-gray-700">{loan.borrower_name || 'N/A'}</span>
-                          </div>
-                          <div className="flex items-center mb-2">
-                            <span className="font-medium text-gray-900">Kontak:</span>
-                            <span className="ml-2 text-gray-700">{loan.borrower_contact || 'N/A'}</span>
-                          </div>
-                          <div className="flex items-center mb-2">
-                            <span className="font-medium text-gray-900">Alasan:</span>
-                            <span className="ml-2 text-gray-700">{loan.reason || 'N/A'}</span>
-                          </div>
-                          <div className="flex items-center mb-2">
-                            <span className="font-medium text-gray-900">Lokasi Jaminan:</span>
-                            <span className="ml-2 text-gray-700">{loan.file_location || 'N/A'}</span>
-                          </div>
-                          <div className="text-sm text-gray-600">
-                            <div><strong>Tanggal Peminjaman:</strong> {formatDate(loan.loan_date)}</div>
-                            <div><strong>Tanggal Rencana Kembali:</strong> {loan.expected_return_date ? formatDate(loan.expected_return_date) : 'Belum ditentukan'}</div>
-                            {loan.actual_return_date && (
-                              <div><strong>Tanggal Pengembalian:</strong> {formatDate(loan.actual_return_date)}</div>
-                            )}
-                          </div>
-                          {/* Button untuk return jaminan - hanya jika status masih active */}
-                          {loan.status === 'active' && !loan.actual_return_date && (
-                            <div className="mt-3 flex gap-2">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead className="bg-gray-50 border-b">
+                      <tr>
+                        <th className="px-6 py-3 text-left font-semibold text-gray-700">Nama Peminjam</th>
+                        <th className="px-6 py-3 text-left font-semibold text-gray-700">Kontak Peminjam</th>
+                        <th className="px-6 py-3 text-left font-semibold text-gray-700">Tanggal Peminjaman</th>
+                        <th className="px-6 py-3 text-left font-semibold text-gray-700">Tanggal Ekspektasi Kembali</th>
+                        <th className="px-6 py-3 text-left font-semibold text-gray-700">Lokasi Jaminan</th>
+                        <th className="px-6 py-3 text-left font-semibold text-gray-700">Alasan Peminjaman</th>
+                        <th className="px-6 py-3 text-center font-semibold text-gray-700">Aksi</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {loanHistory.map((loan) => (
+                        <tr key={loan.id} className="border-b hover:bg-gray-50 transition">
+                          <td className="px-6 py-4 text-gray-900 font-medium">{loan.borrower_name || 'N/A'}</td>
+                          <td className="px-6 py-4 text-gray-900">{loan.borrower_contact || 'N/A'}</td>
+                          <td className="px-6 py-4 text-gray-900">{formatDate(loan.loan_date)}</td>
+                          <td className="px-6 py-4 text-gray-900">
+                            {loan.expected_return_date ? formatDate(loan.expected_return_date) : 'Belum ditentukan'}
+                          </td>
+                          <td className="px-6 py-4 text-gray-900">{loan.file_location || 'N/A'}</td>
+                          <td className="px-6 py-4 text-gray-900">{loan.reason || 'N/A'}</td>
+                          <td className="px-6 py-4 text-center">
+                            {loan.status === 'active' && !loan.actual_return_date && (
                               <button
                                 onClick={() => openReturnModal(loan)}
-                                className="flex items-center justify-center text-xs font-medium bg-blue-500 text-white px-3 py-1.5 rounded hover:bg-blue-600 transition-colors"
+                                className="text-blue-600 hover:text-blue-800 font-medium text-sm"
                               >
-                                <span className="mr-1">↩️</span>
-                                <span>Kembalikan</span>
+                                Kembalikan
                               </button>
-                            </div>
-                          )}
-                        </div>
-                        <div className="text-sm text-gray-500 whitespace-nowrap">
-                          {formatDateTime(loan.created_at)}
-                        </div>
-                      </div>
-                    </li>
-                  ))}
-                </ul>
+                            )}
+                            {loan.actual_return_date && (
+                              <span className="text-green-600 font-medium text-sm">Dikembalikan</span>
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               )}
             </div>
           )}

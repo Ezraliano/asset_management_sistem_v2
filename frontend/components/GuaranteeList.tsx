@@ -217,7 +217,8 @@ const GuaranteeList: React.FC<GuaranteeListProps> = ({ navigateTo }) => {
                   <th className="px-6 py-3 text-left font-semibold text-gray-700">Atas Nama Jaminan</th>
                   <th className="px-6 py-3 text-left font-semibold text-gray-700">Tipe Jaminan</th>
                   <th className="px-6 py-3 text-left font-semibold text-gray-700">No Jaminan</th>
-                  <th className="px-6 py-3 text-left font-semibold text-gray-700">Tanggal Input</th>
+                  <th className="px-6 py-3 text-left font-semibold text-gray-700">Lokasi Jaminan</th>
+                  <th className="px-6 py-3 text-left font-semibold text-gray-700">Tgl Input Jaminan Masuk</th>
                   <th className="px-6 py-3 text-left font-semibold text-gray-700">Status</th>
                   <th className="px-6 py-3 text-left font-semibold text-gray-700">Aksi</th>
                 </tr>
@@ -235,6 +236,7 @@ const GuaranteeList: React.FC<GuaranteeListProps> = ({ navigateTo }) => {
                       </span>
                     </td>
                     <td className="px-6 py-4 text-gray-900">{guarantee.guarantee_number}</td>
+                    <td className="px-6 py-4 text-gray-900">{guarantee.file_location}</td>
                     <td className="px-6 py-4 text-gray-900">{formatDate(guarantee.input_date)}</td>
                     <td className="px-6 py-4">
                       <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(guarantee.status)}`}>
