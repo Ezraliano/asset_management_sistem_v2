@@ -480,18 +480,6 @@ const GuaranteeDetail: React.FC<GuaranteeDetailProps> = ({ guaranteeId, navigate
 
             {/* Action Buttons Bar */}
             <div className="mt-8 pt-6 border-t border-gray-200 flex flex-wrap gap-3 justify-center md:justify-start">
-              {/* Download PDF Button - Selalu tersedia */}
-              {guarantee && (
-                <button
-                  onClick={handleDownloadPdf}
-                  disabled={isDownloadingPdf}
-                  className="flex items-center justify-center text-sm font-medium bg-red-50 text-red-700 px-4 py-2 rounded-lg shadow-sm hover:bg-red-100 border border-red-200 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
-                >
-                  <span className="mr-2">📥</span>
-                  <span>{isDownloadingPdf ? 'Membuat PDF...' : 'Download PDF'}</span>
-                </button>
-              )}
-
               {/* Peminjaman Button - Selalu tersedia */}
               {guarantee && (
                 <button
@@ -516,6 +504,18 @@ const GuaranteeDetail: React.FC<GuaranteeDetailProps> = ({ guaranteeId, navigate
                 >
                   <span className="mr-2">✅</span>
                   <span>Pelunasan Jaminan</span>
+                </button>
+              )}
+
+              {/* Download PDF Button - Selalu tersedia */}
+              {guarantee && (
+                <button
+                  onClick={handleDownloadPdf}
+                  disabled={isDownloadingPdf}
+                  className="flex items-center justify-center text-sm font-medium bg-red-50 text-red-700 px-4 py-2 rounded-lg shadow-sm hover:bg-red-100 border border-red-200 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+                >
+                  <span className="mr-2">📥</span>
+                  <span>{isDownloadingPdf ? 'Membuat PDF...' : 'Download PDF'}</span>
                 </button>
               )}
 
