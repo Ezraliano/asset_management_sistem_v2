@@ -6,6 +6,15 @@ const API_BASE_URL = 'http://127.0.0.1:8000/api';
 // Token timeout checker interval
 let tokenTimeoutInterval: NodeJS.Timeout | null = null;
 
+// Activity tracker variables
+let lastActivityTime = Date.now();
+let activityListenersAdded = false;
+
+// Configuration constants
+const INACTIVITY_WARNING_TIME = 55 * 60 * 1000; // 55 menit - show warning
+const SESSION_TIMEOUT = 60 * 60 * 1000; // 60 menit - force logout
+const ACTIVITY_CHECK_INTERVAL = 1000; // Check aktivitas setiap 1 detik
+
 // Custom events for session management
 export const SESSION_EVENTS = {
   EXPIRING_WARNING: 'sessionExpiringWarning',
@@ -13,14 +22,58 @@ export const SESSION_EVENTS = {
   EXTEND: 'sessionExtended',
 };
 
-// ✅ PERBAIKAN: Enhanced token checker
+// ✅ PERBAIKAN: Add activity listeners untuk monitor user action
+const addActivityListeners = (): void => {
+  if (activityListenersAdded) return;
+
+  const updateActivity = () => {
+    lastActivityTime = Date.now();
+    console.log('[Activity Detected] User is active - Session timer reset');
+  };
+
+  // Monitor berbagai jenis aktivitas user
+  const events = ['mousedown', 'keydown', 'scroll', 'touchstart', 'click', 'mousemove'];
+
+  events.forEach(event => {
+    window.addEventListener(event, updateActivity, { passive: true });
+  });
+
+  activityListenersAdded = true;
+  console.log('Activity listeners added');
+};
+
+// ✅ PERBAIKAN: Remove activity listeners
+const removeActivityListeners = (): void => {
+  if (!activityListenersAdded) return;
+
+  const updateActivity = () => {
+    lastActivityTime = Date.now();
+  };
+
+  const events = ['mousedown', 'keydown', 'scroll', 'touchstart', 'click', 'mousemove'];
+
+  events.forEach(event => {
+    window.removeEventListener(event, updateActivity);
+  });
+
+  activityListenersAdded = false;
+  console.log('Activity listeners removed');
+};
+
+// ✅ PERBAIKAN: Enhanced token checker dengan activity monitoring
 export const startTokenTimeoutChecker = (): void => {
   // Clear any existing interval
   if (tokenTimeoutInterval) {
     clearInterval(tokenTimeoutInterval);
   }
 
-  // Check token every 30 seconds
+  // Reset last activity time when checker starts
+  lastActivityTime = Date.now();
+
+  // Add activity listeners
+  addActivityListeners();
+
+  // Check token dan inactivity setiap 1 detik untuk akurasi lebih baik
   tokenTimeoutInterval = setInterval(async () => {
     const expirationTime = localStorage.getItem('token_expiration');
     const token = localStorage.getItem('auth_token');
@@ -31,38 +84,51 @@ export const startTokenTimeoutChecker = (): void => {
       return;
     }
 
-    const expirationMs = parseInt(expirationTime, 10);
     const currentTime = Date.now();
+    const expirationMs = parseInt(expirationTime, 10);
     const timeRemaining = expirationMs - currentTime;
+    const inactivityDuration = currentTime - lastActivityTime;
+
+    console.log(`[Session Monitor] Time Remaining: ${Math.floor(timeRemaining / 1000)}s, Inactivity: ${Math.floor(inactivityDuration / 1000)}s`);
+
+    // ✅ PERBAIKAN: Jika ada aktivitas dalam 5 menit terakhir, extend token
+    if (inactivityDuration < 5 * 60 * 1000) {
+      // User masih aktif - extend token expiration
+      if (timeRemaining < SESSION_TIMEOUT * 0.8) { // Extend jika tinggal 80% dari waktu original
+        console.log('[Session Monitor] User is active - Auto-extending session');
+        const newExpirationTime = Date.now() + SESSION_TIMEOUT;
+        localStorage.setItem('token_expiration', newExpirationTime.toString());
+      }
+      return; // Skip warning jika user masih aktif
+    }
 
     // CRITICAL: Token expired atau akan expired dalam 10 detik
     if (timeRemaining <= 10 * 1000) {
-      console.warn('Token has expired or will expire very soon');
-      
+      console.warn('[Session Monitor] Token expired or expiring very soon');
+
       // Untuk SSO user, bisa tambahkan validasi SSO session di sini
       if (ssoSessionId) {
-        // Optional: Validasi SSO session dengan backend
         const ssoValid = await validateSSOSession();
         if (!ssoValid) {
-          console.warn('SSO session invalid, logging out');
+          console.warn('[Session Monitor] SSO session invalid, logging out');
           handleTokenExpiration();
           return;
         }
       }
-      
+
       // Verify token dengan backend
       await verifyTokenValidity();
     }
-    // WARNING: Token akan expired dalam 5 menit
-    else if (timeRemaining <= 5 * 60 * 1000) {
-      console.warn('Token will expire soon in', Math.floor(timeRemaining / 1000), 'seconds');
-      
+    // WARNING: User tidak aktif dan token akan expired dalam 5 menit
+    else if (timeRemaining <= INACTIVITY_WARNING_TIME && inactivityDuration >= 5 * 60 * 1000) {
+      console.warn('[Session Monitor] Token will expire soon and user is inactive');
+
       // Emit custom event untuk UI components
       window.dispatchEvent(new CustomEvent(SESSION_EVENTS.EXPIRING_WARNING, {
         detail: { timeRemaining }
       }));
     }
-  }, 30000); // Check every 30 seconds
+  }, ACTIVITY_CHECK_INTERVAL); // Check setiap 1 detik untuk akurasi
 };
 
 // Function to stop the timeout checker
@@ -71,6 +137,8 @@ export const stopTokenTimeoutChecker = (): void => {
     clearInterval(tokenTimeoutInterval);
     tokenTimeoutInterval = null;
   }
+  // ✅ PERBAIKAN: Remove activity listeners when stopping checker
+  removeActivityListeners();
 };
 
 // Function to verify token validity with backend
