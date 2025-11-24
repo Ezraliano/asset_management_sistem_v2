@@ -2212,8 +2212,8 @@ export const getGuaranteesBySpk = async (spkNumber: string): Promise<Guarantee[]
 export const getGuaranteeStats = async (): Promise<GuaranteeStats | null> => {
   try {
     const response = await apiRequest('/guarantees/stats');
-    const result = handleApiResponse<any>(response);
-    return result.data || null;
+    const result = handleApiResponse<GuaranteeStats>(response);
+    return result || null;
   } catch (error) {
     console.error('Error fetching guarantee stats:', error);
     return null;

@@ -241,25 +241,34 @@ Route::middleware(['auth:sanctum'])->group(function () {
 
     // Guarantee Routes - Super Admin, Admin Holding, Admin Unit
     Route::middleware('role:super-admin,admin,unit')->group(function () {
-        Route::apiResource('guarantees', GuaranteeController::class);
+        // Define specific routes BEFORE apiResource to prevent route collision
         Route::get('/guarantees/stats', [GuaranteeController::class, 'getStats']);
         Route::get('/guarantees/by-type/{type}', [GuaranteeController::class, 'getByType']);
         Route::get('/guarantees/by-spk/{spkNumber}', [GuaranteeController::class, 'getBySpk']);
 
+        // General CRUD routes
+        Route::apiResource('guarantees', GuaranteeController::class);
+
         // Guarantee Loan Routes
-        Route::apiResource('guarantee-loans', GuaranteeLoanController::class);
+        // Define specific routes BEFORE apiResource to prevent route collision
         Route::get('/guarantee-loans/stats', [GuaranteeLoanController::class, 'getStats']);
         Route::get('/guarantee-loans/by-guarantee/{guaranteeId}', [GuaranteeLoanController::class, 'getByGuaranteeId']);
         Route::get('/guarantee-loans/by-status/{status}', [GuaranteeLoanController::class, 'getByStatus']);
         Route::put('/guarantee-loans/{id}/return', [GuaranteeLoanController::class, 'returnLoan']);
 
+        // General CRUD routes
+        Route::apiResource('guarantee-loans', GuaranteeLoanController::class);
+
         // Guarantee Settlement Routes
-        Route::apiResource('guarantee-settlements', GuaranteeSettlementController::class);
+        // Define specific routes BEFORE apiResource to prevent route collision
         Route::get('/guarantee-settlements/stats', [GuaranteeSettlementController::class, 'getStats']);
         Route::get('/guarantee-settlements/by-guarantee/{guaranteeId}', [GuaranteeSettlementController::class, 'getByGuaranteeId']);
         Route::get('/guarantee-settlements/by-status/{status}', [GuaranteeSettlementController::class, 'getByStatus']);
         Route::put('/guarantee-settlements/{id}/approve', [GuaranteeSettlementController::class, 'approve']);
         Route::put('/guarantee-settlements/{id}/reject', [GuaranteeSettlementController::class, 'reject']);
+
+        // General CRUD routes
+        Route::apiResource('guarantee-settlements', GuaranteeSettlementController::class);
     });
 });
 

@@ -19,6 +19,7 @@ import Login from './components/Login';
 import SessionExpiryModal from './components/SessionExpiryModal';
 import AutoLogoutWarning from './components/AutoLogoutWarning';
 import GuaranteeList from './components/GuaranteeList';
+import GuaranteeDashboard from './components/GuaranteeDashboard';
 import { LanguageProvider } from './hooks/useTranslation';
 import { getCurrentUser, startTokenTimeoutChecker, stopTokenTimeoutChecker, extendSession, SESSION_EVENTS } from './services/api';
 
@@ -197,28 +198,7 @@ const AppContent: React.FC = () => {
             />
           );
       case 'GUARANTEE_DASHBOARD':
-          return (
-            <div className="space-y-6">
-              <div className="bg-white rounded-lg shadow p-6">
-                <h1 className="text-3xl font-bold text-gray-800 mb-2">Dashboard Jaminan Asset</h1>
-                <p className="text-gray-600">Kelola data jaminan asuransi untuk semua aset perusahaan</p>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div className="bg-white rounded-lg shadow p-6">
-                  <div className="text-4xl font-bold text-green-600">0</div>
-                  <p className="text-gray-600 mt-2">Jaminan Aktif</p>
-                </div>
-                <div className="bg-white rounded-lg shadow p-6">
-                  <div className="text-4xl font-bold text-yellow-600">0</div>
-                  <p className="text-gray-600 mt-2">Jaminan Kadaluarsa</p>
-                </div>
-                <div className="bg-white rounded-lg shadow p-6">
-                  <div className="text-4xl font-bold text-red-600">0</div>
-                  <p className="text-gray-600 mt-2">Jaminan Diklaim</p>
-                </div>
-              </div>
-            </div>
-          );
+          return <GuaranteeDashboard navigateTo={navigateTo} />;
       case 'GUARANTEE_LIST':
           return <GuaranteeList navigateTo={navigateTo} />;
       default:

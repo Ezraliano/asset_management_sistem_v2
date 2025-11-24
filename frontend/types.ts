@@ -404,6 +404,11 @@ export interface GuaranteeSettlement {
 
 export interface GuaranteeStats {
   total: number;
+  by_status: {
+    available: number;
+    dipinjam: number;
+    lunas: number;
+  };
   by_type: {
     BPKB: number;
     SHM: number;

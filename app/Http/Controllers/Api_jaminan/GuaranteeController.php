@@ -296,6 +296,11 @@ class GuaranteeController extends Controller
         try {
             $stats = [
                 'total' => Guarantee::count(),
+                'by_status' => [
+                    'available' => Guarantee::byStatus('available')->count(),
+                    'dipinjam' => Guarantee::byStatus('dipinjam')->count(),
+                    'lunas' => Guarantee::byStatus('lunas')->count(),
+                ],
                 'by_type' => [
                     'BPKB' => Guarantee::byType('BPKB')->count(),
                     'SHM' => Guarantee::byType('SHM')->count(),
