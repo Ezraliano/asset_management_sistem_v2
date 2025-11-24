@@ -79,10 +79,14 @@ const GuaranteeInputForm: React.FC<GuaranteeInputFormProps> = ({ guarantee, asse
 
     if (!formData.spk_number.trim()) {
       errors.spk_number = 'No SPK tidak boleh kosong';
+    } else if (!/^[a-zA-Z0-9]*$/.test(formData.spk_number)) {
+      errors.spk_number = 'No SPK hanya boleh mengandung huruf dan angka, tanpa simbol khusus';
     }
 
     if (!formData.cif_number.trim()) {
       errors.cif_number = 'No CIF tidak boleh kosong';
+    } else if (!/^\d+$/.test(formData.cif_number)) {
+      errors.cif_number = 'No CIF hanya boleh mengandung angka positif tanpa simbol';
     }
 
     if (!formData.spk_name.trim()) {
@@ -115,9 +119,21 @@ const GuaranteeInputForm: React.FC<GuaranteeInputFormProps> = ({ guarantee, asse
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
+    let processedValue = value;
+
+    // Special handling for spk_number - only allow alphanumeric characters
+    if (name === 'spk_number') {
+      processedValue = value.replace(/[^a-zA-Z0-9]/g, '');
+    }
+
+    // Special handling for cif_number - only allow digits
+    if (name === 'cif_number') {
+      processedValue = value.replace(/[^\d]/g, '');
+    }
+
     setFormData(prev => ({
       ...prev,
-      [name]: value,
+      [name]: processedValue,
     }));
     // Clear error for this field when user starts typing
     if (validationErrors[name as keyof ValidationErrors]) {
@@ -197,10 +213,10 @@ const GuaranteeInputForm: React.FC<GuaranteeInputFormProps> = ({ guarantee, asse
         {/* No SPK */}
         <div>
           <label htmlFor="spk_number" className="block text-sm font-medium text-gray-700 mb-1">
-            No SPK *
+            No SPK * <span className="text-gray-500 text-xs">(Hanya huruf dan angka)</span>
           </label>
           <input
-            type="number"
+            type="text"
             id="spk_number"
             name="spk_number"
             value={formData.spk_number}
@@ -210,7 +226,7 @@ const GuaranteeInputForm: React.FC<GuaranteeInputFormProps> = ({ guarantee, asse
             className={`block w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary sm:text-sm disabled:bg-gray-50 ${
               getFieldError('spk_number') ? 'border-red-300' : 'border-gray-300'
             }`}
-            placeholder="e.g., 12345"
+            placeholder="e.g., SPK12345 atau 12345"
           />
           {getFieldError('spk_number') && (
             <p className="mt-1 text-sm text-red-600">{getFieldError('spk_number')}</p>
@@ -220,16 +236,17 @@ const GuaranteeInputForm: React.FC<GuaranteeInputFormProps> = ({ guarantee, asse
         {/* No CIF */}
         <div>
           <label htmlFor="cif_number" className="block text-sm font-medium text-gray-700 mb-1">
-            No CIF *
+            No CIF * <span className="text-gray-500 text-xs">(Hanya angka positif)</span>
           </label>
           <input
-            type="number"
+            type="text"
             id="cif_number"
             name="cif_number"
             value={formData.cif_number}
             onChange={handleChange}
             required
             disabled={loading}
+            inputMode="numeric"
             className={`block w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary sm:text-sm disabled:bg-gray-50 ${
               getFieldError('cif_number') ? 'border-red-300' : 'border-gray-300'
             }`}

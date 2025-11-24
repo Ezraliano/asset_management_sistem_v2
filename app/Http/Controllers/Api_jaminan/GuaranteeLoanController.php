@@ -89,7 +89,7 @@ class GuaranteeLoanController extends Controller
                 'guarantee_id' => 'required|exists:mysql_jaminan.guarantees,id',
                 'spk_number' => 'required|string|max:255',
                 'cif_number' => 'required|string|max:255',
-                'guarantee_type' => 'required|in:BPKB,SHM,SHGB',
+                'guarantee_type' => 'required|in:BPKB,SHM,SHGB,E-SHM',
                 'file_location' => 'required|string|max:255',
                 'borrower_name' => 'required|string|max:255',
                 'borrower_contact' => 'required|string|max:255',

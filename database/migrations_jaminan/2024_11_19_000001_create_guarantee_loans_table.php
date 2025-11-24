@@ -16,7 +16,7 @@ return new class extends Migration
             $table->unsignedBigInteger('guarantee_id');
             $table->string('spk_number');
             $table->string('cif_number');
-            $table->enum('guarantee_type', ['BPKB', 'SHM', 'SHGB']);
+            $table->enum('guarantee_type', ['BPKB', 'SHM', 'SHGB', 'E-SHM']);
             $table->string('file_location');
             $table->string('borrower_name');
             $table->string('borrower_contact');
