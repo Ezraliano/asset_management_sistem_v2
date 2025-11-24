@@ -2193,6 +2193,7 @@ export const getGuaranteeLoans = async (params?: {
   sort_by?: string;
   sort_order?: 'asc' | 'desc';
   per_page?: number;
+  for_report?: string;
 }): Promise<{ loans: any[]; pagination: any }> => {
   try {
     const queryParams = new URLSearchParams();
@@ -2204,6 +2205,7 @@ export const getGuaranteeLoans = async (params?: {
     if (params?.sort_by) queryParams.append('sort_by', params.sort_by);
     if (params?.sort_order) queryParams.append('sort_order', params.sort_order);
     if (params?.per_page) queryParams.append('per_page', params.per_page.toString());
+    if (params?.for_report) queryParams.append('for_report', params.for_report);
 
     const queryString = queryParams.toString();
     const endpoint = queryString ? `/guarantee-loans?${queryString}` : '/guarantee-loans';

@@ -82,7 +82,8 @@ const GuaranteeReportExport: React.FC<GuaranteeReportExportProps> = ({
         }
       } else if (selectedReport === 'loan') {
         filename = `Laporan_Jaminan_Dipinjam_${today}`;
-        const result = await getGuaranteeLoans({ per_page: 1000 });
+        // Tambahkan parameter for_report=true untuk filter hanya jaminan yang masih dipinjam
+        const result = await getGuaranteeLoans({ per_page: 1000, for_report: 'true' });
         const loanData = result.loans || [];
 
         if (!Array.isArray(loanData) || loanData.length === 0) {

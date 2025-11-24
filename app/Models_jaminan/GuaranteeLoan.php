@@ -87,4 +87,22 @@ class GuaranteeLoan extends Model
     {
         return $query->orderBy('loan_date', 'desc');
     }
+
+    /**
+     * Scope untuk filter hanya peminjaman yang masih aktif (belum dikembalikan)
+     */
+    public function scopeOnlyActive($query)
+    {
+        return $query->where('status', 'active');
+    }
+
+    /**
+     * Scope untuk filter jaminan yang masih dipinjam (guarantee status = dipinjam)
+     */
+    public function scopeWithActiveLoan($query)
+    {
+        return $query->whereHas('guarantee', function ($guaranteeQuery) {
+            $guaranteeQuery->where('status', 'dipinjam');
+        });
+    }
 }

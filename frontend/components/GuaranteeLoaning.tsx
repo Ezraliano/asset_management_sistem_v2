@@ -11,6 +11,11 @@ const GuaranteeLoaning: React.FC<GuaranteeLoaningProps> = ({ guarantee, onSucces
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
+
+  // Cek apakah jaminan sudah berstatus lunas
+  const isGuaranteeSettled = guarantee.status === 'lunas';
+  const isGuaranteeBorrowed = guarantee.status === 'dipinjam';
+
   const [formData, setFormData] = useState({
     guarantee_id: guarantee.id.toString(),
     spk_number: guarantee.spk_number,
@@ -122,6 +127,26 @@ const GuaranteeLoaning: React.FC<GuaranteeLoaningProps> = ({ guarantee, onSucces
           ×
         </button>
       </div>
+
+      {/* Alert - Jaminan sudah lunas */}
+      {isGuaranteeSettled && (
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+          <p className="text-red-700 font-semibold mb-2">⚠️ Jaminan Tidak Dapat Dipinjamkan</p>
+          <p className="text-red-600 text-sm">
+            Jaminan ini sudah berstatus "Lunas" dan telah keluar dari sistem. Jaminan yang sudah lunas tidak dapat dipinjamkan kembali.
+          </p>
+        </div>
+      )}
+
+      {/* Alert - Jaminan sedang dipinjam */}
+      {isGuaranteeBorrowed && (
+        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+          <p className="text-yellow-700 font-semibold mb-2">⚠️ Jaminan Sedang Dipinjam</p>
+          <p className="text-yellow-600 text-sm">
+            Jaminan ini sedang dipinjam. Harap mengembalikan jaminan terlebih dahulu sebelum melakukan peminjaman baru.
+          </p>
+        </div>
+      )}
 
       {/* Info Jaminan */}
       <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
@@ -274,8 +299,9 @@ const GuaranteeLoaning: React.FC<GuaranteeLoaningProps> = ({ guarantee, onSucces
         <div className="flex gap-3 pt-4 border-t">
           <button
             type="submit"
-            disabled={loading}
+            disabled={loading || isGuaranteeSettled || isGuaranteeBorrowed}
             className="flex-1 bg-primary text-white px-6 py-2 rounded-lg hover:bg-primary-dark transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+            title={isGuaranteeSettled ? 'Jaminan sudah lunas, tidak dapat dipinjamkan' : isGuaranteeBorrowed ? 'Jaminan sedang dipinjam' : 'Simpan peminjaman'}
           >
             {loading ? 'Menyimpan...' : 'Simpan Peminjaman'}
           </button>

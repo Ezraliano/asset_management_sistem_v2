@@ -20,9 +20,15 @@ class GuaranteeLoanController extends Controller
         try {
             $query = GuaranteeLoan::with('guarantee');
 
-            // Filter berdasarkan status
-            if ($request->has('status') && $request->status !== '') {
-                $query->byStatus($request->status);
+            // Filter untuk laporan export - hanya tampilkan jaminan yang masih dipinjam
+            // Ini memastikan laporan "Jaminan Dipinjam" hanya menampilkan yang berstatus dipinjam
+            if ($request->has('for_report') && $request->for_report === 'true') {
+                $query->onlyActive()->withActiveLoan();
+            } else {
+                // Filter berdasarkan status loan (active/returned) jika tidak untuk laporan
+                if ($request->has('status') && $request->status !== '') {
+                    $query->byStatus($request->status);
+                }
             }
 
             // Filter berdasarkan guarantee_id
@@ -53,6 +59,7 @@ class GuaranteeLoanController extends Controller
                 'success' => true,
                 'message' => 'Data peminjaman jaminan berhasil diambil',
                 'data' => $loans->items(),
+                'loans' => $loans->items(),
                 'pagination' => [
                     'total' => $loans->total(),
                     'per_page' => $loans->perPage(),
@@ -91,11 +98,34 @@ class GuaranteeLoanController extends Controller
                 'expected_return_date' => 'nullable|date|after_or_equal:loan_date',
             ]);
 
+            // Validasi: Cek apakah jaminan sudah berstatus 'lunas'
+            $guarantee = Guarantee::find($validated['guarantee_id']);
+            if (!$guarantee) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Jaminan tidak ditemukan'
+                ], Response::HTTP_NOT_FOUND);
+            }
+
+            if ($guarantee->status === 'lunas') {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Jaminan dengan status "Lunas" tidak dapat dipinjamkan. Jaminan sudah keluar/dikembalikan.'
+                ], Response::HTTP_BAD_REQUEST);
+            }
+
+            // Jika sudah dipinjam sebelumnya, cek apakah sudah dikembalikan
+            if ($guarantee->status === 'dipinjam') {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Jaminan sedang dipinjam. Kembalikan terlebih dahulu sebelum melakukan peminjaman baru.'
+                ], Response::HTTP_BAD_REQUEST);
+            }
+
             // Create guarantee loan
             $loan = GuaranteeLoan::create($validated);
 
             // Update status jaminan menjadi 'dipinjam'
-            $guarantee = Guarantee::find($validated['guarantee_id']);
             if ($guarantee) {
                 $guarantee->update(['status' => 'dipinjam']);
             }
