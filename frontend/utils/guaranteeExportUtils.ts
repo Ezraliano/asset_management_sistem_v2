@@ -612,3 +612,339 @@ const getSettlementStatusLabel = (status: string): string => {
   };
   return labels[status] || status;
 };
+
+/**
+ * Interface untuk Detail Jaminan dengan Settlement
+ */
+interface GuaranteeDetailForPdf {
+  id: number;
+  spk_number: string;
+  cif_number: string;
+  spk_name: string;
+  credit_period: string;
+  guarantee_name: string;
+  guarantee_type: string;
+  guarantee_number: string;
+  file_location: string;
+  input_date: string;
+  status: string;
+  created_at: string;
+  updated_at: string;
+  settlements?: Array<{
+    id: number;
+    settlement_date: string;
+    settlement_status: string;
+    settlement_notes?: string;
+    settled_by?: string;
+    settlement_remarks?: string;
+    bukti_pelunasan?: string;
+  }>;
+}
+
+/**
+ * Export Detail Jaminan ke PDF
+ * Menampilkan informasi lengkap jaminan dan bukti pelunasan (jika berstatus lunas)
+ */
+export const exportGuaranteeDetailToPdf = async (
+  filename: string,
+  guarantee: GuaranteeDetailForPdf
+) => {
+  const doc = new jsPDF({
+    orientation: 'portrait',
+    unit: 'mm',
+    format: 'a4',
+  });
+
+  let yPosition = 15;
+  const margin = { left: 15, right: 15, top: 15, bottom: 15 };
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const pageHeight = doc.internal.pageSize.getHeight();
+
+  // Title
+  doc.setFontSize(16);
+  doc.setTextColor(41, 128, 185);
+  doc.setFont('Helvetica', 'bold');
+  doc.text('DETAIL JAMINAN ASET', margin.left, yPosition);
+  yPosition += 8;
+
+  // Date
+  doc.setFontSize(10);
+  doc.setTextColor(100, 100, 100);
+  doc.setFont('Helvetica', 'normal');
+  doc.text(`Tanggal Cetak: ${new Date().toLocaleDateString('id-ID')}`, margin.left, yPosition);
+  yPosition += 8;
+
+  // Divider
+  doc.setDrawColor(200, 200, 200);
+  doc.line(margin.left, yPosition, pageWidth - margin.right, yPosition);
+  yPosition += 6;
+
+  // Section 1: Informasi SPK
+  doc.setFontSize(12);
+  doc.setTextColor(41, 128, 185);
+  doc.setFont('Helvetica', 'bold');
+  doc.text('Informasi SPK', margin.left, yPosition);
+  yPosition += 7;
+
+  doc.setFontSize(10);
+  doc.setTextColor(40, 40, 40);
+  doc.setFont('Helvetica', 'normal');
+
+  const spkInfo = [
+    ['No SPK', guarantee.spk_number],
+    ['No CIF', guarantee.cif_number],
+    ['Atas Nama SPK', guarantee.spk_name],
+    ['Jangka Kredit', guarantee.credit_period],
+  ];
+
+  spkInfo.forEach((info) => {
+    doc.setFont('Helvetica', 'bold');
+    doc.text(info[0] + ':', margin.left, yPosition);
+    doc.setFont('Helvetica', 'normal');
+    doc.text(info[1], margin.left + 50, yPosition);
+    yPosition += 6;
+  });
+
+  yPosition += 4;
+
+  // Section 2: Informasi Jaminan
+  doc.setFontSize(12);
+  doc.setTextColor(41, 128, 185);
+  doc.setFont('Helvetica', 'bold');
+  doc.text('Informasi Jaminan', margin.left, yPosition);
+  yPosition += 7;
+
+  doc.setFontSize(10);
+  doc.setTextColor(40, 40, 40);
+  doc.setFont('Helvetica', 'normal');
+
+  const guaranteeInfo = [
+    ['Atas Nama Jaminan', guarantee.guarantee_name],
+    ['Tipe Jaminan', guarantee.guarantee_type],
+    ['No Jaminan', guarantee.guarantee_number],
+    ['Lokasi File', guarantee.file_location],
+  ];
+
+  guaranteeInfo.forEach((info) => {
+    doc.setFont('Helvetica', 'bold');
+    doc.text(info[0] + ':', margin.left, yPosition);
+    doc.setFont('Helvetica', 'normal');
+    const wrappedText = doc.splitTextToSize(info[1], pageWidth - margin.left - margin.right - 50);
+    doc.text(wrappedText, margin.left + 50, yPosition);
+    yPosition += 6;
+  });
+
+  yPosition += 4;
+
+  // Section 3: Status dan Tanggal
+  doc.setFontSize(12);
+  doc.setTextColor(41, 128, 185);
+  doc.setFont('Helvetica', 'bold');
+  doc.text('Status dan Tanggal', margin.left, yPosition);
+  yPosition += 7;
+
+  doc.setFontSize(10);
+  doc.setTextColor(40, 40, 40);
+  doc.setFont('Helvetica', 'normal');
+
+  const statusInfo = [
+    ['Status', getStatusLabel(guarantee.status)],
+    ['Tanggal Input', formatDate(guarantee.input_date)],
+  ];
+
+  statusInfo.forEach((info) => {
+    doc.setFont('Helvetica', 'bold');
+    doc.text(info[0] + ':', margin.left, yPosition);
+    doc.setFont('Helvetica', 'normal');
+    doc.text(info[1], margin.left + 50, yPosition);
+    yPosition += 6;
+  });
+
+  // Check if guarantee is "lunas" and has settlements with bukti_pelunasan
+  if (guarantee.status === 'lunas' && guarantee.settlements && guarantee.settlements.length > 0) {
+    const approvedSettlement = guarantee.settlements.find(s => s.settlement_status === 'approved');
+
+    if (approvedSettlement) {
+      yPosition += 4;
+
+      // Section 4: Informasi Pelunasan
+      doc.setFontSize(12);
+      doc.setTextColor(46, 204, 113);
+      doc.setFont('Helvetica', 'bold');
+      doc.text('Informasi Pelunasan', margin.left, yPosition);
+      yPosition += 7;
+
+      doc.setFontSize(10);
+      doc.setTextColor(40, 40, 40);
+      doc.setFont('Helvetica', 'normal');
+
+      const settlementInfo = [
+        ['Tanggal Pelunasan', formatDate(approvedSettlement.settlement_date)],
+        ['Status Pelunasan', getSettlementStatusLabel(approvedSettlement.settlement_status)],
+        ['Validator', approvedSettlement.settled_by || 'N/A'],
+      ];
+
+      settlementInfo.forEach((info) => {
+        doc.setFont('Helvetica', 'bold');
+        doc.text(info[0] + ':', margin.left, yPosition);
+        doc.setFont('Helvetica', 'normal');
+        doc.text(info[1], margin.left + 50, yPosition);
+        yPosition += 6;
+      });
+
+      if (approvedSettlement.settlement_notes) {
+        doc.setFont('Helvetica', 'bold');
+        doc.text('Catatan Pelunasan:', margin.left, yPosition);
+        yPosition += 5;
+        doc.setFont('Helvetica', 'normal');
+        const wrappedNotes = doc.splitTextToSize(
+          approvedSettlement.settlement_notes,
+          pageWidth - margin.left - margin.right - 5
+        );
+        doc.text(wrappedNotes, margin.left + 3, yPosition);
+        yPosition += wrappedNotes.length * 5 + 3;
+      }
+
+      if (approvedSettlement.settlement_remarks) {
+        doc.setFont('Helvetica', 'bold');
+        doc.text('Keterangan Validasi:', margin.left, yPosition);
+        yPosition += 5;
+        doc.setFont('Helvetica', 'normal');
+        const wrappedRemarks = doc.splitTextToSize(
+          approvedSettlement.settlement_remarks,
+          pageWidth - margin.left - margin.right - 5
+        );
+        doc.text(wrappedRemarks, margin.left + 3, yPosition);
+        yPosition += wrappedRemarks.length * 5 + 3;
+      }
+
+      // Add bukti pelunasan image if exists
+      if (approvedSettlement.bukti_pelunasan) {
+        yPosition += 3;
+        doc.setFont('Helvetica', 'bold');
+        doc.setFontSize(10);
+        doc.text('Bukti Pelunasan:', margin.left, yPosition);
+        yPosition += 8;
+
+        try {
+          // Convert image URL to base64 for embedding in PDF
+          const imageUrl = `http://127.0.0.1:8000/storage/${approvedSettlement.bukti_pelunasan}`;
+          const response = await fetch(imageUrl);
+          const blob = await response.blob();
+          const reader = new FileReader();
+
+          return new Promise<void>((resolve) => {
+            reader.onloadend = () => {
+              const imageData = reader.result as string;
+
+              // Check if we need to add a new page for the image
+              const maxImageHeight = pageHeight - yPosition - margin.bottom;
+
+              if (maxImageHeight > 50) {
+                // Image fits on current page
+                const imageWidth = 60;
+                const imageHeight = 60;
+                doc.addImage(imageData, 'JPEG', margin.left, yPosition, imageWidth, imageHeight);
+              } else {
+                // Add new page for image
+                doc.addPage();
+                const imageWidth = 100;
+                const imageHeight = 100;
+                doc.addImage(imageData, 'JPEG', margin.left, 20, imageWidth, imageHeight);
+              }
+
+              // Add footer with page numbers
+              const pageCount = (doc as any).internal.getNumberOfPages();
+              for (let i = 1; i <= pageCount; i++) {
+                (doc as any).setPage(i);
+                doc.setFontSize(8);
+                doc.setTextColor(150, 150, 150);
+                doc.text(
+                  `Halaman ${i} dari ${pageCount}`,
+                  pageWidth / 2,
+                  pageHeight - 10,
+                  { align: 'center' }
+                );
+              }
+
+              doc.save(filename);
+              resolve();
+            };
+            reader.readAsDataURL(blob);
+          });
+        } catch (error) {
+          console.error('Error loading bukti pelunasan image:', error);
+          // Continue without image if there's an error
+          doc.setFont('Helvetica', 'normal');
+          doc.setFontSize(9);
+          doc.setTextColor(200, 0, 0);
+          doc.text('(Gambar bukti pelunasan tidak dapat dimuat)', margin.left, yPosition);
+
+          // Add footer with page numbers
+          const pageCount = (doc as any).internal.getNumberOfPages();
+          for (let i = 1; i <= pageCount; i++) {
+            (doc as any).setPage(i);
+            doc.setFontSize(8);
+            doc.setTextColor(150, 150, 150);
+            doc.text(
+              `Halaman ${i} dari ${pageCount}`,
+              pageWidth / 2,
+              pageHeight - 10,
+              { align: 'center' }
+            );
+          }
+
+          doc.save(filename);
+        }
+      } else {
+        // Add footer with page numbers
+        const pageCount = (doc as any).internal.getNumberOfPages();
+        for (let i = 1; i <= pageCount; i++) {
+          (doc as any).setPage(i);
+          doc.setFontSize(8);
+          doc.setTextColor(150, 150, 150);
+          doc.text(
+            `Halaman ${i} dari ${pageCount}`,
+            pageWidth / 2,
+            pageHeight - 10,
+            { align: 'center' }
+          );
+        }
+
+        doc.save(filename);
+      }
+    } else {
+      // Add footer with page numbers
+      const pageCount = (doc as any).internal.getNumberOfPages();
+      for (let i = 1; i <= pageCount; i++) {
+        (doc as any).setPage(i);
+        doc.setFontSize(8);
+        doc.setTextColor(150, 150, 150);
+        doc.text(
+          `Halaman ${i} dari ${pageCount}`,
+          pageWidth / 2,
+          pageHeight - 10,
+          { align: 'center' }
+        );
+      }
+
+      doc.save(filename);
+    }
+  } else {
+    // Add footer with page numbers
+    const pageCount = (doc as any).internal.getNumberOfPages();
+    for (let i = 1; i <= pageCount; i++) {
+      (doc as any).setPage(i);
+      doc.setFontSize(8);
+      doc.setTextColor(150, 150, 150);
+      doc.text(
+        `Halaman ${i} dari ${pageCount}`,
+        pageWidth / 2,
+        pageHeight - 10,
+        { align: 'center' }
+      );
+    }
+
+    doc.save(filename);
+  }
+};

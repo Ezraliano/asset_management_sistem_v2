@@ -9,6 +9,7 @@ import GuaranteeSettlement from './GuaranteeSettlement';
 import GuaranteeReturn from './GuaranteeReturn';
 import SettlementValidation from './SettlementValidation';
 import SettlementRevision from './SettlementRevision';
+import { exportGuaranteeDetailToPdf } from '../utils/guaranteeExportUtils';
 
 interface GuaranteeDetailProps {
   guaranteeId: string;
@@ -38,6 +39,7 @@ const GuaranteeDetail: React.FC<GuaranteeDetailProps> = ({ guaranteeId, navigate
   const [successMessage, setSuccessMessage] = useState('');
   const [isSettlementAlertOpen, setSettlementAlertOpen] = useState(false);
   const [settlementAlertMessage, setSettlementAlertMessage] = useState('');
+  const [isDownloadingPdf, setDownloadingPdf] = useState(false);
 
   const fetchLoanHistory = useCallback(async (gId: number) => {
     setLoadingLoans(true);
@@ -187,6 +189,38 @@ const GuaranteeDetail: React.FC<GuaranteeDetailProps> = ({ guaranteeId, navigate
         'Jaminan sudah dalam status "Lunas". Tidak dapat melakukan pelunasan lebih lanjut.'
       );
       setSettlementAlertOpen(true);
+    }
+  };
+
+  const handleDownloadPdf = async () => {
+    if (!guarantee) return;
+
+    setDownloadingPdf(true);
+    try {
+      // Prepare guarantee data with settlements for PDF export
+      const guaranteeDataForPdf = {
+        ...guarantee,
+        settlements: settlementHistory,
+      };
+
+      // Generate filename with guarantee and spk number
+      const filename = `Detail_Jaminan_${guarantee.spk_number}_${guarantee.guarantee_name.replace(/\s+/g, '_')}.pdf`;
+
+      // Call export function
+      await exportGuaranteeDetailToPdf(filename, guaranteeDataForPdf as any);
+
+      setSuccessMessage('PDF berhasil diunduh');
+      setTimeout(() => {
+        setSuccessMessage('');
+      }, 3000);
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      setSuccessMessage('Gagal mengunduh PDF');
+      setTimeout(() => {
+        setSuccessMessage('');
+      }, 3000);
+    } finally {
+      setDownloadingPdf(false);
     }
   };
 
@@ -445,6 +479,18 @@ const GuaranteeDetail: React.FC<GuaranteeDetailProps> = ({ guaranteeId, navigate
 
             {/* Action Buttons Bar */}
             <div className="mt-8 pt-6 border-t border-gray-200 flex flex-wrap gap-3 justify-center md:justify-start">
+              {/* Download PDF Button - Selalu tersedia */}
+              {guarantee && (
+                <button
+                  onClick={handleDownloadPdf}
+                  disabled={isDownloadingPdf}
+                  className="flex items-center justify-center text-sm font-medium bg-red-50 text-red-700 px-4 py-2 rounded-lg shadow-sm hover:bg-red-100 border border-red-200 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+                >
+                  <span className="mr-2">📥</span>
+                  <span>{isDownloadingPdf ? 'Membuat PDF...' : 'Download PDF'}</span>
+                </button>
+              )}
+
               {/* Peminjaman Button - Selalu tersedia */}
               {guarantee && (
                 <button
