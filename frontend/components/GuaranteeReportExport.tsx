@@ -15,7 +15,7 @@ interface GuaranteeReportExportProps {
   onClose: () => void;
 }
 
-type ReportType = 'income' | 'loan' | 'settlement';
+type ReportType = 'income' | 'loan' | 'settlement' | 'all';
 type ExportFormat = 'pdf' | 'excel';
 
 const GuaranteeReportExport: React.FC<GuaranteeReportExportProps> = ({
@@ -113,6 +113,22 @@ const GuaranteeReportExport: React.FC<GuaranteeReportExportProps> = ({
         } else {
           exportGuaranteeSettlementToExcel(`${filename}.xlsx`, settlementData);
         }
+      } else if (selectedReport === 'all') {
+        filename = `Laporan_Semua_Jaminan_${today}`;
+        const response = await getGuarantees({ per_page: 1000 });
+        const allGuarantees: Guarantee[] = response.guarantees || [];
+
+        if (allGuarantees.length === 0) {
+          setError('Tidak ada data jaminan untuk diekspor');
+          setLoading(false);
+          return;
+        }
+
+        if (selectedFormat === 'pdf') {
+          exportGuaranteeIncomeToPdf(`${filename}.pdf`, allGuarantees);
+        } else {
+          exportGuaranteeIncomeToExcel(`${filename}.xlsx`, allGuarantees);
+        }
       }
 
       setSuccessMessage(
@@ -138,6 +154,7 @@ const GuaranteeReportExport: React.FC<GuaranteeReportExportProps> = ({
       income: 'Jaminan Masuk',
       loan: 'Jaminan Dipinjam',
       settlement: 'Jaminan Lunas',
+      all: 'Semua Jaminan',
     };
     return labels[type];
   };
@@ -226,6 +243,22 @@ const GuaranteeReportExport: React.FC<GuaranteeReportExportProps> = ({
                 <span className="ml-3 text-gray-700">
                   <div className="font-medium">Jaminan Lunas</div>
                   <div className="text-xs text-gray-500">Data jaminan yang sudah dikembalikan/lunas</div>
+                </span>
+              </label>
+
+              <label className="flex items-center p-3 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50 transition">
+                <input
+                  type="radio"
+                  name="report"
+                  value="all"
+                  checked={selectedReport === 'all'}
+                  onChange={(e) => setSelectedReport(e.target.value as ReportType)}
+                  disabled={loading}
+                  className="w-4 h-4 text-primary"
+                />
+                <span className="ml-3 text-gray-700">
+                  <div className="font-medium">Semua Jaminan</div>
+                  <div className="text-xs text-gray-500">Data semua jaminan tanpa filter status</div>
                 </span>
               </label>
             </div>

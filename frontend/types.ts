@@ -296,6 +296,7 @@ export interface ChartData {
   name: string;
   count: number;
   value?: number; // Untuk future use jika butuh value
+  [key: string]: string | number | undefined; // Untuk kompatibilitas dengan Recharts
 }
 
 export interface DashboardStats {

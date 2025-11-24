@@ -1,13 +1,10 @@
 // Dashboard.tsx - DENGAN CHART DAN DIAGRAM LINGKARAN
 import React, { useState, useEffect } from 'react';
-import { View, DashboardStats, ChartData, Unit } from '../types';
+import { DashboardStats, ChartData, Unit } from '../types';
 import { getDashboardStats, getCurrentUser, getUnits } from '../services/api';
 import { useTranslation } from '../hooks/useTranslation';
 import { formatToRupiah } from '../utils/formatters';
-
-interface DashboardProps {
-  navigateTo: (view: View) => void;
-}
+import { BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 // Warna untuk chart
 const CHART_COLORS = [
@@ -15,7 +12,7 @@ const CHART_COLORS = [
   '#06B6D4', '#84CC16', '#F97316', '#EC4899', '#6366F1'
 ];
 
-const Dashboard: React.FC<DashboardProps> = ({ navigateTo }) => {
+const Dashboard: React.FC = () => {
   const { t } = useTranslation();
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [loading, setLoading] = useState(true);
@@ -60,108 +57,6 @@ const Dashboard: React.FC<DashboardProps> = ({ navigateTo }) => {
     }
   }, [selectedUnitId, currentUser, startDate, endDate]);
 
-  // Komponen untuk Bar Chart (Assets by Category)
-  const BarChart: React.FC<{ data: ChartData[] }> = ({ data }) => {
-    const maxCount = Math.max(...data.map(item => item.count), 0);
-    
-    return (
-      <div className="space-y-3">
-        {data.map((item, index) => (
-          <div key={item.name} className="flex items-center">
-            <div className="w-32 text-sm text-gray-600 truncate mr-3">
-              {item.name}
-            </div>
-            <div className="flex-1">
-              <div className="flex items-center">
-                <div 
-                  className="bg-blue-500 h-6 rounded-l transition-all duration-500"
-                  style={{ 
-                    width: `${maxCount > 0 ? (item.count / maxCount) * 100 : 0}%`,
-                    backgroundColor: CHART_COLORS[index % CHART_COLORS.length]
-                  }}
-                >
-                  <span className="text-white text-xs font-medium pl-2">
-                    {item.count}
-                  </span>
-                </div>
-              </div>
-            </div>
-          </div>
-        ))}
-        {data.length === 0 && (
-          <div className="text-center text-gray-500 py-4">
-            No category data available
-          </div>
-        )}
-      </div>
-    );
-  };
-
-  // Komponen untuk Pie Chart (Assets by Location)
-  const PieChart: React.FC<{ data: ChartData[] }> = ({ data }) => {
-    const total = data.reduce((sum, item) => sum + item.count, 0);
-    
-    if (data.length === 0) {
-      return (
-        <div className="text-center text-gray-500 py-8">
-          No location data available
-        </div>
-      );
-    }
-
-    let currentPercentage = 0;
-    const segments = data.map((item, index) => {
-      const percentage = total > 0 ? (item.count / total) * 100 : 0;
-      const segment = {
-        ...item,
-        percentage,
-        startPercentage: currentPercentage,
-        color: CHART_COLORS[index % CHART_COLORS.length]
-      };
-      currentPercentage += percentage;
-      return segment;
-    });
-
-    return (
-      <div className="flex flex-col lg:flex-row items-center justify-center space-y-4 lg:space-y-0 lg:space-x-8">
-        {/* SVG Pie Chart */}
-        <div className="relative">
-          <svg width="200" height="200" viewBox="0 0 42 42" className="transform -rotate-90">
-            {segments.map((segment) => (
-              <circle
-                key={segment.name}
-                cx="21"
-                cy="21"
-                r="15.91549430918954"
-                fill="transparent"
-                stroke={segment.color}
-                strokeWidth="8"
-                strokeDasharray={`${segment.percentage} ${100 - segment.percentage}`}
-                strokeDashoffset={-segment.startPercentage}
-                className="transition-all duration-500"
-              />
-            ))}
-          </svg>
-        </div>
-        
-        {/* Legend */}
-        <div className="space-y-2 min-w-48">
-          {segments.map((segment) => (
-            <div key={segment.name} className="flex items-center text-sm">
-              <div 
-                className="w-3 h-3 rounded-full mr-2"
-                style={{ backgroundColor: segment.color }}
-              />
-              <span className="text-gray-600 flex-1 truncate">{segment.name}</span>
-              <span className="text-gray-900 font-medium ml-2">
-                {segment.count} ({segment.percentage.toFixed(1)}%)
-              </span>
-            </div>
-          ))}
-        </div>
-      </div>
-    );
-  };
 
   if (loading) {
     return (
@@ -281,19 +176,13 @@ const Dashboard: React.FC<DashboardProps> = ({ navigateTo }) => {
         </div>
 
         <div className="bg-white p-6 rounded-lg shadow-md border border-gray-200">
-          <h3 className="text-lg font-semibold text-medium-text">{t('Aset Yang Dijual')}</h3>
-          <p className="text-3xl font-bold text-purple-500">{stats.assets_sold || 0}</p>
-          <p className="text-sm text-gray-500 mt-1">Asset yang telah terjual</p>
-        </div>
-
-        <div className="bg-white p-6 rounded-lg shadow-md border border-gray-200">
           <h3 className="text-lg font-semibold text-medium-text">{t('Asset Hilang')}</h3>
           <p className="text-3xl font-bold text-gray-500">{stats.assets_lost || 0}</p>
           <p className="text-sm text-gray-500 mt-1">Asset yang hilang</p>
         </div>
       </div>
 
-      {/* Charts Section - Menggantikan Quick Actions */}
+      {/* Charts Section */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Bar Chart - Assets by Category */}
         <div className="bg-white p-6 rounded-lg shadow-md border border-gray-200">
@@ -305,7 +194,24 @@ const Dashboard: React.FC<DashboardProps> = ({ navigateTo }) => {
               Total: {stats.assets_by_category.reduce((sum, item) => sum + item.count, 0)}
             </span>
           </div>
-          <BarChart data={stats.assets_by_category} />
+          {stats.assets_by_category.length > 0 ? (
+            <ResponsiveContainer width="100%" height={300}>
+              <BarChart data={stats.assets_by_category}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                <XAxis dataKey="name" stroke="#666" />
+                <YAxis stroke="#666" />
+                <Tooltip
+                  contentStyle={{ backgroundColor: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: '6px' }}
+                  formatter={(value) => [`${value}`, 'Jumlah']}
+                />
+                <Bar dataKey="count" fill="#3b82f6" radius={[8, 8, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          ) : (
+            <div className="h-300 flex items-center justify-center text-gray-500">
+              Tidak ada data kategori asset
+            </div>
+          )}
           <div className="mt-4 text-sm text-gray-500 text-center">
             Grafik menunjukkan jumlah asset per kategori
           </div>
@@ -321,55 +227,53 @@ const Dashboard: React.FC<DashboardProps> = ({ navigateTo }) => {
               Total: {stats.assets_by_location.reduce((sum, item) => sum + item.count, 0)}
             </span>
           </div>
-          <PieChart data={stats.assets_by_location} />
+          {stats.assets_by_location.length > 0 && stats.assets_by_location.some(d => d.count > 0) ? (
+            <ResponsiveContainer width="100%" height={300}>
+              <PieChart>
+                <Pie
+                  data={stats.assets_by_location}
+                  cx="50%"
+                  cy="50%"
+                  innerRadius={80}
+                  outerRadius={120}
+                  paddingAngle={5}
+                  dataKey="count"
+                  label={({ name, value }) => `${name}: ${value}`}
+                >
+                  {stats.assets_by_location.map((_, index) => (
+                    <Cell key={`cell-${index}`} fill={CHART_COLORS[index % CHART_COLORS.length]} />
+                  ))}
+                </Pie>
+                <Tooltip
+                  contentStyle={{ backgroundColor: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: '6px' }}
+                  formatter={(value) => [`${value}`, 'Jumlah']}
+                />
+              </PieChart>
+            </ResponsiveContainer>
+          ) : (
+            <div className="h-300 flex items-center justify-center text-gray-500">
+              Tidak ada data lokasi asset
+            </div>
+          )}
+          <div className="mt-6 pt-4 border-t border-gray-100">
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-2 text-sm">
+              {stats.assets_by_location.map((location, index) => (
+                <div key={location.name} className="flex items-center gap-2">
+                  <div
+                    className="w-3 h-3 rounded-full"
+                    style={{ backgroundColor: CHART_COLORS[index % CHART_COLORS.length] }}
+                  ></div>
+                  <span className="text-gray-600">{location.name}: {location.count}</span>
+                </div>
+              ))}
+            </div>
+          </div>
           <div className="mt-4 text-sm text-gray-500 text-center">
             Diagram menunjukkan persentase asset per lokasi
           </div>
         </div>
       </div>
 
-      {/* Quick Navigation Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <button
-          onClick={() => navigateTo({ type: 'ASSET_LIST' })}
-          className="bg-white p-4 rounded-lg shadow-md border border-gray-200 hover:shadow-lg transition-all duration-200 text-left group"
-        >
-          <h3 className="font-semibold text-gray-900 group-hover:text-primary transition-colors">
-            📋 Daftar Asset
-          </h3>
-          <p className="text-sm text-gray-600 mt-1">Lihat dan kelola semua asset</p>
-        </button>
-
-        <button
-          onClick={() => navigateTo({ type: 'QR_SCANNER' })}
-          className="bg-white p-4 rounded-lg shadow-md border border-gray-200 hover:shadow-lg transition-all duration-200 text-left group"
-        >
-          <h3 className="font-semibold text-gray-900 group-hover:text-primary transition-colors">
-            📷 Scan QR
-          </h3>
-          <p className="text-sm text-gray-600 mt-1">Scan QR code asset</p>
-        </button>
-
-        <button
-          onClick={() => navigateTo({ type: 'BULK_TRANSACTION' })}
-          className="bg-white p-4 rounded-lg shadow-md border border-gray-200 hover:shadow-lg transition-all duration-200 text-left group"
-        >
-          <h3 className="font-semibold text-gray-900 group-hover:text-primary transition-colors">
-            🔄 Bulk Transaction
-          </h3>
-          <p className="text-sm text-gray-600 mt-1">Transaksi asset dalam jumlah besar</p>
-        </button>
-
-        <button
-          onClick={() => navigateTo({ type: 'REPORTS' })}
-          className="bg-white p-4 rounded-lg shadow-md border border-gray-200 hover:shadow-lg transition-all duration-200 text-left group"
-        >
-          <h3 className="font-semibold text-gray-900 group-hover:text-primary transition-colors">
-            📊 Laporan
-          </h3>
-          <p className="text-sm text-gray-600 mt-1">Lihat laporan lengkap</p>
-        </button>
-      </div>
     </div>
   );
 };
