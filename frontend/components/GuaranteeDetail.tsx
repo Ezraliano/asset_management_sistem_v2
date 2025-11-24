@@ -197,10 +197,11 @@ const GuaranteeDetail: React.FC<GuaranteeDetailProps> = ({ guaranteeId, navigate
 
     setDownloadingPdf(true);
     try {
-      // Prepare guarantee data with settlements for PDF export
+      // Prepare guarantee data with settlements and loans for PDF export
       const guaranteeDataForPdf = {
         ...guarantee,
         settlements: settlementHistory,
+        loans: loanHistory,
       };
 
       // Generate filename with guarantee and spk number

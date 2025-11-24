@@ -614,7 +614,7 @@ const getSettlementStatusLabel = (status: string): string => {
 };
 
 /**
- * Interface untuk Detail Jaminan dengan Settlement
+ * Interface untuk Detail Jaminan dengan Settlement dan Loan
  */
 interface GuaranteeDetailForPdf {
   id: number;
@@ -639,11 +639,26 @@ interface GuaranteeDetailForPdf {
     settlement_remarks?: string;
     bukti_pelunasan?: string;
   }>;
+  loans?: Array<{
+    id: number;
+    guarantee_id: number;
+    borrower_name: string;
+    borrower_contact: string;
+    reason: string;
+    loan_date: string;
+    expected_return_date?: string | null;
+    actual_return_date?: string | null;
+    status: string;
+    created_at: string;
+  }>;
 }
 
 /**
  * Export Detail Jaminan ke PDF
- * Menampilkan informasi lengkap jaminan dan bukti pelunasan (jika berstatus lunas)
+ * Menampilkan:
+ * - Informasi lengkap jaminan
+ * - Informasi peminjaman (jika status = "dipinjam")
+ * - Informasi pelunasan dan bukti pelunasan (jika status = "lunas")
  */
 export const exportGuaranteeDetailToPdf = async (
   filename: string,
@@ -759,6 +774,56 @@ export const exportGuaranteeDetailToPdf = async (
     doc.text(info[1], margin.left + 50, yPosition);
     yPosition += 6;
   });
+
+  // Check if guarantee is "dipinjam" and has active loans
+  if (guarantee.status === 'dipinjam' && guarantee.loans && guarantee.loans.length > 0) {
+    const activeLoan = guarantee.loans.find(l => l.status === 'active');
+
+    if (activeLoan) {
+      yPosition += 4;
+
+      // Section: Informasi Peminjaman
+      doc.setFontSize(12);
+      doc.setTextColor(230, 126, 34);
+      doc.setFont('Helvetica', 'bold');
+      doc.text('Informasi Peminjaman', margin.left, yPosition);
+      yPosition += 7;
+
+      doc.setFontSize(10);
+      doc.setTextColor(40, 40, 40);
+      doc.setFont('Helvetica', 'normal');
+
+      const loanInfo = [
+        ['Nama Peminjam', activeLoan.borrower_name],
+        ['Kontak Peminjam', activeLoan.borrower_contact],
+        ['Tanggal Peminjaman', formatDate(activeLoan.loan_date)],
+        ['Tanggal Kembali Ekspektasi', activeLoan.expected_return_date ? formatDate(activeLoan.expected_return_date) : 'Belum ditentukan'],
+      ];
+
+      loanInfo.forEach((info) => {
+        doc.setFont('Helvetica', 'bold');
+        doc.text(info[0] + ':', margin.left, yPosition);
+        doc.setFont('Helvetica', 'normal');
+        const wrappedText = doc.splitTextToSize(info[1], pageWidth - margin.left - margin.right - 50);
+        doc.text(wrappedText, margin.left + 50, yPosition);
+        yPosition += 6;
+      });
+
+      if (activeLoan.reason) {
+        yPosition += 2;
+        doc.setFont('Helvetica', 'bold');
+        doc.text('Alasan Peminjaman:', margin.left, yPosition);
+        yPosition += 5;
+        doc.setFont('Helvetica', 'normal');
+        const wrappedReason = doc.splitTextToSize(
+          activeLoan.reason,
+          pageWidth - margin.left - margin.right - 5
+        );
+        doc.text(wrappedReason, margin.left + 3, yPosition);
+        yPosition += wrappedReason.length * 5 + 3;
+      }
+    }
+  }
 
   // Check if guarantee is "lunas" and has settlements with bukti_pelunasan
   if (guarantee.status === 'lunas' && guarantee.settlements && guarantee.settlements.length > 0) {
