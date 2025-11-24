@@ -778,94 +778,92 @@ export const exportGuaranteeDetailToPdf = async (
     yPosition += 6;
   });
 
-  // Check if guarantee is "dipinjam" and has active loans
-  if (guarantee.status === 'dipinjam' && guarantee.loans && guarantee.loans.length > 0) {
-    const activeLoan = guarantee.loans.find(l => l.status === 'active');
+  // Check if guarantee has loan history (display for all statuses)
+  if (guarantee.loans && guarantee.loans.length > 0) {
+    yPosition += 4;
 
-    if (activeLoan) {
-      yPosition += 4;
+    // Section: Riwayat Peminjaman
+    doc.setFontSize(12);
+    doc.setTextColor(230, 126, 34);
+    doc.setFont('Helvetica', 'bold');
+    doc.text('Riwayat Peminjaman', margin.left, yPosition);
+    yPosition += 10;
 
-      // Section: Informasi Peminjaman
-      doc.setFontSize(12);
-      doc.setTextColor(230, 126, 34);
-      doc.setFont('Helvetica', 'bold');
-      doc.text('Informasi Peminjaman', margin.left, yPosition);
-      yPosition += 10;
+    // Create table headers for loan history
+    const loanTableHeaders = [
+      'Nama Peminjam',
+      'Kontak Peminjam',
+      'Tgl Peminjaman',
+      'Tgl Ekspektasi Kembali',
+      'Tgl Pengembalian',
+      'Lokasi Jaminan',
+      'Alasan Peminjaman'
+    ];
 
-      // Create table data for loan information
-      const loanTableHeaders = [
-        'Nama Peminjam',
-        'Kontak Peminjam',
-        'Tanggal Peminjaman',
-        'Tanggal Ekspektasi Kembali',
-        'Lokasi Jaminan',
-        'Alasan Peminjaman'
-      ];
+    // Create table data from all loans (active and returned)
+    const loanTableData = guarantee.loans.map((loan: any) => [
+      loan.borrower_name || 'N/A',
+      loan.borrower_contact || 'N/A',
+      formatDate(loan.loan_date),
+      loan.expected_return_date ? formatDate(loan.expected_return_date) : 'Belum ditentukan',
+      loan.actual_return_date ? formatDate(loan.actual_return_date) : 'Belum dikembalikan',
+      guarantee.file_location || 'N/A',
+      loan.reason || 'N/A'
+    ]);
 
-      const loanTableData = [
-        [
-          activeLoan.borrower_name || 'N/A',
-          activeLoan.borrower_contact || 'N/A',
-          formatDate(activeLoan.loan_date),
-          activeLoan.expected_return_date ? formatDate(activeLoan.expected_return_date) : 'Belum ditentukan',
-          guarantee.file_location || 'N/A',
-          activeLoan.reason || 'N/A'
-        ]
-      ];
+    // Create table using autoTable with portrait orientation
+    (doc as any).autoTable({
+      head: [loanTableHeaders],
+      body: loanTableData,
+      startY: yPosition,
+      styles: {
+        fontSize: 7,
+        cellPadding: 2,
+        lineColor: [200, 200, 200],
+        lineWidth: 0.1,
+        textColor: [40, 40, 40],
+        font: 'helvetica',
+        halign: 'left',
+        valign: 'middle',
+        overflow: 'linebreak',
+      },
+      headStyles: {
+        fillColor: [230, 126, 34],
+        textColor: 255,
+        fontStyle: 'bold',
+        fontSize: 8,
+      },
+      alternateRowStyles: {
+        fillColor: [245, 245, 245],
+      },
+      columnStyles: {
+        0: { cellWidth: 22 },
+        1: { cellWidth: 22 },
+        2: { cellWidth: 20 },
+        3: { cellWidth: 22 },
+        4: { cellWidth: 22 },
+        5: { cellWidth: 22 },
+        6: { cellWidth: 25 },
+      },
+      margin: {
+        left: margin.left,
+        right: margin.right,
+        top: 0,
+        bottom: 0,
+      },
+      showHead: 'firstPage',
+      theme: 'grid',
+      didDrawPage: (data: any) => {
+        // Handle page breaks if needed
+        if (data.pageNumber > 1) {
+          yPosition = margin.top;
+        }
+      },
+    });
 
-      // Create table using autoTable with landscape orientation adjustment
-      (doc as any).autoTable({
-        head: [loanTableHeaders],
-        body: loanTableData,
-        startY: yPosition,
-        styles: {
-          fontSize: 8,
-          cellPadding: 3,
-          lineColor: [200, 200, 200],
-          lineWidth: 0.1,
-          textColor: [40, 40, 40],
-          font: 'helvetica',
-          halign: 'left',
-          valign: 'middle',
-          overflow: 'linebreak',
-        },
-        headStyles: {
-          fillColor: [230, 126, 34],
-          textColor: 255,
-          fontStyle: 'bold',
-          fontSize: 9,
-        },
-        alternateRowStyles: {
-          fillColor: [245, 245, 245],
-        },
-        columnStyles: {
-          0: { cellWidth: 28 },
-          1: { cellWidth: 28 },
-          2: { cellWidth: 26 },
-          3: { cellWidth: 28 },
-          4: { cellWidth: 25 },
-          5: { cellWidth: 30 },
-        },
-        margin: {
-          left: margin.left,
-          right: margin.right,
-          top: 0,
-          bottom: 0,
-        },
-        showHead: 'firstPage',
-        theme: 'grid',
-        didDrawPage: (data: any) => {
-          // Handle page breaks if needed
-          if (data.pageNumber > 1) {
-            yPosition = margin.top;
-          }
-        },
-      });
-
-      // Update yPosition after table
-      const finalY = (doc as any).lastAutoTable.finalY || yPosition + 30;
-      yPosition = finalY + 5;
-    }
+    // Update yPosition after table
+    const finalY = (doc as any).lastAutoTable.finalY || yPosition + 30;
+    yPosition = finalY + 5;
   }
 
   // Check if guarantee is "lunas" and has settlements with bukti_pelunasan
