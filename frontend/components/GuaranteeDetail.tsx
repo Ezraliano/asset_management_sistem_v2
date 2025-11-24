@@ -688,7 +688,7 @@ const GuaranteeDetail: React.FC<GuaranteeDetailProps> = ({ guaranteeId, navigate
                               Validasi
                             </button>
                           )}
-                          {settlement.settlement_status === 'rejected' && (
+                          {settlement.settlement_status === 'rejected' && guarantee?.status !== 'lunas' && (
                             <button
                               onClick={() => {
                                 setSelectedSettlementForRevision(settlement);
