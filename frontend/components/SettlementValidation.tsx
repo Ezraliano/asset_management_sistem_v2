@@ -6,6 +6,7 @@ interface SettlementData {
   guarantee_id: number;
   settlement_date: string;
   settlement_notes?: string;
+  bukti_pelunasan?: string | null;
   settlement_status: 'pending' | 'approved' | 'rejected';
   settled_by?: string;
   settlement_remarks?: string;
@@ -44,6 +45,7 @@ const SettlementValidation: React.FC<SettlementValidationProps> = ({
     }));
   };
 
+
   const formatDate = (dateString: string) => {
     try {
       return new Date(dateString).toLocaleDateString('id-ID', {
@@ -68,8 +70,10 @@ const SettlementValidation: React.FC<SettlementValidationProps> = ({
 
   const handleReject = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError('');
+
     if (!formData.settlement_remarks.trim()) {
-      setError('Catatan penolakan harus diisi');
+      setError('Alasan penolakan harus diisi');
       return;
     }
 
@@ -89,22 +93,34 @@ const SettlementValidation: React.FC<SettlementValidationProps> = ({
       }
 
       const endpoint = `/api/guarantee-settlements/${settlement.id}/${validationAction}`;
-      const payload = validationAction === 'approve'
-        ? {
-            settled_by: formData.settled_by,
-            settlement_remarks: formData.settlement_remarks || undefined,
-          }
-        : {
-            settlement_remarks: formData.settlement_remarks,
-          };
+
+      // Prepare request body sebagai JSON (bukan FormData)
+      const requestBody: any = {};
+
+      // settled_by - wajib untuk approve, opsional untuk reject
+      if (formData.settled_by) {
+        requestBody.settled_by = formData.settled_by;
+      }
+
+      // settlement_remarks - opsional untuk kedua action
+      if (formData.settlement_remarks) {
+        requestBody.settlement_remarks = formData.settlement_remarks;
+      }
+
+      console.log('Sending validation request:', {
+        endpoint,
+        validationAction,
+        requestBody,
+      });
 
       const response = await fetch(`http://127.0.0.1:8000${endpoint}`, {
         method: 'PUT',
         headers: {
-          'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
         },
-        body: JSON.stringify(payload),
+        body: JSON.stringify(requestBody),
       });
 
       const responseText = await response.text();
@@ -122,13 +138,31 @@ const SettlementValidation: React.FC<SettlementValidationProps> = ({
         }
       } catch (parseError) {
         console.error('JSON Parse Error:', parseError);
+        console.error('Response Text:', responseText);
+        console.error('Response Status:', response.status);
         setError('Server mengembalikan respons yang tidak valid');
         setLoading(false);
         return;
       }
 
       if (!response.ok) {
-        setError(data?.message || `Gagal ${validationAction === 'approve' ? 'menyetujui' : 'menolak'} pelunasan (${response.status})`);
+        console.error('Response Data:', data);
+        console.error('Validation Errors:', data?.errors);
+
+        // Format error message dengan lebih detail
+        let errorMessage = data?.message || `Gagal ${validationAction === 'approve' ? 'menyetujui' : 'menolak'} pelunasan (${response.status})`;
+
+        // Jika ada validation errors, tambahkan ke pesan
+        if (data?.errors && typeof data.errors === 'object') {
+          const errorFields = Object.keys(data.errors);
+          if (errorFields.length > 0) {
+            errorMessage += ': ' + errorFields.map(field =>
+              `${field} - ${data.errors[field]?.join(', ')}`
+            ).join('; ');
+          }
+        }
+
+        setError(errorMessage);
         setLoading(false);
         return;
       }
@@ -260,6 +294,17 @@ const SettlementValidation: React.FC<SettlementValidationProps> = ({
             <p className="text-gray-900 mt-1 p-2 bg-white rounded border border-gray-300">{settlement.settlement_notes}</p>
           </div>
         )}
+        {settlement.bukti_pelunasan && (
+          <div className="mt-4">
+            <label className="block text-sm text-gray-600 font-medium">Bukti Pelunasan</label>
+            <img
+              src={`http://127.0.0.1:8000/storage/${settlement.bukti_pelunasan}`}
+              alt="Bukti Pelunasan"
+              className="mt-2 w-48 h-auto rounded border border-gray-300 cursor-pointer hover:opacity-80"
+              onClick={() => window.open(`http://127.0.0.1:8000/storage/${settlement.bukti_pelunasan}`, '_blank')}
+            />
+          </div>
+        )}
       </div>
 
       {/* Error Message */}
@@ -369,6 +414,22 @@ const SettlementValidation: React.FC<SettlementValidationProps> = ({
 
               {action === 'reject' && (
                 <div className="space-y-4 ml-7">
+                  <div>
+                    <label htmlFor="reject_settled_by" className="block text-sm font-medium text-gray-700 mb-1">
+                      Nama Validator (Opsional)
+                    </label>
+                    <input
+                      type="text"
+                      id="reject_settled_by"
+                      name="settled_by"
+                      value={formData.settled_by}
+                      onChange={handleInputChange}
+                      placeholder="Masukkan nama Anda (opsional)"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
+                      disabled={loading}
+                    />
+                  </div>
+
                   <div>
                     <label htmlFor="reject_remarks" className="block text-sm font-medium text-gray-700 mb-1">
                       Alasan Penolakan <span className="text-red-500">*</span>

@@ -36,6 +36,8 @@ const GuaranteeDetail: React.FC<GuaranteeDetailProps> = ({ guaranteeId, navigate
   const [selectedSettlementForRevision, setSelectedSettlementForRevision] = useState<any | null>(null);
   const [isRevisionModalOpen, setRevisionModalOpen] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
+  const [isSettlementAlertOpen, setSettlementAlertOpen] = useState(false);
+  const [settlementAlertMessage, setSettlementAlertMessage] = useState('');
 
   const fetchLoanHistory = useCallback(async (gId: number) => {
     setLoadingLoans(true);
@@ -165,6 +167,27 @@ const GuaranteeDetail: React.FC<GuaranteeDetailProps> = ({ guaranteeId, navigate
   const closeReturnModal = () => {
     setReturnModalOpen(false);
     setSelectedLoanForReturn(null);
+  };
+
+  const handleSettlementButtonClick = () => {
+    if (!guarantee) return;
+
+    if (guarantee.status === 'available') {
+      // Bisa melakukan pelunasan
+      setSettlementModalOpen(true);
+    } else if (guarantee.status === 'dipinjam') {
+      // Jaminan sedang dipinjam
+      setSettlementAlertMessage(
+        'Jaminan sedang dalam status "Dipinjam". Anda tidak dapat melakukan pelunasan sampai jaminan dikembalikan. Silakan lakukan pengembalian jaminan terlebih dahulu agar statusnya berubah menjadi "Tersedia".'
+      );
+      setSettlementAlertOpen(true);
+    } else if (guarantee.status === 'lunas') {
+      // Jaminan sudah dilunasi
+      setSettlementAlertMessage(
+        'Jaminan sudah dalam status "Lunas". Tidak dapat melakukan pelunasan lebih lanjut.'
+      );
+      setSettlementAlertOpen(true);
+    }
   };
 
   const getTypeColor = (type: string) => {
@@ -432,11 +455,16 @@ const GuaranteeDetail: React.FC<GuaranteeDetailProps> = ({ guaranteeId, navigate
                 </button>
               )}
 
-              {/* Pelunasan Button - Selalu tersedia, bisa dengan atau tanpa loan history */}
+              {/* Pelunasan Button - Hanya bisa jika status 'available' */}
               {guarantee && (
                 <button
-                  onClick={() => setSettlementModalOpen(true)}
-                  className="flex items-center justify-center text-sm font-medium bg-green-50 text-green-700 px-4 py-2 rounded-lg shadow-sm hover:bg-green-100 border border-green-200 transition-colors"
+                  onClick={handleSettlementButtonClick}
+                  className={`flex items-center justify-center text-sm font-medium px-4 py-2 rounded-lg shadow-sm transition-colors ${
+                    guarantee.status === 'available'
+                      ? 'bg-green-50 text-green-700 hover:bg-green-100 border border-green-200 cursor-pointer'
+                      : 'bg-gray-100 text-gray-400 border border-gray-200 cursor-not-allowed opacity-60'
+                  }`}
+                  disabled={guarantee.status !== 'available'}
                 >
                   <span className="mr-2">✅</span>
                   <span>Pelunasan Jaminan</span>
@@ -582,6 +610,17 @@ const GuaranteeDetail: React.FC<GuaranteeDetailProps> = ({ guaranteeId, navigate
                             )}
                             {settlement.settlement_remarks && (
                               <div><strong>Keterangan:</strong> {settlement.settlement_remarks}</div>
+                            )}
+                            {settlement.bukti_pelunasan && (
+                              <div className="mt-3">
+                                <p className="font-medium mb-2"><strong>Bukti Pelunasan:</strong></p>
+                                <img
+                                  src={`http://127.0.0.1:8000/storage/${settlement.bukti_pelunasan}`}
+                                  alt="Bukti Pelunasan"
+                                  className="w-32 h-auto rounded border border-gray-300 cursor-pointer hover:opacity-80"
+                                  onClick={() => window.open(`http://127.0.0.1:8000/storage/${settlement.bukti_pelunasan}`, '_blank')}
+                                />
+                              </div>
                             )}
                           </div>
                         </div>
@@ -743,6 +782,50 @@ const GuaranteeDetail: React.FC<GuaranteeDetailProps> = ({ guaranteeId, navigate
             }}
           />
         )}
+      </Modal>
+
+      {/* Modal Alert - Settlement Status Information */}
+      <Modal
+        isOpen={isSettlementAlertOpen}
+        onClose={() => setSettlementAlertOpen(false)}
+        title="Informasi Pelunasan Jaminan"
+      >
+        <div className="space-y-4">
+          <div className={`p-4 rounded-lg border-l-4 ${
+            guarantee?.status === 'dipinjam'
+              ? 'bg-yellow-50 border-yellow-500'
+              : 'bg-blue-50 border-blue-500'
+          }`}>
+            <p className={`text-sm ${
+              guarantee?.status === 'dipinjam'
+                ? 'text-yellow-800'
+                : 'text-blue-800'
+            }`}>
+              {settlementAlertMessage}
+            </p>
+          </div>
+
+          {guarantee?.status === 'dipinjam' && (
+            <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+              <h4 className="font-semibold text-blue-900 mb-2">Langkah yang harus dilakukan:</h4>
+              <ol className="list-decimal list-inside space-y-1 text-sm text-blue-800">
+                <li>Buka riwayat peminjaman jaminan</li>
+                <li>Pilih peminjaman yang ingin dikembalikan</li>
+                <li>Klik tombol "Pengembalian Jaminan"</li>
+                <li>Lengkapi data pengembalian dan submit</li>
+                <li>Setelah disetujui, status jaminan akan berubah menjadi "Tersedia"</li>
+                <li>Kemudian Anda bisa melakukan pelunasan jaminan</li>
+              </ol>
+            </div>
+          )}
+
+          <button
+            onClick={() => setSettlementAlertOpen(false)}
+            className="w-full bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors font-medium"
+          >
+            Mengerti
+          </button>
+        </div>
       </Modal>
     </div>
   );

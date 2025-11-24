@@ -27,6 +27,7 @@ class GuaranteeSettlement extends Model
         'expected_return_date',
         'settlement_date',
         'settlement_notes',
+        'bukti_pelunasan',
         'settlement_status',
         'settled_by',
         'settlement_remarks',

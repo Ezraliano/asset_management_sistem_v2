@@ -16,6 +16,7 @@ return new class extends Migration
             $table->unsignedBigInteger('guarantee_id');
             $table->date('settlement_date');
             $table->text('settlement_notes')->nullable();
+            $table->string('bukti_pelunasan')->nullable();
             $table->enum('settlement_status', ['pending', 'approved', 'rejected'])->default('pending');
             $table->string('settled_by')->nullable();
             $table->text('settlement_remarks')->nullable();

@@ -21,7 +21,9 @@ const SettlementRevision: React.FC<SettlementRevisionProps> = ({
     guarantee_id: guarantee.id.toString(),
     settlement_date: previousSettlement.settlement_date || new Date().toISOString().split('T')[0],
     settlement_notes: previousSettlement.settlement_notes || '',
+    bukti_pelunasan: null as File | null,
   });
+  const [previewImage, setPreviewImage] = useState<string | null>(null);
 
   const [validationErrors, setValidationErrors] = useState<Record<string, string[]>>({});
 
@@ -41,6 +43,36 @@ const SettlementRevision: React.FC<SettlementRevisionProps> = ({
     }
   };
 
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0] || null;
+    if (file) {
+      setFormData(prev => ({
+        ...prev,
+        bukti_pelunasan: file
+      }));
+      // Create preview
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setPreviewImage(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    } else {
+      setFormData(prev => ({
+        ...prev,
+        bukti_pelunasan: null
+      }));
+      setPreviewImage(null);
+    }
+    // Clear error untuk field ini
+    if (validationErrors['bukti_pelunasan']) {
+      setValidationErrors(prev => {
+        const newErrors = { ...prev };
+        delete newErrors['bukti_pelunasan'];
+        return newErrors;
+      });
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -55,13 +87,21 @@ const SettlementRevision: React.FC<SettlementRevisionProps> = ({
         return;
       }
 
+      // Prepare FormData for file upload
+      const submitData = new FormData();
+      submitData.append('guarantee_id', formData.guarantee_id);
+      submitData.append('settlement_date', formData.settlement_date);
+      submitData.append('settlement_notes', formData.settlement_notes);
+      if (formData.bukti_pelunasan) {
+        submitData.append('bukti_pelunasan', formData.bukti_pelunasan);
+      }
+
       const response = await fetch('http://127.0.0.1:8000/api/guarantee-settlements', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`,
         },
-        body: JSON.stringify(formData),
+        body: submitData,
       });
 
       // Handle response text terlebih dahulu
@@ -228,6 +268,40 @@ const SettlementRevision: React.FC<SettlementRevisionProps> = ({
           />
           {validationErrors.settlement_notes && (
             <p className="text-red-500 text-xs mt-1">{validationErrors.settlement_notes[0]}</p>
+          )}
+        </div>
+
+        {/* Bukti Pelunasan - Upload Gambar */}
+        <div>
+          <label htmlFor="bukti_pelunasan" className="block text-sm font-medium text-gray-700 mb-1">
+            Upload Bukti Pelunasan (Gambar) <span className="text-red-500">*</span>
+          </label>
+          <div className="relative">
+            <input
+              type="file"
+              id="bukti_pelunasan"
+              name="bukti_pelunasan"
+              onChange={handleFileChange}
+              accept="image/*"
+              className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary ${
+                validationErrors.bukti_pelunasan ? 'border-red-500' : 'border-gray-300'
+              }`}
+              disabled={loading}
+            />
+            <p className="text-xs text-gray-500 mt-1">Format: JPG, PNG, GIF (Max 5MB)</p>
+          </div>
+          {validationErrors.bukti_pelunasan && (
+            <p className="text-red-500 text-xs mt-1">{validationErrors.bukti_pelunasan[0]}</p>
+          )}
+          {previewImage && (
+            <div className="mt-3">
+              <p className="text-sm text-gray-600 font-medium mb-2">Preview Gambar:</p>
+              <img
+                src={previewImage}
+                alt="Preview"
+                className="w-full max-w-xs h-auto rounded-lg border border-gray-300"
+              />
+            </div>
           )}
         </div>
 

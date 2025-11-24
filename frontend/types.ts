@@ -380,6 +380,28 @@ export interface GuaranteeLoan {
   updated_at: string;
 }
 
+export interface GuaranteeSettlement {
+  id: number;
+  guarantee_id: number;
+  loan_id?: number;
+  spk_number?: string;
+  cif_number?: string;
+  guarantee_name?: string;
+  guarantee_type?: GuaranteeType;
+  borrower_name?: string;
+  borrower_contact?: string;
+  loan_date?: string;
+  expected_return_date?: string | null;
+  settlement_date: string;
+  settlement_notes?: string | null;
+  bukti_pelunasan?: string | null;
+  settlement_status: 'pending' | 'approved' | 'rejected';
+  settled_by?: string | null;
+  settlement_remarks?: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface GuaranteeStats {
   total: number;
   by_type: {

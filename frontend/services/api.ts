@@ -2407,6 +2407,32 @@ export const createGuaranteeSettlement = async (data: any): Promise<any | null> 
 };
 
 /**
+ * Create guarantee settlement with file upload
+ */
+export const createGuaranteeSettlementWithFile = async (data: FormData): Promise<any | null> => {
+  try {
+    const token = localStorage.getItem('auth_token');
+    const response = await fetch('http://127.0.0.1:8000/api/guarantee-settlements', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+      body: data,
+    });
+
+    const result = await response.json();
+    if (!response.ok) {
+      throw new Error(result.message || 'Gagal membuat settlement');
+    }
+
+    return result.data || null;
+  } catch (error) {
+    console.error('Error creating guarantee settlement with file:', error);
+    throw error;
+  }
+};
+
+/**
  * Update guarantee settlement
  */
 export const updateGuaranteeSettlement = async (settlementId: number, data: any): Promise<any | null> => {
@@ -2436,6 +2462,32 @@ export const approveGuaranteeSettlement = async (settlementId: number, data: any
     return result.data || null;
   } catch (error) {
     console.error('Error approving guarantee settlement:', error);
+    throw error;
+  }
+};
+
+/**
+ * Approve guarantee settlement with file upload
+ */
+export const approveGuaranteeSettlementWithFile = async (settlementId: number, data: FormData): Promise<any | null> => {
+  try {
+    const token = localStorage.getItem('auth_token');
+    const response = await fetch(`http://127.0.0.1:8000/api/guarantee-settlements/${settlementId}/approve`, {
+      method: 'PUT',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+      body: data,
+    });
+
+    const result = await response.json();
+    if (!response.ok) {
+      throw new Error(result.message || 'Gagal menyetujui settlement');
+    }
+
+    return result.data || null;
+  } catch (error) {
+    console.error('Error approving guarantee settlement with file:', error);
     throw error;
   }
 };

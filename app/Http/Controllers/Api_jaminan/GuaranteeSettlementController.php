@@ -78,12 +78,47 @@ class GuaranteeSettlementController extends Controller
     public function store(Request $request)
     {
         try {
-            // Validasi input - hanya settlement_date dan settlement_notes dari request
+            // Validasi input - termasuk file bukti_pelunasan
             $validated = $request->validate([
                 'guarantee_id' => 'required|exists:mysql_jaminan.guarantees,id',
                 'settlement_date' => 'required|date',
                 'settlement_notes' => 'nullable|string',
+                'bukti_pelunasan' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:5120',
             ]);
+
+            // ✅ VALIDASI PENTING: Cek status jaminan - harus 'available' untuk bisa dilunasi
+            $guarantee = Guarantee::find($validated['guarantee_id']);
+            if (!$guarantee) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Data jaminan tidak ditemukan'
+                ], Response::HTTP_NOT_FOUND);
+            }
+
+            // Validasi: Jaminan harus memiliki status 'available' untuk dilunasi
+            if ($guarantee->status !== 'available') {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Jaminan dengan status "' . $guarantee->status . '" tidak dapat dilunasi. Status harus "tersedia" (available). Silakan kembalikan jaminan terlebih dahulu agar status berubah menjadi "tersedia".'
+                ], Response::HTTP_BAD_REQUEST);
+            }
+
+            // Handle file upload jika ada
+            $buktiPelunasanPath = null;
+            if ($request->hasFile('bukti_pelunasan')) {
+                try {
+                    $file = $request->file('bukti_pelunasan');
+                    $filename = 'bukti_pelunasan_' . time() . '.' . $file->getClientOriginalExtension();
+                    $buktiPelunasanPath = $file->storeAs('bukti_pelunasan', $filename, 'public');
+                    $validated['bukti_pelunasan'] = $buktiPelunasanPath;
+                } catch (\Exception $fileError) {
+                    \Log::error('File Upload Error: ' . $fileError->getMessage());
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Gagal mengunggah file bukti pelunasan: ' . $fileError->getMessage()
+                    ], Response::HTTP_INTERNAL_SERVER_ERROR);
+                }
+            }
 
             // Create guarantee settlement with pending status (waiting for approval/validation)
             $settlement = GuaranteeSettlement::create(array_merge($validated, [
@@ -320,6 +355,14 @@ class GuaranteeSettlementController extends Controller
                 ], Response::HTTP_BAD_REQUEST);
             }
 
+            // Log incoming request data for debugging
+            \Log::info('Approve Request Data', [
+                'settlement_id' => $id,
+                'request_all' => $request->all(),
+                'settled_by' => $request->input('settled_by'),
+                'settlement_remarks' => $request->input('settlement_remarks'),
+            ]);
+
             // Validasi input
             $validated = $request->validate([
                 'settled_by' => 'required|string|max:255',
@@ -331,13 +374,9 @@ class GuaranteeSettlementController extends Controller
                 'settlement_status' => 'approved',
             ]));
 
-            // Update loan status
-            $loan = GuaranteeLoan::find($settlement->loan_id);
-            if ($loan) {
-                $loan->update(['status' => 'returned']);
-            }
-
-            // Update guarantee status
+            // Update guarantee status menjadi 'lunas' setelah approval
+            // CATATAN: Pelunasan adalah proses settlement jaminan, bukan peminjaman tertentu
+            // Status 'lunas' berarti jaminan sudah dilunasi dan tidak ada lagi kewajiban
             $guarantee = Guarantee::find($settlement->guarantee_id);
             if ($guarantee) {
                 $guarantee->update(['status' => 'lunas']);
@@ -349,12 +388,21 @@ class GuaranteeSettlementController extends Controller
                 'data' => $settlement
             ]);
         } catch (ValidationException $e) {
+            \Log::error('Approve Validation Error', [
+                'settlement_id' => $id,
+                'errors' => $e->errors(),
+                'request_data' => $request->all(),
+            ]);
             return response()->json([
                 'success' => false,
                 'message' => 'Validasi gagal',
                 'errors' => $e->errors()
             ], Response::HTTP_UNPROCESSABLE_ENTITY);
         } catch (\Exception $e) {
+            \Log::error('Approve Error: ' . $e->getMessage(), [
+                'settlement_id' => $id,
+                'exception' => $e,
+            ]);
             return response()->json([
                 'success' => false,
                 'message' => 'Gagal menyetujui pelunasan jaminan: ' . $e->getMessage()
@@ -387,7 +435,8 @@ class GuaranteeSettlementController extends Controller
 
             // Validasi input
             $validated = $request->validate([
-                'settlement_remarks' => 'required|string',
+                'settlement_remarks' => 'nullable|string',
+                'settled_by' => 'nullable|string|max:255',
             ]);
 
             // Update settlement
