@@ -40,6 +40,7 @@ class MaintenanceController extends Controller
         $validated = $request->validate([
             'asset_id' => 'required|exists:assets,id',
             'type' => 'required|in:Perbaikan,Pemeliharaan',
+            'repair_type' => 'nullable|in:Perbaikan Ringan,Perbaikan Berat',
             'date' => 'required|date',
             'unit_id' => 'nullable|exists:units,id',
             'party_type' => 'required|in:Internal,External',
@@ -140,6 +141,7 @@ class MaintenanceController extends Controller
         $validated = $request->validate([
             'asset_id' => 'sometimes|required|exists:assets,id',
             'type' => 'sometimes|required|in:Perbaikan,Pemeliharaan',
+            'repair_type' => 'nullable|in:Perbaikan Ringan,Perbaikan Berat',
             'date' => 'sometimes|required|date',
             'unit_id' => 'nullable|exists:units,id',
             'party_type' => 'sometimes|required|in:Internal,External',

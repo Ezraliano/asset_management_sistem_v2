@@ -15,6 +15,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('asset_id')->constrained('assets')->onDelete('cascade');
             $table->enum('type', ['Perbaikan', 'Pemeliharaan']); // Tipe: Perbaikan atau Pemeliharaan
+            $table->enum('repair_type', ['Perbaikan Ringan', 'Perbaikan Berat'])->nullable(); // Tipe perbaikan (hanya untuk Perbaikan)
             $table->date('date');
             $table->foreignId('unit_id')->nullable()->constrained('units')->onDelete('set null'); // Unit yang memperbaiki/memelihara
             $table->enum('party_type', ['Internal', 'External']); // Pihak yang menangani

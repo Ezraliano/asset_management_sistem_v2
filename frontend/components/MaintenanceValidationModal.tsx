@@ -173,7 +173,7 @@ const MaintenanceValidationModal: React.FC<MaintenanceValidationModalProps> = ({
       </div>
 
       {/* Status Badge */}
-      <div className="flex items-center space-x-4">
+      <div className="flex items-center space-x-4 flex-wrap">
         <div className="flex items-center space-x-2">
           <span className="text-sm font-medium text-gray-600">Tipe:</span>
           <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-semibold ${
@@ -182,6 +182,16 @@ const MaintenanceValidationModal: React.FC<MaintenanceValidationModalProps> = ({
             {maintenance.type}
           </span>
         </div>
+        {maintenance.type === 'Perbaikan' && maintenance.repair_type && (
+          <div className="flex items-center space-x-2">
+            <span className="text-sm font-medium text-gray-600">Tipe Perbaikan:</span>
+            <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-semibold ${
+              maintenance.repair_type === 'Perbaikan Ringan' ? 'bg-blue-600 text-white' : 'bg-purple-600 text-white'
+            }`}>
+              {maintenance.repair_type}
+            </span>
+          </div>
+        )}
         <div className="flex items-center space-x-2">
           <span className="text-sm font-medium text-gray-600">Status Validasi:</span>
           {getValidationStatusBadge(maintenance.validation_status)}

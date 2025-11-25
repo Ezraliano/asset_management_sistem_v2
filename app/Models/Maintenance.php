@@ -14,6 +14,7 @@ class Maintenance extends Model
     protected $fillable = [
         'asset_id',
         'type',
+        'repair_type',
         'date',
         'unit_id',
         'party_type',

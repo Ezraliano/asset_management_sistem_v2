@@ -78,6 +78,7 @@ export interface Maintenance {
   id: number;
   asset_id: number;
   type: 'Perbaikan' | 'Pemeliharaan';
+  repair_type?: 'Perbaikan Ringan' | 'Perbaikan Berat' | null;
   date: string;
   unit_id?: number | null;
   party_type: 'Internal' | 'External';

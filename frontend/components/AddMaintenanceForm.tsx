@@ -10,6 +10,7 @@ interface AddMaintenanceFormProps {
 
 const AddMaintenanceForm: React.FC<AddMaintenanceFormProps> = ({ asset, onSuccess, onClose }) => {
   const [type, setType] = useState<'Perbaikan' | 'Pemeliharaan'>('Perbaikan');
+  const [repairType, setRepairType] = useState<'Perbaikan Ringan' | 'Perbaikan Berat' | ''>('');
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
   const [unitId, setUnitId] = useState<number | ''>('');
   const [partyType, setPartyType] = useState<'Internal' | 'External'>('Internal');
@@ -56,6 +57,7 @@ const AddMaintenanceForm: React.FC<AddMaintenanceFormProps> = ({ asset, onSucces
       const formData = new FormData();
       formData.append('asset_id', asset.id.toString());
       formData.append('type', type);
+      if (repairType) formData.append('repair_type', repairType);
       formData.append('date', date);
       if (unitId) formData.append('unit_id', unitId.toString());
       formData.append('party_type', partyType);
@@ -121,6 +123,29 @@ const AddMaintenanceForm: React.FC<AddMaintenanceFormProps> = ({ asset, onSucces
           </label>
         </div>
       </div>
+
+      {/* Tipe Perbaikan - hanya tampil jika type adalah "Perbaikan" */}
+      {type === 'Perbaikan' && (
+        <div>
+          <label htmlFor="repair_type" className="block text-sm font-medium text-gray-700">
+            Tipe Perbaikan <span className="text-red-500">*</span>
+          </label>
+          <select
+            id="repair_type"
+            value={repairType}
+            onChange={(e) => setRepairType(e.target.value as 'Perbaikan Ringan' | 'Perbaikan Berat')}
+            className="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary sm:text-sm"
+          >
+            <option value="">-- Pilih Tipe Perbaikan --</option>
+            <option value="Perbaikan Ringan">Perbaikan Ringan</option>
+            <option value="Perbaikan Berat">Perbaikan Berat</option>
+          </select>
+          <p className="mt-1 text-xs text-gray-500">
+            • <strong>Perbaikan Ringan:</strong> Perbaikan yang tidak melibatkan penggantian komponen utama<br/>
+            • <strong>Perbaikan Berat:</strong> Perbaikan yang melibatkan penggantian komponen atau kerusakan berat
+          </p>
+        </div>
+      )}
 
       {/* Nama Aset (Read-only) */}
       <div>

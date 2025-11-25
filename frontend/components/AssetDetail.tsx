@@ -853,12 +853,19 @@ const AssetDetail: React.FC<AssetDetailProps> = ({ assetId, navigateTo }) => {
                                     maint.type === 'Perbaikan' ? 'bg-red-50 border-red-200 hover:bg-red-100' : 'bg-yellow-50 border-yellow-200 hover:bg-yellow-100'
                                 }`}>
                                     <div className="flex justify-between items-start mb-3">
-                                        <div className="flex items-center gap-2">
+                                        <div className="flex items-center gap-2 flex-wrap">
                                             <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-semibold ${
                                                 maint.type === 'Perbaikan' ? 'bg-red-600 text-white' : 'bg-yellow-600 text-white'
                                             }`}>
                                                 {maint.type}
                                             </span>
+                                            {maint.type === 'Perbaikan' && maint.repair_type && (
+                                                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                                                    maint.repair_type === 'Perbaikan Ringan' ? 'bg-blue-100 text-blue-800' : 'bg-purple-100 text-purple-800'
+                                                }`}>
+                                                    {maint.repair_type}
+                                                </span>
+                                            )}
                                             <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
                                                 maint.status === 'COMPLETED' ? 'bg-green-100 text-green-800' :
                                                 maint.status === 'IN_PROGRESS' ? 'bg-blue-100 text-blue-800' :
