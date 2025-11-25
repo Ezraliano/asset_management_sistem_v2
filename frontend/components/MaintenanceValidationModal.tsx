@@ -59,7 +59,7 @@ const MaintenanceValidationModal: React.FC<MaintenanceValidationModalProps> = ({
     setIsProcessing(true);
     try {
       const token = localStorage.getItem('auth_token');
-      const response = await fetch(`https://assetmanagementga.arjunaconnect.com/api/maintenances/${maintenance.id}/validate`, {
+      const response = await fetch(`http://127.0.0.1:8000/api/maintenances/${maintenance.id}/validate`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -95,7 +95,7 @@ const MaintenanceValidationModal: React.FC<MaintenanceValidationModalProps> = ({
     setIsProcessing(true);
     try {
       const token = localStorage.getItem('auth_token');
-      const response = await fetch(`https://assetmanagementga.arjunaconnect.com/api/maintenances/${maintenance.id}/validate`, {
+      const response = await fetch(`http://127.0.0.1:8000/api/maintenances/${maintenance.id}/validate`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -126,7 +126,7 @@ const MaintenanceValidationModal: React.FC<MaintenanceValidationModalProps> = ({
     setIsProcessing(true);
     try {
       const token = localStorage.getItem('auth_token');
-      const response = await fetch(`https://assetmanagementga.arjunaconnect.com/api/maintenances/${maintenance.id}/complete`, {
+      const response = await fetch(`http://127.0.0.1:8000/api/maintenances/${maintenance.id}/complete`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -248,10 +248,10 @@ const MaintenanceValidationModal: React.FC<MaintenanceValidationModalProps> = ({
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">Foto Bukti</label>
             <img
-              src={`https://assetmanagementga.arjunaconnect.com/api/storage/${maintenance.photo_proof}`}
+              src={`http://127.0.0.1:8000/storage/${maintenance.photo_proof}`}
               alt="Bukti Perbaikan/Pemeliharaan"
               className="w-full max-w-md h-auto rounded-lg border border-gray-300 shadow-sm cursor-pointer"
-              onClick={() => window.open(`https://assetmanagementga.arjunaconnect.com/api/storage/${maintenance.photo_proof}`, '_blank')}
+              onClick={() => window.open(`http://127.0.0.1:8000/storage/${maintenance.photo_proof}`, '_blank')}
               onError={(e) => {
                 (e.target as HTMLImageElement).src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="400" height="300"%3E%3Crect fill="%23ddd" width="400" height="300"/%3E%3Ctext fill="%23999" x="50%25" y="50%25" text-anchor="middle" dy=".3em"%3EGambar tidak tersedia%3C/text%3E%3C/svg%3E';
               }}
