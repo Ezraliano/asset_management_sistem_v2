@@ -20,6 +20,9 @@ const GuaranteeList: React.FC<GuaranteeListProps> = ({ navigateTo }) => {
   const [isReportExportOpen, setReportExportOpen] = useState(false);
   const [editingGuarantee, setEditingGuarantee] = useState<Guarantee | undefined>(undefined);
   const [viewingGuaranteeId, setViewingGuaranteeId] = useState<string | null>(null);
+  const [searchSpkNumber, setSearchSpkNumber] = useState('');
+  const [searchCifNumber, setSearchCifNumber] = useState('');
+  const [allGuarantees, setAllGuarantees] = useState<Guarantee[]>([]);
 
   // Fetch assets
   useEffect(() => {
@@ -48,6 +51,7 @@ const GuaranteeList: React.FC<GuaranteeListProps> = ({ navigateTo }) => {
       try {
         const response = await getGuarantees({ per_page: 50 });
         if (response.guarantees && Array.isArray(response.guarantees)) {
+          setAllGuarantees(response.guarantees);
           setGuarantees(response.guarantees);
         }
       } catch (err) {
@@ -57,6 +61,25 @@ const GuaranteeList: React.FC<GuaranteeListProps> = ({ navigateTo }) => {
     };
     fetchGuaranteesList();
   }, []);
+
+  // Filter guarantees based on search criteria
+  useEffect(() => {
+    let filtered = allGuarantees;
+
+    if (searchSpkNumber.trim()) {
+      filtered = filtered.filter(g =>
+        g.spk_number.toLowerCase().includes(searchSpkNumber.toLowerCase())
+      );
+    }
+
+    if (searchCifNumber.trim()) {
+      filtered = filtered.filter(g =>
+        g.cif_number.toLowerCase().includes(searchCifNumber.toLowerCase())
+      );
+    }
+
+    setGuarantees(filtered);
+  }, [searchSpkNumber, searchCifNumber, allGuarantees]);
 
   const handleAddGuarantee = () => {
     setEditingGuarantee(undefined);
@@ -189,6 +212,49 @@ const GuaranteeList: React.FC<GuaranteeListProps> = ({ navigateTo }) => {
         </div>
       </div>
 
+      {/* Search Filters */}
+      <div className="bg-white rounded-lg shadow p-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-2">
+              Cari Nomor SPK
+            </label>
+            <input
+              type="text"
+              placeholder="Masukkan nomor SPK..."
+              value={searchSpkNumber}
+              onChange={(e) => setSearchSpkNumber(e.target.value)}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-2">
+              Cari Nomor CIF
+            </label>
+            <input
+              type="text"
+              placeholder="Masukkan nomor CIF..."
+              value={searchCifNumber}
+              onChange={(e) => setSearchCifNumber(e.target.value)}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary"
+            />
+          </div>
+        </div>
+        {(searchSpkNumber || searchCifNumber) && (
+          <div className="mt-4 pt-4 border-t border-gray-200">
+            <button
+              onClick={() => {
+                setSearchSpkNumber('');
+                setSearchCifNumber('');
+              }}
+              className="text-sm text-primary hover:text-primary-dark font-medium"
+            >
+              ✕ Bersihkan Filter
+            </button>
+          </div>
+        )}
+      </div>
+
       {/* Error Message */}
       {error && (
         <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-red-800">
@@ -198,7 +264,7 @@ const GuaranteeList: React.FC<GuaranteeListProps> = ({ navigateTo }) => {
 
       {/* Guarantees Table */}
       <div className="bg-white rounded-lg shadow overflow-hidden">
-        {guarantees.length === 0 ? (
+        {allGuarantees.length === 0 ? (
           <div className="p-8 text-center">
             <svg className="w-12 h-12 text-gray-400 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
@@ -206,8 +272,27 @@ const GuaranteeList: React.FC<GuaranteeListProps> = ({ navigateTo }) => {
             <p className="text-gray-600 font-medium">Tidak ada data jaminan</p>
             <p className="text-gray-500 text-sm mt-1">Klik tombol "Input Jaminan" untuk menambahkan data baru</p>
           </div>
+        ) : guarantees.length === 0 ? (
+          <div className="p-8 text-center">
+            <svg className="w-12 h-12 text-gray-400 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+            <p className="text-gray-600 font-medium">Tidak ada hasil pencarian</p>
+            <p className="text-gray-500 text-sm mt-1">Coba ubah kriteria pencarian Nomor SPK atau Nomor CIF</p>
+          </div>
         ) : (
-          <div className="overflow-x-auto">
+          <div>
+            <div className="px-6 py-4 border-b bg-gray-50">
+              <p className="text-sm text-gray-600">
+                Menampilkan <span className="font-semibold">{guarantees.length}</span> dari <span className="font-semibold">{allGuarantees.length}</span> jaminan
+                {(searchSpkNumber || searchCifNumber) && (
+                  <span className="ml-2 text-blue-600">
+                    (Hasil pencarian: {searchSpkNumber && `SPK: "${searchSpkNumber}"`} {searchSpkNumber && searchCifNumber && '+'} {searchCifNumber && `CIF: "${searchCifNumber}"`})
+                  </span>
+                )}
+              </p>
+            </div>
+            <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead className="bg-gray-50 border-b">
                 <tr>
@@ -265,6 +350,7 @@ const GuaranteeList: React.FC<GuaranteeListProps> = ({ navigateTo }) => {
                 ))}
               </tbody>
             </table>
+            </div>
           </div>
         )}
       </div>
