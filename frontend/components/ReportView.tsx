@@ -213,10 +213,10 @@ const ReportView: React.FC<ReportViewProps> = ({ user }) => {
 
     // Filter reports based on user role
     // Auditor can only see audit report
-    // Admin Holding can see all reports
-    const reports = user.role === 'Auditor'
+    // Admin Holding can see all reports except sale report
+    const reports = user.role === 'auditor'
         ? allReports.filter(report => report.key === 'audit')
-        : allReports;
+        : allReports.filter(report => report.key !== 'sale');
 
     const handleExport = async (reportKey: string, format: 'CSV' | 'PDF' | 'EXCEL') => {
         setLoadingReport(reportKey);

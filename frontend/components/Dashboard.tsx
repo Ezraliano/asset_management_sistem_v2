@@ -180,6 +180,14 @@ const Dashboard: React.FC = () => {
           <p className="text-3xl font-bold text-gray-500">{stats.assets_lost || 0}</p>
           <p className="text-sm text-gray-500 mt-1">Asset yang hilang</p>
         </div>
+
+        <div className="bg-white p-6 rounded-lg shadow-md border border-gray-200">
+          <h3 className="text-lg font-semibold text-medium-text">{t('Akumulasi Depresiasi Asset')}</h3>
+          <p className="text-3xl font-bold text-purple-600">
+            {formatToRupiah(stats.total_accumulated_depreciation)}
+          </p>
+          <p className="text-sm text-gray-500 mt-1">Total penurunan nilai asset</p>
+        </div>
       </div>
 
       {/* Charts Section */}

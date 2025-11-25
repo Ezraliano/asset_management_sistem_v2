@@ -71,7 +71,15 @@ class DashboardController extends Controller
         $activeIncidents = (clone $incidentQueryForDate)->whereNotIn('status', ['RESOLVED', 'CLOSED'])->count();
         $approvedLoans = (clone $loanQueryForDate)->where('status', 'APPROVED')->count();
 
-        // 8. CALCULATE CHART DATA (based on current state)
+        // 8. CALCULATE TOTAL ACCUMULATED DEPRECIATION
+        $totalAccumulatedDepreciation = (clone $assetQueryForDate)
+            ->with('depreciations')
+            ->get()
+            ->sum(function($asset) {
+                return $asset->depreciations()->sum('depreciation_amount');
+            });
+
+        // 9. CALCULATE CHART DATA (based on current state)
         $assetsByCategory = (clone $assetQueryForDate)->selectRaw('category, COUNT(*) as count')
             ->groupBy('category')
             ->get()
@@ -88,7 +96,7 @@ class DashboardController extends Controller
                 ->map(fn($item) => ['name' => $item->unit ? $item->unit->name : 'No Unit', 'count' => $item->count]);
         }
 
-        // 9. RETURN RESPONSE
+        // 10. RETURN RESPONSE
         return response()->json([
             'success' => true,
             'data' => [
@@ -102,6 +110,7 @@ class DashboardController extends Controller
                 'active_incidents' => $activeIncidents, // Date filtered
                 'assets_sold' => $assetsSold,
                 'assets_lost' => $assetsLost,
+                'total_accumulated_depreciation' => (float) $totalAccumulatedDepreciation,
                 'assets_by_category' => $assetsByCategory,
                 'assets_by_location' => $assetsByLocation,
             ]

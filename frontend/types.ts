@@ -311,6 +311,7 @@ export interface DashboardStats {
   active_incidents: number;
   assets_sold: number;
   assets_lost: number;
+  total_accumulated_depreciation: number;
   assets_by_category: ChartData[];
   assets_by_location: ChartData[];
 }
