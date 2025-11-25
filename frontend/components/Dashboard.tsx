@@ -207,7 +207,7 @@ const Dashboard: React.FC = () => {
               <BarChart data={stats.assets_by_category}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
                 <XAxis dataKey="name" stroke="#666" />
-                <YAxis stroke="#666" />
+                <YAxis stroke="#666" allowDecimals={false} />
                 <Tooltip
                   contentStyle={{ backgroundColor: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: '6px' }}
                   formatter={(value) => [`${value}`, 'Jumlah']}
