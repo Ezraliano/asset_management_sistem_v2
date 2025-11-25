@@ -171,7 +171,7 @@ const Dashboard: React.FC = () => {
 
         <div className="bg-white p-6 rounded-lg shadow-md border border-gray-200">
           <h3 className="text-lg font-semibold text-medium-text">{t('Asset Dalam Pemeliharaan')}</h3>
-          <p className="text-3xl font-bold text-cyan-500">{stats.scheduled_maintenances}</p>
+          <p className="text-3xl font-bold text-cyan-500">{stats.assets_in_maintenance}</p>
           <p className="text-sm text-gray-500 mt-1">Asset yang sedang dipelihara</p>
         </div>
 

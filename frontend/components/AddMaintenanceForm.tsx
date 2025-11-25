@@ -256,7 +256,7 @@ const AddMaintenanceForm: React.FC<AddMaintenanceFormProps> = ({ asset, onSucces
 
       {/* Foto Bukti */}
       <div>
-        <label htmlFor="photo_proof" className="block text-sm font-medium text-gray-700">Foto Bukti</label>
+        <label htmlFor="photo_proof" className="block text-sm font-medium text-gray-700">Foto Bukti Nota</label>
         <input
           type="file"
           id="photo_proof"

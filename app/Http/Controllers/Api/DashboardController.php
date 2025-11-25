@@ -62,6 +62,7 @@ class DashboardController extends Controller
         $totalValue = (clone $assetQueryForDate)->sum('value');
         $assetsInUse = (clone $assetQueryForDate)->where('status', 'Available')->count();
         $assetsInRepair = (clone $assetQueryForDate)->where('status', 'Dalam Perbaikan')->count();
+        $assetsInMaintenance = (clone $assetQueryForDate)->where('status', 'Dalam Pemeliharaan')->count();
         $assetsSold = (clone $assetQueryForDate)->where('status', 'Terjual')->count();
         $assetsLost = (clone $assetQueryForDate)->where('status', 'Lost')->count();
 
@@ -95,6 +96,7 @@ class DashboardController extends Controller
                 'total_value' => (float) $totalValue,
                 'assets_in_use' => $assetsInUse,
                 'assets_in_repair' => $assetsInRepair,
+                'assets_in_maintenance' => $assetsInMaintenance,
                 'approved_loans' => $approvedLoans, // Date filtered
                 'scheduled_maintenances' => $scheduledMaintenances, // Date filtered
                 'active_incidents' => $activeIncidents, // Date filtered

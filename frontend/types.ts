@@ -305,6 +305,7 @@ export interface DashboardStats {
   total_value: number;
   assets_in_use: number;
   assets_in_repair: number;
+  assets_in_maintenance: number;
   approved_loans: number;
   scheduled_maintenances: number;
   active_incidents: number;
