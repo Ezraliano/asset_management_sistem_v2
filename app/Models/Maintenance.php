@@ -15,6 +15,7 @@ class Maintenance extends Model
         'asset_id',
         'type',
         'repair_type',
+        'maintenance_type',
         'date',
         'unit_id',
         'party_type',

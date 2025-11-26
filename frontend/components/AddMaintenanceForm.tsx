@@ -10,7 +10,8 @@ interface AddMaintenanceFormProps {
 
 const AddMaintenanceForm: React.FC<AddMaintenanceFormProps> = ({ asset, onSuccess, onClose }) => {
   const [type, setType] = useState<'Perbaikan' | 'Pemeliharaan'>('Perbaikan');
-  const [repairType, setRepairType] = useState<'Perbaikan Ringan' | 'Perbaikan Berat' | ''>('');
+  const [repairType, setRepairType] = useState<'Perbaikan Total' | 'Penambahan Komponen' | 'Perbaikan Komponen' | ''>('');
+  const [maintenanceType, setMaintenanceType] = useState<'Pemeliharaan Rutin Bulanan' | 'Pemeliharaan Rutin Tahunan' | ''>('');
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
   const [unitId, setUnitId] = useState<number | ''>('');
   const [partyType, setPartyType] = useState<'Internal' | 'External'>('Internal');
@@ -52,12 +53,23 @@ const AddMaintenanceForm: React.FC<AddMaintenanceFormProps> = ({ asset, onSucces
       return;
     }
 
+    if (type === 'Perbaikan' && !repairType) {
+      alert('Mohon pilih Tipe Perbaikan');
+      return;
+    }
+
+    if (type === 'Pemeliharaan' && !maintenanceType) {
+      alert('Mohon pilih Jenis Pemeliharaan');
+      return;
+    }
+
     setIsSubmitting(true);
     try {
       const formData = new FormData();
       formData.append('asset_id', asset.id.toString());
       formData.append('type', type);
       if (repairType) formData.append('repair_type', repairType);
+      if (maintenanceType) formData.append('maintenance_type', maintenanceType);
       formData.append('date', date);
       if (unitId) formData.append('unit_id', unitId.toString());
       formData.append('party_type', partyType);
@@ -124,6 +136,25 @@ const AddMaintenanceForm: React.FC<AddMaintenanceFormProps> = ({ asset, onSucces
         </div>
       </div>
 
+      {/* Jenis Pemeliharaan - hanya tampil jika type adalah "Pemeliharaan" */}
+      {type === 'Pemeliharaan' && (
+        <div>
+          <label htmlFor="maintenance_type" className="block text-sm font-medium text-gray-700">
+            Jenis Pemeliharaan <span className="text-red-500">*</span>
+          </label>
+          <select
+            id="maintenance_type"
+            value={maintenanceType}
+            onChange={(e) => setMaintenanceType(e.target.value as 'Pemeliharaan Rutin Bulanan' | 'Pemeliharaan Rutin Tahunan')}
+            className="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary sm:text-sm"
+          >
+            <option value="">-- Pilih Jenis Pemeliharaan --</option>
+            <option value="Pemeliharaan Rutin Bulanan">Pemeliharaan Rutin Bulanan</option>
+            <option value="Pemeliharaan Rutin Tahunan">Pemeliharaan Rutin Tahunan</option>
+          </select>
+        </div>
+      )}
+
       {/* Tipe Perbaikan - hanya tampil jika type adalah "Perbaikan" */}
       {type === 'Perbaikan' && (
         <div>
@@ -133,16 +164,18 @@ const AddMaintenanceForm: React.FC<AddMaintenanceFormProps> = ({ asset, onSucces
           <select
             id="repair_type"
             value={repairType}
-            onChange={(e) => setRepairType(e.target.value as 'Perbaikan Ringan' | 'Perbaikan Berat')}
+            onChange={(e) => setRepairType(e.target.value as 'Perbaikan Total' | 'Penambahan Komponen' | 'Perbaikan Komponen')}
             className="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary sm:text-sm"
           >
             <option value="">-- Pilih Tipe Perbaikan --</option>
-            <option value="Perbaikan Ringan">Perbaikan Ringan</option>
-            <option value="Perbaikan Berat">Perbaikan Berat</option>
+            <option value="Perbaikan Total">Perbaikan Total</option>
+            <option value="Penambahan Komponen">Penambahan Komponen</option>
+            <option value="Perbaikan Komponen">Perbaikan Komponen</option>
           </select>
           <p className="mt-1 text-xs text-gray-500">
-            • <strong>Perbaikan Ringan:</strong> Perbaikan yang tidak melibatkan penggantian komponen utama<br/>
-            • <strong>Perbaikan Berat:</strong> Perbaikan yang melibatkan penggantian komponen atau kerusakan berat
+            • <strong>Perbaikan Total:</strong> Perbaikan menyeluruh pada aset<br/>
+            • <strong>Penambahan Komponen:</strong> Penambahan komponen baru<br/>
+            • <strong>Perbaikan Komponen:</strong> Perbaikan pada komponen tertentu
           </p>
         </div>
       )}
