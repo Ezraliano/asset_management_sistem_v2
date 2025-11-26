@@ -9,6 +9,7 @@ interface GuaranteeDashboardProps {
 interface BarChartData {
   name: string;
   count: number;
+  color?: string;
 }
 
 interface DonutChartData {
@@ -28,6 +29,17 @@ const GuaranteeDashboard: React.FC<GuaranteeDashboardProps> = ({ navigateTo }) =
   const [statusData, setStatusData] = useState<DonutChartData[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+
+  // Color mapping for guarantee types
+  const getTypeColor = (type: string): string => {
+    const colors: Record<string, string> = {
+      'BPKB': '#3b82f6',    // Blue
+      'SHM': '#10b981',     // Green
+      'SHGB': '#8b5cf6',    // Purple
+      'E-SHM': '#f59e0b',   // Orange
+    };
+    return colors[type] || '#6b7280';
+  };
 
   useEffect(() => {
     const fetchStats = async () => {
@@ -50,10 +62,10 @@ const GuaranteeDashboard: React.FC<GuaranteeDashboardProps> = ({ navigateTo }) =
           // Prepare data untuk Bar Chart (Tipe Jaminan)
           if (guaranteeStats.by_type) {
             const typeChartData: BarChartData[] = [
-              { name: 'BPKB', count: guaranteeStats.by_type.BPKB || 0 },
-              { name: 'SHM', count: guaranteeStats.by_type.SHM || 0 },
-              { name: 'SHGB', count: guaranteeStats.by_type.SHGB || 0 },
-              { name: 'E-SHM', count: guaranteeStats.by_type['E-SHM'] || 0 },
+              { name: 'BPKB', count: guaranteeStats.by_type.BPKB || 0, color: getTypeColor('BPKB') },
+              { name: 'SHM', count: guaranteeStats.by_type.SHM || 0, color: getTypeColor('SHM') },
+              { name: 'SHGB', count: guaranteeStats.by_type.SHGB || 0, color: getTypeColor('SHGB') },
+              { name: 'E-SHM', count: guaranteeStats.by_type['E-SHM'] || 0, color: getTypeColor('E-SHM') },
             ];
             setTypeData(typeChartData);
           }
@@ -202,7 +214,11 @@ const GuaranteeDashboard: React.FC<GuaranteeDashboardProps> = ({ navigateTo }) =
                   contentStyle={{ backgroundColor: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: '6px' }}
                   formatter={(value) => [`${value}`, 'Jumlah']}
                 />
-                <Bar dataKey="count" fill="#3b82f6" radius={[8, 8, 0, 0]} />
+                <Bar dataKey="count" radius={[8, 8, 0, 0]}>
+                  {typeData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={entry.color} />
+                  ))}
+                </Bar>
               </BarChart>
             </ResponsiveContainer>
           ) : (
@@ -211,7 +227,25 @@ const GuaranteeDashboard: React.FC<GuaranteeDashboardProps> = ({ navigateTo }) =
             </div>
           )}
           <div className="mt-4 pt-4 border-t border-gray-100">
-            <p className="text-xs text-gray-600">Data jaminan berdasarkan tipe: BPKB, SHM, SHGB, dan E-SHM</p>
+            <div className="flex flex-wrap gap-4 mb-2">
+              <div className="flex items-center gap-2">
+                <div className="w-3 h-3 rounded" style={{ backgroundColor: '#3b82f6' }}></div>
+                <span className="text-xs text-gray-600">BPKB</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-3 h-3 rounded" style={{ backgroundColor: '#10b981' }}></div>
+                <span className="text-xs text-gray-600">SHM</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-3 h-3 rounded" style={{ backgroundColor: '#8b5cf6' }}></div>
+                <span className="text-xs text-gray-600">SHGB</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-3 h-3 rounded" style={{ backgroundColor: '#f59e0b' }}></div>
+                <span className="text-xs text-gray-600">E-SHM</span>
+              </div>
+            </div>
+            <p className="text-xs text-gray-600">Data jaminan berdasarkan tipe</p>
           </div>
         </div>
 
