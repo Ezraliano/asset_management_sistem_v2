@@ -23,6 +23,8 @@ const GuaranteeList: React.FC<GuaranteeListProps> = ({ navigateTo }) => {
   const [searchSpkNumber, setSearchSpkNumber] = useState('');
   const [searchCifNumber, setSearchCifNumber] = useState('');
   const [allGuarantees, setAllGuarantees] = useState<Guarantee[]>([]);
+  const [sortBy, setSortBy] = useState('spk_number');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
 
   // Fetch assets
   useEffect(() => {
@@ -49,7 +51,11 @@ const GuaranteeList: React.FC<GuaranteeListProps> = ({ navigateTo }) => {
   useEffect(() => {
     const fetchGuaranteesList = async () => {
       try {
-        const response = await getGuarantees({ per_page: 50 });
+        const response = await getGuarantees({
+          per_page: 50,
+          sort_by: sortBy,
+          sort_order: sortOrder
+        });
         if (response.guarantees && Array.isArray(response.guarantees)) {
           setAllGuarantees(response.guarantees);
           setGuarantees(response.guarantees);
@@ -60,7 +66,7 @@ const GuaranteeList: React.FC<GuaranteeListProps> = ({ navigateTo }) => {
       }
     };
     fetchGuaranteesList();
-  }, []);
+  }, [sortBy, sortOrder]);
 
   // Filter guarantees based on search criteria
   useEffect(() => {
@@ -100,8 +106,13 @@ const GuaranteeList: React.FC<GuaranteeListProps> = ({ navigateTo }) => {
     handleCloseModal();
     // Refresh guarantees list after successful save
     try {
-      const response = await getGuarantees({ per_page: 50 });
+      const response = await getGuarantees({
+        per_page: 50,
+        sort_by: sortBy,
+        sort_order: sortOrder
+      });
       if (response?.guarantees && Array.isArray(response.guarantees)) {
+        setAllGuarantees(response.guarantees);
         setGuarantees(response.guarantees);
       } else {
         setError('Failed to refresh guarantees list');
@@ -157,7 +168,26 @@ const GuaranteeList: React.FC<GuaranteeListProps> = ({ navigateTo }) => {
     return (
       <GuaranteeDetail
         guaranteeId={viewingGuaranteeId}
-        navigateTo={() => setViewingGuaranteeId(null)}
+        navigateTo={() => {
+          setViewingGuaranteeId(null);
+          // Refresh list when returning from detail view
+          const refreshList = async () => {
+            try {
+              const response = await getGuarantees({
+                per_page: 50,
+                sort_by: sortBy,
+                sort_order: sortOrder
+              });
+              if (response?.guarantees && Array.isArray(response.guarantees)) {
+                setAllGuarantees(response.guarantees);
+                setGuarantees(response.guarantees);
+              }
+            } catch (err) {
+              console.error('Failed to refresh guarantees:', err);
+            }
+          };
+          refreshList();
+        }}
       />
     );
   }
@@ -212,9 +242,9 @@ const GuaranteeList: React.FC<GuaranteeListProps> = ({ navigateTo }) => {
         </div>
       </div>
 
-      {/* Search Filters */}
+      {/* Search Filters & Sorting */}
       <div className="bg-white rounded-lg shadow p-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
             <label className="block text-sm font-semibold text-gray-700 mb-2">
               Cari Nomor SPK
@@ -238,6 +268,31 @@ const GuaranteeList: React.FC<GuaranteeListProps> = ({ navigateTo }) => {
               onChange={(e) => setSearchCifNumber(e.target.value)}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary"
             />
+          </div>
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-2">
+              Urutkan
+            </label>
+            <div className="flex gap-2">
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value)}
+                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary"
+              >
+                <option value="spk_number">No SPK</option>
+                <option value="cif_number">No CIF</option>
+                <option value="input_date">Tgl Input</option>
+                <option value="status">Status</option>
+                <option value="guarantee_type">Tipe</option>
+              </select>
+              <button
+                onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
+                title={`Urutkan ${sortOrder === 'asc' ? 'dari besar ke kecil' : 'dari kecil ke besar'}`}
+                className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-100 transition-colors font-medium"
+              >
+                {sortOrder === 'asc' ? '↑ Asc' : '↓ Desc'}
+              </button>
+            </div>
           </div>
         </div>
         {(searchSpkNumber || searchCifNumber) && (

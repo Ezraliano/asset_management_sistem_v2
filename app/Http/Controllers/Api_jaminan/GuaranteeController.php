@@ -44,9 +44,9 @@ class GuaranteeController extends Controller
                 $query->byDateRange($request->start_date, $request->end_date);
             }
 
-            // Sorting
-            $sortBy = $request->get('sort_by', 'input_date');
-            $sortOrder = $request->get('sort_order', 'desc');
+            // Sorting - Default sorting by spk_number in ascending order
+            $sortBy = $request->get('sort_by', 'spk_number');
+            $sortOrder = $request->get('sort_order', 'asc');
             $query->orderBy($sortBy, $sortOrder);
 
             // Pagination
@@ -89,7 +89,7 @@ class GuaranteeController extends Controller
                 'credit_period' => 'required|string|max:255',
                 'guarantee_name' => 'required|string|max:255',
                 'guarantee_type' => 'required|in:BPKB,SHM,SHGB,E-SHM',
-                'guarantee_number' => 'required|string|max:255',
+                'guarantee_number' => 'required|string|max:255|unique:mysql_jaminan.guarantees,guarantee_number',
                 'file_location' => 'required|string|max:255',
                 'input_date' => 'required|date',
                 'status' => 'sometimes|in:available,dipinjam,lunas',
@@ -175,7 +175,7 @@ class GuaranteeController extends Controller
                 'credit_period' => 'sometimes|required|string|max:255',
                 'guarantee_name' => 'sometimes|required|string|max:255',
                 'guarantee_type' => 'sometimes|required|in:BPKB,SHM,SHGB,E-SHM',
-                'guarantee_number' => 'sometimes|required|string|max:255',
+                'guarantee_number' => 'sometimes|required|string|max:255|unique:mysql_jaminan.guarantees,guarantee_number,' . $id,
                 'file_location' => 'sometimes|required|string|max:255',
                 'input_date' => 'sometimes|required|date',
                 'status' => 'sometimes|in:available,dipinjam,lunas',

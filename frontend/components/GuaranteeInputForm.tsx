@@ -141,12 +141,17 @@ const GuaranteeInputForm: React.FC<GuaranteeInputFormProps> = ({ guarantee, asse
         ...prev,
         [name]: undefined,
       }));
+      // Also clear general error if user is correcting their input
+      if (error) {
+        setError('');
+      }
     }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    setValidationErrors({});
 
     if (!validateForm()) {
       setError('Mohon perbaiki kesalahan pada form');
@@ -162,26 +167,96 @@ const GuaranteeInputForm: React.FC<GuaranteeInputFormProps> = ({ guarantee, asse
         guarantee_type: formData.guarantee_type as 'BPKB' | 'SHM' | 'SHGB' | 'E-SHM'
       };
 
-      if (guarantee) {
-        // Update guarantee
-        const response = await updateGuarantee(guarantee.id, submitData);
-        if (!response) {
-          setError('Gagal memperbarui jaminan');
-          return;
-        }
-      } else {
-        // Create guarantee
-        const response = await addGuarantee(submitData);
-        if (!response) {
-          setError('Gagal menyimpan jaminan');
-          return;
-        }
+      const token = localStorage.getItem('auth_token');
+      if (!token) {
+        setError('Token tidak ditemukan. Silakan login kembali.');
+        setLoading(false);
+        return;
       }
 
-      onSuccess();
+      const endpoint = guarantee
+        ? `http://127.0.0.1:8000/api/guarantees/${guarantee.id}`
+        : 'http://127.0.0.1:8000/api/guarantees';
+
+      const method = guarantee ? 'PUT' : 'POST';
+
+      const response = await fetch(endpoint, {
+        method,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify(submitData),
+      });
+
+      const responseText = await response.text();
+      let data: any = {};
+
+      try {
+        if (responseText && responseText.trim() !== '') {
+          data = JSON.parse(responseText);
+        }
+      } catch (parseError) {
+        console.error('JSON Parse Error:', parseError);
+        setError('Server mengembalikan respons yang tidak valid');
+        setLoading(false);
+        return;
+      }
+
+      if (!response.ok) {
+        // Handle validation errors from backend
+        if (data?.errors && typeof data.errors === 'object') {
+          const serverErrors: ValidationErrors = {};
+
+          // Map server errors to form fields with Indonesian translations
+          Object.entries(data.errors).forEach(([field, messages]: [string, any]) => {
+            let translatedMessage = '';
+            const rawMessage = Array.isArray(messages) ? messages[0] : String(messages);
+
+            // Translate error messages to Indonesian
+            if (rawMessage.includes('must be unique')) {
+              if (field === 'spk_number') {
+                translatedMessage = 'Nomor SPK ini sudah digunakan. Silakan gunakan nomor SPK yang berbeda.';
+              } else if (field === 'guarantee_number') {
+                translatedMessage = 'Nomor Jaminan ini sudah digunakan. Silakan gunakan nomor yang berbeda.';
+              } else {
+                translatedMessage = `${field} ini sudah digunakan. Silakan gunakan yang berbeda.`;
+              }
+            } else if (rawMessage.includes('must be a valid date')) {
+              translatedMessage = 'Format tanggal tidak valid. Silakan gunakan format YYYY-MM-DD.';
+            } else if (rawMessage.includes('must be one of')) {
+              translatedMessage = 'Nilai yang dipilih tidak valid. Silakan pilih dari opsi yang tersedia.';
+            } else if (rawMessage.includes('is required')) {
+              translatedMessage = `${field} tidak boleh kosong.`;
+            } else if (rawMessage.includes('must be a string')) {
+              translatedMessage = `${field} harus berupa teks.`;
+            } else if (rawMessage.includes('may not be greater than')) {
+              translatedMessage = `${field} terlalu panjang (maksimal 255 karakter).`;
+            } else {
+              translatedMessage = rawMessage;
+            }
+
+            serverErrors[field as keyof ValidationErrors] = translatedMessage;
+          });
+
+          setValidationErrors(serverErrors);
+          setError('Validasi gagal. Mohon periksa kembali data yang anda masukkan.');
+        } else {
+          // Handle general error
+          setError(data?.message || `Gagal ${guarantee ? 'memperbarui' : 'menyimpan'} jaminan`);
+        }
+        setLoading(false);
+        return;
+      }
+
+      if (data?.success !== false) {
+        onSuccess();
+      } else {
+        setError(data?.message || `Gagal ${guarantee ? 'memperbarui' : 'menyimpan'} jaminan`);
+      }
     } catch (err: any) {
       console.error('Error saving guarantee:', err);
-      setError(err.message || 'Gagal menyimpan jaminan');
+      setError(err.message || `Gagal ${guarantee ? 'memperbarui' : 'menyimpan'} jaminan`);
     } finally {
       setLoading(false);
     }
