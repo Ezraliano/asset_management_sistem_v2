@@ -215,7 +215,7 @@ const GuaranteeInputForm: React.FC<GuaranteeInputFormProps> = ({ guarantee, asse
           });
 
           setValidationErrors(serverErrors);
-          setError('Validasi gagal. Mohon periksa kembali data yang anda masukkan.');
+          setError('Input Jaminan gagal. Mohon periksa kembali data yang anda masukkan.');
         } else {
           // Handle general error
           setError(data?.message || `Gagal ${guarantee ? 'memperbarui' : 'menyimpan'} jaminan`);
