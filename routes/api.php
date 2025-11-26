@@ -21,6 +21,7 @@ use App\Http\Controllers\Api\UserController;
 use App\Http\Controllers\Api_jaminan\GuaranteeController;
 use App\Http\Controllers\Api_jaminan\GuaranteeLoanController;
 use App\Http\Controllers\Api_jaminan\GuaranteeSettlementController;
+use App\Http\Controllers\Api_jaminan\JaminanAuthController;
 
 /*
 |--------------------------------------------------------------------------
@@ -32,13 +33,21 @@ use App\Http\Controllers\Api_jaminan\GuaranteeSettlementController;
 Route::prefix('auth')->group(function () {
     // SSO Login (POST credentials ke SSO server)
     Route::post('sso/login', [AuthSSOController::class, 'loginViaSSO']);
-    
-    // Fallback local login  
+
+    // Fallback local login
     Route::post('login', [AuthSSOController::class, 'login']);
-    
+
     // Common routes
     Route::get('check', [AuthSSOController::class, 'checkAuth']);
     Route::get('user', [AuthSSOController::class, 'user'])->middleware('auth:sanctum');
+});
+
+// Jaminan (Guarantee) Authentication Routes - Public
+Route::prefix('jaminan/auth')->group(function () {
+    Route::post('login', [JaminanAuthController::class, 'login']);
+    Route::post('logout', [JaminanAuthController::class, 'logout'])->middleware('auth:sanctum');
+    Route::get('user', [JaminanAuthController::class, 'user'])->middleware('auth:sanctum');
+    Route::get('verify-token', [JaminanAuthController::class, 'verifyToken'])->middleware('auth:sanctum');
 });
 
 
@@ -269,6 +278,16 @@ Route::middleware(['auth:sanctum'])->group(function () {
 
         // General CRUD routes
         Route::apiResource('guarantee-settlements', GuaranteeSettlementController::class);
+    });
+
+    // Jaminan User Management Routes - Only Superadmin (Protected by JaminanRoleMiddleware in controller)
+    Route::middleware('auth:sanctum')->group(function () {
+        Route::prefix('jaminan/users')->group(function () {
+            Route::get('', [JaminanAuthController::class, 'index']);
+            Route::post('', [JaminanAuthController::class, 'store']);
+            Route::put('{id}', [JaminanAuthController::class, 'update']);
+            Route::delete('{id}', [JaminanAuthController::class, 'destroy']);
+        });
     });
 });
 
