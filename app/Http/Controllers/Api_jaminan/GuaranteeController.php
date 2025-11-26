@@ -81,7 +81,7 @@ class GuaranteeController extends Controller
     public function store(Request $request)
     {
         try {
-            // Validasi input
+            // Validasi input dengan custom messages dalam bahasa Indonesia
             $validated = $request->validate([
                 'spk_number' => 'required|string|max:255|unique:mysql_jaminan.guarantees,spk_number',
                 'cif_number' => 'required|string|max:255',
@@ -93,6 +93,28 @@ class GuaranteeController extends Controller
                 'file_location' => 'required|string|max:255',
                 'input_date' => 'required|date',
                 'status' => 'sometimes|in:available,dipinjam,lunas',
+            ], [
+                'spk_number.required' => 'Nomor SPK tidak boleh kosong.',
+                'spk_number.unique' => 'Nomor SPK ini sudah digunakan. Silakan gunakan nomor SPK yang berbeda.',
+                'spk_number.max' => 'Nomor SPK terlalu panjang (maksimal 255 karakter).',
+                'cif_number.required' => 'Nomor CIF tidak boleh kosong.',
+                'cif_number.max' => 'Nomor CIF terlalu panjang.',
+                'spk_name.required' => 'Atas Nama SPK tidak boleh kosong.',
+                'spk_name.max' => 'Atas Nama SPK terlalu panjang.',
+                'credit_period.required' => 'Jangka Waktu Kredit tidak boleh kosong.',
+                'credit_period.max' => 'Jangka Waktu Kredit terlalu panjang.',
+                'guarantee_name.required' => 'Atas Nama Jaminan tidak boleh kosong.',
+                'guarantee_name.max' => 'Atas Nama Jaminan terlalu panjang.',
+                'guarantee_type.required' => 'Tipe Jaminan tidak boleh kosong.',
+                'guarantee_type.in' => 'Tipe Jaminan harus salah satu dari: BPKB, SHM, SHGB, E-SHM.',
+                'guarantee_number.required' => 'Nomor Jaminan tidak boleh kosong.',
+                'guarantee_number.unique' => 'Nomor Jaminan ini sudah digunakan. Silakan gunakan nomor yang berbeda.',
+                'guarantee_number.max' => 'Nomor Jaminan terlalu panjang.',
+                'file_location.required' => 'Lokasi Berkas tidak boleh kosong.',
+                'file_location.max' => 'Lokasi Berkas terlalu panjang.',
+                'input_date.required' => 'Tanggal Input tidak boleh kosong.',
+                'input_date.date' => 'Format tanggal tidak valid. Silakan gunakan format YYYY-MM-DD.',
+                'status.in' => 'Status harus salah satu dari: available, dipinjam, lunas.',
             ]);
 
             // Set status default ke 'available' jika tidak ada
@@ -167,7 +189,7 @@ class GuaranteeController extends Controller
                 ], Response::HTTP_NOT_FOUND);
             }
 
-            // Validasi input
+            // Validasi input dengan custom messages dalam bahasa Indonesia
             $validated = $request->validate([
                 'spk_number' => 'sometimes|required|string|max:255|unique:mysql_jaminan.guarantees,spk_number,' . $id,
                 'cif_number' => 'sometimes|required|string|max:255',
@@ -179,6 +201,28 @@ class GuaranteeController extends Controller
                 'file_location' => 'sometimes|required|string|max:255',
                 'input_date' => 'sometimes|required|date',
                 'status' => 'sometimes|in:available,dipinjam,lunas',
+            ], [
+                'spk_number.required' => 'Nomor SPK tidak boleh kosong.',
+                'spk_number.unique' => 'Nomor SPK ini sudah digunakan. Silakan gunakan nomor SPK yang berbeda.',
+                'spk_number.max' => 'Nomor SPK terlalu panjang (maksimal 255 karakter).',
+                'cif_number.required' => 'Nomor CIF tidak boleh kosong.',
+                'cif_number.max' => 'Nomor CIF terlalu panjang.',
+                'spk_name.required' => 'Atas Nama SPK tidak boleh kosong.',
+                'spk_name.max' => 'Atas Nama SPK terlalu panjang.',
+                'credit_period.required' => 'Jangka Waktu Kredit tidak boleh kosong.',
+                'credit_period.max' => 'Jangka Waktu Kredit terlalu panjang.',
+                'guarantee_name.required' => 'Atas Nama Jaminan tidak boleh kosong.',
+                'guarantee_name.max' => 'Atas Nama Jaminan terlalu panjang.',
+                'guarantee_type.required' => 'Tipe Jaminan tidak boleh kosong.',
+                'guarantee_type.in' => 'Tipe Jaminan harus salah satu dari: BPKB, SHM, SHGB, E-SHM.',
+                'guarantee_number.required' => 'Nomor Jaminan tidak boleh kosong.',
+                'guarantee_number.unique' => 'Nomor Jaminan ini sudah digunakan. Silakan gunakan nomor yang berbeda.',
+                'guarantee_number.max' => 'Nomor Jaminan terlalu panjang.',
+                'file_location.required' => 'Lokasi Berkas tidak boleh kosong.',
+                'file_location.max' => 'Lokasi Berkas terlalu panjang.',
+                'input_date.required' => 'Tanggal Input tidak boleh kosong.',
+                'input_date.date' => 'Format tanggal tidak valid. Silakan gunakan format YYYY-MM-DD.',
+                'status.in' => 'Status harus salah satu dari: available, dipinjam, lunas.',
             ]);
 
             // Update guarantee

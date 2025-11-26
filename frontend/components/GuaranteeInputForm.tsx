@@ -208,35 +208,10 @@ const GuaranteeInputForm: React.FC<GuaranteeInputFormProps> = ({ guarantee, asse
         if (data?.errors && typeof data.errors === 'object') {
           const serverErrors: ValidationErrors = {};
 
-          // Map server errors to form fields with Indonesian translations
+          // Map server errors to form fields
           Object.entries(data.errors).forEach(([field, messages]: [string, any]) => {
-            let translatedMessage = '';
-            const rawMessage = Array.isArray(messages) ? messages[0] : String(messages);
-
-            // Translate error messages to Indonesian
-            if (rawMessage.includes('must be unique')) {
-              if (field === 'spk_number') {
-                translatedMessage = 'Nomor SPK ini sudah digunakan. Silakan gunakan nomor SPK yang berbeda.';
-              } else if (field === 'guarantee_number') {
-                translatedMessage = 'Nomor Jaminan ini sudah digunakan. Silakan gunakan nomor yang berbeda.';
-              } else {
-                translatedMessage = `${field} ini sudah digunakan. Silakan gunakan yang berbeda.`;
-              }
-            } else if (rawMessage.includes('must be a valid date')) {
-              translatedMessage = 'Format tanggal tidak valid. Silakan gunakan format YYYY-MM-DD.';
-            } else if (rawMessage.includes('must be one of')) {
-              translatedMessage = 'Nilai yang dipilih tidak valid. Silakan pilih dari opsi yang tersedia.';
-            } else if (rawMessage.includes('is required')) {
-              translatedMessage = `${field} tidak boleh kosong.`;
-            } else if (rawMessage.includes('must be a string')) {
-              translatedMessage = `${field} harus berupa teks.`;
-            } else if (rawMessage.includes('may not be greater than')) {
-              translatedMessage = `${field} terlalu panjang (maksimal 255 karakter).`;
-            } else {
-              translatedMessage = rawMessage;
-            }
-
-            serverErrors[field as keyof ValidationErrors] = translatedMessage;
+            const errorMessage = Array.isArray(messages) ? messages[0] : String(messages);
+            serverErrors[field as keyof ValidationErrors] = errorMessage;
           });
 
           setValidationErrors(serverErrors);
@@ -263,7 +238,13 @@ const GuaranteeInputForm: React.FC<GuaranteeInputFormProps> = ({ guarantee, asse
   };
 
   const getFieldError = (field: keyof ValidationErrors): string | undefined => validationErrors[field];
-  const hasErrors = (): boolean => Object.keys(validationErrors).length > 0 || !!error;
+
+  // Check if there are actual field errors (not just general error message)
+  const hasFieldErrors = (): boolean => {
+    return Object.values(validationErrors).some(error => error !== undefined && error !== '');
+  };
+
+  const hasErrors = (): boolean => hasFieldErrors();
 
   const guaranteeTypes = ['BPKB', 'SHM', 'SHGB', 'E-SHM'];
 
