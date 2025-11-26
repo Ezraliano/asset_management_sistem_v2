@@ -83,7 +83,7 @@ class GuaranteeController extends Controller
         try {
             // Validasi input dengan custom messages dalam bahasa Indonesia
             $validated = $request->validate([
-                'spk_number' => 'required|string|max:255|unique:mysql_jaminan.guarantees,spk_number',
+                'spk_number' => 'required|string|max:255',
                 'cif_number' => 'required|string|max:255',
                 'spk_name' => 'required|string|max:255',
                 'credit_period' => 'required|string|max:255',
@@ -95,7 +95,6 @@ class GuaranteeController extends Controller
                 'status' => 'sometimes|in:available,dipinjam,lunas',
             ], [
                 'spk_number.required' => 'Nomor SPK tidak boleh kosong.',
-                'spk_number.unique' => 'Nomor SPK ini sudah digunakan. Silakan gunakan nomor SPK yang berbeda.',
                 'spk_number.max' => 'Nomor SPK terlalu panjang (maksimal 255 karakter).',
                 'cif_number.required' => 'Nomor CIF tidak boleh kosong.',
                 'cif_number.max' => 'Nomor CIF terlalu panjang.',
@@ -191,7 +190,7 @@ class GuaranteeController extends Controller
 
             // Validasi input dengan custom messages dalam bahasa Indonesia
             $validated = $request->validate([
-                'spk_number' => 'sometimes|required|string|max:255|unique:mysql_jaminan.guarantees,spk_number,' . $id,
+                'spk_number' => 'sometimes|required|string|max:255',
                 'cif_number' => 'sometimes|required|string|max:255',
                 'spk_name' => 'sometimes|required|string|max:255',
                 'credit_period' => 'sometimes|required|string|max:255',
@@ -203,7 +202,6 @@ class GuaranteeController extends Controller
                 'status' => 'sometimes|in:available,dipinjam,lunas',
             ], [
                 'spk_number.required' => 'Nomor SPK tidak boleh kosong.',
-                'spk_number.unique' => 'Nomor SPK ini sudah digunakan. Silakan gunakan nomor SPK yang berbeda.',
                 'spk_number.max' => 'Nomor SPK terlalu panjang (maksimal 255 karakter).',
                 'cif_number.required' => 'Nomor CIF tidak boleh kosong.',
                 'cif_number.max' => 'Nomor CIF terlalu panjang.',

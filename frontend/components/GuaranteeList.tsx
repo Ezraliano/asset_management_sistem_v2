@@ -281,9 +281,6 @@ const GuaranteeList: React.FC<GuaranteeListProps> = ({ navigateTo }) => {
               >
                 <option value="spk_number">No SPK</option>
                 <option value="cif_number">No CIF</option>
-                <option value="input_date">Tgl Input</option>
-                <option value="status">Status</option>
-                <option value="guarantee_type">Tipe</option>
               </select>
               <button
                 onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}

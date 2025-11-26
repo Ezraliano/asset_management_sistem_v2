@@ -13,13 +13,13 @@ return new class extends Migration
     {
         Schema::connection('mysql_jaminan')->create('guarantees', function (Blueprint $table) {
             $table->id();
-            $table->string('spk_number')->unique();
+            $table->string('spk_number');
             $table->string('cif_number');
             $table->string('spk_name');
             $table->string('credit_period');
             $table->string('guarantee_name');
             $table->enum('guarantee_type', ['BPKB', 'SHM', 'SHGB', 'E-SHM']);
-            $table->string('guarantee_number');
+            $table->string('guarantee_number')->unique();
             $table->string('file_location');
             $table->date('input_date');
             $table->enum('status', ['available', 'dipinjam', 'lunas'])->default('available');

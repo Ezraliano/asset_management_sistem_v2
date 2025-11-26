@@ -269,7 +269,7 @@ const GuaranteeInputForm: React.FC<GuaranteeInputFormProps> = ({ guarantee, asse
         {/* No SPK */}
         <div>
           <label htmlFor="spk_number" className="block text-sm font-medium text-gray-700 mb-1">
-            No SPK * <span className="text-gray-500 text-xs">(Hanya huruf dan angka)</span>
+            No SPK * <span className="text-gray-500 text-xs">(Boleh sama dengan jaminan lain)</span>
           </label>
           <input
             type="text"
@@ -292,7 +292,7 @@ const GuaranteeInputForm: React.FC<GuaranteeInputFormProps> = ({ guarantee, asse
         {/* No CIF */}
         <div>
           <label htmlFor="cif_number" className="block text-sm font-medium text-gray-700 mb-1">
-            No CIF * <span className="text-gray-500 text-xs">(Hanya angka positif)</span>
+            No CIF * <span className="text-gray-500 text-xs">(Boleh sama dengan jaminan lain)</span>
           </label>
           <input
             type="text"
@@ -413,7 +413,7 @@ const GuaranteeInputForm: React.FC<GuaranteeInputFormProps> = ({ guarantee, asse
         {/* No Jaminan */}
         <div>
           <label htmlFor="guarantee_number" className="block text-sm font-medium text-gray-700 mb-1">
-            No Jaminan {formData.guarantee_type && `(No ${formData.guarantee_type})`} *
+            No Jaminan {formData.guarantee_type && `(No ${formData.guarantee_type})`} * <span className="text-gray-500 text-xs">(Harus unik - tidak boleh sama)</span>
           </label>
           <input
             type="text"
