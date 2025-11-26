@@ -1,7 +1,7 @@
 {
   "sidebar": {
     "title": "AMS",
-    "dashboard": "Dasbor",
+    "dashboard": "Dashboard",
     "assets": "Aset",
     "inventory_audit": "Audit Inventaris",
     "bulk_transaction": "Transaksi Massal",
@@ -22,7 +22,7 @@
     "sso_info": "Sistem terhubung dengan Single Sign-On"
   },
   "dashboard": {
-    "title": "Dasbor",
+    "title": "Dashboard",
     "add_asset": "Tambah Aset",
     "scan_asset": "Pindai Aset",
     "total_assets": "Total Aset",

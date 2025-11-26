@@ -130,63 +130,171 @@ const Dashboard: React.FC = () => {
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <div className="bg-white p-6 rounded-lg shadow-md border border-gray-200">
-          <h3 className="text-lg font-semibold text-medium-text">{t('Total Asset')}</h3>
-          <p className="text-3xl font-bold text-primary">{stats.total_assets}</p>
-          <p className="text-sm text-gray-500 mt-1">Total semua asset</p>
-        </div>
-        
-        <div className="bg-white p-6 rounded-lg shadow-md border border-gray-200">
-          <h3 className="text-lg font-semibold text-medium-text">{t('Nilai Asset Keseluruhan')}</h3>
-          <p className="text-3xl font-bold text-primary">
-            {formatToRupiah(stats.total_value)}
-          </p>
-          <p className="text-sm text-gray-500 mt-1">Total nilai semua asset</p>
-        </div>
-        
-        <div className="bg-white p-6 rounded-lg shadow-md border border-gray-200">
-          <h3 className="text-lg font-semibold text-medium-text">{t('Asset Yang Tersedia')}</h3>
-          <p className="text-3xl font-bold text-green-600">{stats.assets_in_use}</p>
-          <p className="text-sm text-gray-500 mt-1">Asset dalam penggunaan</p>
-        </div>
-        
-        <div className="bg-white p-6 rounded-lg shadow-md border border-gray-200">
-          <h3 className="text-lg font-semibold text-medium-text">{t('Asset Dalam Perbaikan')}</h3>
-          <p className="text-3xl font-bold text-orange-500">{stats.assets_in_repair}</p>
-          <p className="text-sm text-gray-500 mt-1">Sedang dalam perbaikan</p>
-        </div>
-        
-        <div className="bg-white p-6 rounded-lg shadow-md border border-gray-200">
-          <h3 className="text-lg font-semibold text-medium-text">{t('Asset Yang Dipinjam')}</h3>
-          <p className="text-3xl font-bold text-yellow-500">{stats.approved_loans}</p>
-          <p className="text-sm text-gray-500 mt-1">Asset yang sedang dipinjam</p>
-        </div>
-        
-        <div className="bg-white p-6 rounded-lg shadow-md border border-gray-200">
-          <h3 className="text-lg font-semibold text-medium-text">{t('Insiden Kerusakan Asset')}</h3>
-          <p className="text-3xl font-bold text-red-500">{stats.active_incidents}</p>
-          <p className="text-sm text-gray-500 mt-1">Insiden aktif</p>
+      <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-3 gap-6">
+        {/* Total Asset */}
+        <div className="bg-white rounded-lg shadow hover:shadow-lg transition-shadow p-6">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex-1">
+              <p className="text-gray-600 text-sm font-medium mb-2">{t('Total Asset')}</p>
+              <p className="text-3xl font-bold text-primary">{stats.total_assets}</p>
+            </div>
+            <div className="bg-blue-100 rounded-full p-2 flex-shrink-0 ml-2">
+              <svg className="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m0 0l8-4m0 0l8 4m0 6l-8 4-8-4m0 0l8-4m0 0l8 4m0 6l-8 4-8-4" />
+              </svg>
+            </div>
+          </div>
+          <div className="pt-3 border-t border-gray-100">
+            <p className="text-xs text-gray-500">Total semua asset</p>
+          </div>
         </div>
 
-        <div className="bg-white p-6 rounded-lg shadow-md border border-gray-200">
-          <h3 className="text-lg font-semibold text-medium-text">{t('Asset Dalam Pemeliharaan')}</h3>
-          <p className="text-3xl font-bold text-cyan-500">{stats.assets_in_maintenance}</p>
-          <p className="text-sm text-gray-500 mt-1">Asset yang sedang dipelihara</p>
+        {/* Nilai Asset Keseluruhan */}
+        <div className="bg-white rounded-lg shadow hover:shadow-lg transition-shadow p-6">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex-1">
+              <p className="text-gray-600 text-sm font-medium mb-2">{t('Nilai Asset Keseluruhan')}</p>
+              <p className="text-3xl font-bold text-primary">
+                {formatToRupiah(stats.total_value)}
+              </p>
+            </div>
+            <div className="bg-indigo-100 rounded-full p-2 flex-shrink-0 ml-2">
+              <svg className="w-5 h-5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+          </div>
+          <div className="pt-3 border-t border-gray-100">
+            <p className="text-xs text-gray-500">Total nilai semua asset</p>
+          </div>
         </div>
 
-        <div className="bg-white p-6 rounded-lg shadow-md border border-gray-200">
-          <h3 className="text-lg font-semibold text-medium-text">{t('Asset Hilang')}</h3>
-          <p className="text-3xl font-bold text-gray-500">{stats.assets_lost || 0}</p>
-          <p className="text-sm text-gray-500 mt-1">Asset yang hilang</p>
+        {/* Asset Yang Tersedia */}
+        <div className="bg-white rounded-lg shadow hover:shadow-lg transition-shadow p-6">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex-1">
+              <p className="text-gray-600 text-sm font-medium mb-2">{t('Asset Yang Tersedia')}</p>
+              <p className="text-3xl font-bold text-green-600">{stats.assets_in_use}</p>
+            </div>
+            <div className="bg-green-100 rounded-full p-2 flex-shrink-0 ml-2">
+              <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+          </div>
+          <div className="pt-3 border-t border-gray-100">
+            <p className="text-xs text-gray-500">Asset dalam penggunaan</p>
+          </div>
         </div>
 
-        <div className="bg-white p-6 rounded-lg shadow-md border border-gray-200">
-          <h3 className="text-lg font-semibold text-medium-text">{t('Akumulasi Depresiasi Asset')}</h3>
-          <p className="text-3xl font-bold text-purple-600">
-            {formatToRupiah(stats.total_accumulated_depreciation)}
-          </p>
-          <p className="text-sm text-gray-500 mt-1">Total penurunan nilai asset</p>
+        {/* Asset Dalam Perbaikan */}
+        <div className="bg-white rounded-lg shadow hover:shadow-lg transition-shadow p-6">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex-1">
+              <p className="text-gray-600 text-sm font-medium mb-2">{t('Asset Dalam Perbaikan')}</p>
+              <p className="text-3xl font-bold text-orange-500">{stats.assets_in_repair}</p>
+            </div>
+            <div className="bg-orange-100 rounded-full p-2 flex-shrink-0 ml-2">
+              <svg className="w-5 h-5 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+          </div>
+          <div className="pt-3 border-t border-gray-100">
+            <p className="text-xs text-gray-500">Sedang dalam perbaikan</p>
+          </div>
+        </div>
+
+        {/* Asset Yang Dipinjam */}
+        <div className="bg-white rounded-lg shadow hover:shadow-lg transition-shadow p-6">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex-1">
+              <p className="text-gray-600 text-sm font-medium mb-2">{t('Asset Yang Dipinjam')}</p>
+              <p className="text-3xl font-bold text-yellow-500">{stats.approved_loans}</p>
+            </div>
+            <div className="bg-yellow-100 rounded-full p-2 flex-shrink-0 ml-2">
+              <svg className="w-5 h-5 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+              </svg>
+            </div>
+          </div>
+          <div className="pt-3 border-t border-gray-100">
+            <p className="text-xs text-gray-500">Asset yang sedang dipinjam</p>
+          </div>
+        </div>
+
+        {/* Insiden Kerusakan Asset */}
+        <div className="bg-white rounded-lg shadow hover:shadow-lg transition-shadow p-6">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex-1">
+              <p className="text-gray-600 text-sm font-medium mb-2">{t('Insiden Kerusakan Asset')}</p>
+              <p className="text-3xl font-bold text-red-500">{stats.active_incidents}</p>
+            </div>
+            <div className="bg-red-100 rounded-full p-2 flex-shrink-0 ml-2">
+              <svg className="w-5 h-5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4v.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+          </div>
+          <div className="pt-3 border-t border-gray-100">
+            <p className="text-xs text-gray-500">Insiden aktif</p>
+          </div>
+        </div>
+
+        {/* Asset Dalam Pemeliharaan */}
+        <div className="bg-white rounded-lg shadow hover:shadow-lg transition-shadow p-6">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex-1">
+              <p className="text-gray-600 text-sm font-medium mb-2">{t('Asset Dalam Pemeliharaan')}</p>
+              <p className="text-3xl font-bold text-cyan-500">{stats.assets_in_maintenance}</p>
+            </div>
+            <div className="bg-cyan-100 rounded-full p-2 flex-shrink-0 ml-2">
+              <svg className="w-5 h-5 text-cyan-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
+              </svg>
+            </div>
+          </div>
+          <div className="pt-3 border-t border-gray-100">
+            <p className="text-xs text-gray-500">Asset yang sedang dipelihara</p>
+          </div>
+        </div>
+
+        {/* Asset Hilang */}
+        <div className="bg-white rounded-lg shadow hover:shadow-lg transition-shadow p-6">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex-1">
+              <p className="text-gray-600 text-sm font-medium mb-2">{t('Asset Hilang')}</p>
+              <p className="text-3xl font-bold text-gray-600">{stats.assets_lost || 0}</p>
+            </div>
+            <div className="bg-gray-100 rounded-full p-2 flex-shrink-0 ml-2">
+              <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+          </div>
+          <div className="pt-3 border-t border-gray-100">
+            <p className="text-xs text-gray-500">Asset yang hilang</p>
+          </div>
+        </div>
+
+        {/* Akumulasi Depresiasi Asset */}
+        <div className="bg-white rounded-lg shadow hover:shadow-lg transition-shadow p-6">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex-1">
+              <p className="text-gray-600 text-sm font-medium mb-2">{t('Akumulasi Depresiasi Asset')}</p>
+              <p className="text-3xl font-bold text-purple-600">
+                {formatToRupiah(stats.total_accumulated_depreciation)}
+              </p>
+            </div>
+            <div className="bg-purple-100 rounded-full p-2 flex-shrink-0 ml-2">
+              <svg className="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 17h8m0 0V9m0 8l-8-8-4 4m0 0L3 9m0 8v-8" />
+              </svg>
+            </div>
+          </div>
+          <div className="pt-3 border-t border-gray-100">
+            <p className="text-xs text-gray-500">Total penurunan nilai asset</p>
+          </div>
         </div>
       </div>
 
