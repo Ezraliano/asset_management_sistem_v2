@@ -116,6 +116,19 @@ class GuaranteeController extends Controller
                 'status.in' => 'Status harus salah satu dari: available, dipinjam, lunas.',
             ]);
 
+            // Validasi tambahan: Cek apakah CIF sudah terdaftar dengan nama berbeda
+            $existingGuarantee = Guarantee::where('cif_number', $validated['cif_number'])->first();
+            if ($existingGuarantee && strtolower(trim($existingGuarantee->guarantee_name)) !== strtolower(trim($validated['guarantee_name']))) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Validasi gagal',
+                    'errors' => [
+                        'cif_number' => 'Nomor CIF ' . $validated['cif_number'] . ' sudah terdaftar dengan nama "' . $existingGuarantee->guarantee_name . '". Atas Nama Jaminan harus sama.',
+                        'guarantee_name' => 'Atas Nama Jaminan harus "' . $existingGuarantee->guarantee_name . '" untuk Nomor CIF ini.'
+                    ]
+                ], Response::HTTP_UNPROCESSABLE_ENTITY);
+            }
+
             // Set status default ke 'available' jika tidak ada
             if (!isset($validated['status'])) {
                 $validated['status'] = 'available';
@@ -222,6 +235,21 @@ class GuaranteeController extends Controller
                 'input_date.date' => 'Format tanggal tidak valid. Silakan gunakan format YYYY-MM-DD.',
                 'status.in' => 'Status harus salah satu dari: available, dipinjam, lunas.',
             ]);
+
+            // Validasi tambahan: Cek apakah CIF sudah terdaftar dengan nama berbeda (untuk record lain)
+            $existingGuarantee = Guarantee::where('cif_number', $validated['cif_number'])
+                ->where('id', '!=', $id)
+                ->first();
+            if ($existingGuarantee && strtolower(trim($existingGuarantee->guarantee_name)) !== strtolower(trim($validated['guarantee_name']))) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Validasi gagal',
+                    'errors' => [
+                        'cif_number' => 'Nomor CIF ' . $validated['cif_number'] . ' sudah terdaftar dengan nama "' . $existingGuarantee->guarantee_name . '". Atas Nama Jaminan harus sama.',
+                        'guarantee_name' => 'Atas Nama Jaminan harus "' . $existingGuarantee->guarantee_name . '" untuk Nomor CIF ini.'
+                    ]
+                ], Response::HTTP_UNPROCESSABLE_ENTITY);
+            }
 
             // Update guarantee
             $guarantee->update($validated);

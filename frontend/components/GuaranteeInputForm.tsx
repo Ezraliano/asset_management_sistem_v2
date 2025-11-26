@@ -292,7 +292,7 @@ const GuaranteeInputForm: React.FC<GuaranteeInputFormProps> = ({ guarantee, asse
         {/* No CIF */}
         <div>
           <label htmlFor="cif_number" className="block text-sm font-medium text-gray-700 mb-1">
-            No CIF * <span className="text-gray-500 text-xs">(Boleh sama dengan jaminan lain)</span>
+            No CIF * <span className="text-gray-500 text-xs">(Harus sama jika CIF sudah terdaftar)</span>
           </label>
           <input
             type="text"
@@ -362,7 +362,7 @@ const GuaranteeInputForm: React.FC<GuaranteeInputFormProps> = ({ guarantee, asse
         {/* Atas Nama Jaminan */}
         <div>
           <label htmlFor="guarantee_name" className="block text-sm font-medium text-gray-700 mb-1">
-            Atas Nama Jaminan *
+            Atas Nama Jaminan * <span className="text-gray-500 text-xs">(Harus sama jika CIF sudah terdaftar)</span>
           </label>
           <input
             type="text"
