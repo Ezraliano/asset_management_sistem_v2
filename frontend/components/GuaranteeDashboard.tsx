@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { getGuaranteeStats } from '../services/api';
+import { getGuaranteeStats, getGuaranteeUnits } from '../services/api';
 import { BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 interface GuaranteeDashboardProps {
@@ -18,6 +18,15 @@ interface DonutChartData {
   value: number;
 }
 
+interface Unit {
+  id: number;
+  code: string;
+  name: string;
+  description?: string;
+  location?: string;
+  is_active: boolean;
+}
+
 const GuaranteeDashboard: React.FC<GuaranteeDashboardProps> = ({ navigateTo }) => {
   const [stats, setStats] = useState({
     available: 0,
@@ -29,6 +38,8 @@ const GuaranteeDashboard: React.FC<GuaranteeDashboardProps> = ({ navigateTo }) =
   const [statusData, setStatusData] = useState<DonutChartData[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [selectedUnit, setSelectedUnit] = useState<number | ''>('');
+  const [units, setUnits] = useState<Unit[]>([]);
 
   // Color mapping for guarantee types
   const getTypeColor = (type: string): string => {
@@ -42,10 +53,25 @@ const GuaranteeDashboard: React.FC<GuaranteeDashboardProps> = ({ navigateTo }) =
   };
 
   useEffect(() => {
+    const fetchUnits = async () => {
+      try {
+        const unitsList = await getGuaranteeUnits();
+        if (unitsList) {
+          setUnits(unitsList);
+        }
+      } catch (err: any) {
+        console.error('Error fetching units:', err);
+      }
+    };
+
+    fetchUnits();
+  }, []);
+
+  useEffect(() => {
     const fetchStats = async () => {
       try {
         setLoading(true);
-        const guaranteeStats = await getGuaranteeStats();
+        const guaranteeStats = await getGuaranteeStats(selectedUnit);
 
         if (guaranteeStats && guaranteeStats.by_status) {
           const availableCount = guaranteeStats.by_status.available || 0;
@@ -91,7 +117,7 @@ const GuaranteeDashboard: React.FC<GuaranteeDashboardProps> = ({ navigateTo }) =
     // Refresh stats setiap 5 menit
     const interval = setInterval(fetchStats, 5 * 60 * 1000);
     return () => clearInterval(interval);
-  }, []);
+  }, [selectedUnit]);
 
   if (loading) {
     return (
@@ -114,10 +140,31 @@ const GuaranteeDashboard: React.FC<GuaranteeDashboardProps> = ({ navigateTo }) =
 
   return (
     <div className="space-y-6">
-      {/* Header */}
+      {/* Header with Unit Filter */}
       <div className="bg-white rounded-lg shadow p-6">
-        <h1 className="text-3xl font-bold text-gray-800 mb-2">Dashboard Jaminan Asset</h1>
-        <p className="text-gray-600">Kelola data jaminan asuransi untuk semua aset perusahaan</p>
+        <div className="flex items-start justify-between mb-4">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-800 mb-2">Dashboard Jaminan Asset</h1>
+            <p className="text-gray-600">Kelola data jaminan asuransi untuk semua aset perusahaan</p>
+          </div>
+          {units.length > 0 && (
+            <div className="ml-4">
+              <label className="block text-sm font-medium text-gray-700 mb-2">Filter Unit</label>
+              <select
+                value={selectedUnit}
+                onChange={(e) => setSelectedUnit(e.target.value ? parseInt(e.target.value) : '')}
+                className="px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              >
+                <option value="">Semua Unit</option>
+                {units.map((unit) => (
+                  <option key={unit.id} value={unit.id}>
+                    {unit.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Error Message */}

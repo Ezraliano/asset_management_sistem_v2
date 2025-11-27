@@ -2209,14 +2209,39 @@ export const getGuaranteesBySpk = async (spkNumber: string): Promise<Guarantee[]
 /**
  * Get guarantee statistics
  */
-export const getGuaranteeStats = async (): Promise<GuaranteeStats | null> => {
+export const getGuaranteeStats = async (unitId?: number | ''): Promise<GuaranteeStats | null> => {
   try {
-    const response = await apiRequest('/guarantees/stats');
+    const url = unitId ? `/guarantees/stats?unit_id=${unitId}` : '/guarantees/stats';
+    const response = await apiRequest(url);
     const result = handleApiResponse<GuaranteeStats>(response);
     return result || null;
   } catch (error) {
     console.error('Error fetching guarantee stats:', error);
     return null;
+  }
+};
+
+/**
+ * Get list of available guarantee units
+ */
+export const getGuaranteeUnits = async (): Promise<Unit[]> => {
+  try {
+    const response = await apiRequest('/guarantees/units');
+    const result = handleApiResponse<any>(response);
+
+    // Handle both direct array and {data: [...]} structure
+    if (Array.isArray(result)) {
+      return result;
+    }
+
+    if (result && Array.isArray(result.data)) {
+      return result.data;
+    }
+
+    return [];
+  } catch (error) {
+    console.error('Error fetching guarantee units:', error);
+    return [];
   }
 };
 

@@ -23,6 +23,7 @@ return new class extends Migration
             $table->string('file_location');
             $table->date('input_date');
             $table->enum('status', ['available', 'dipinjam', 'lunas'])->default('available');
+            $table->unsignedBigInteger('unit_id')->nullable()->comment('Foreign key to units table');
             $table->timestamps();
 
             // Indexes untuk performa query
@@ -31,6 +32,14 @@ return new class extends Migration
             $table->index('guarantee_type');
             $table->index('input_date');
             $table->index('status');
+            $table->index('unit_id');
+
+            // Foreign key constraint
+            $table->foreign('unit_id')
+                ->references('id')
+                ->on('units')
+                ->onDelete('set null')
+                ->onUpdate('cascade');
         });
     }
 

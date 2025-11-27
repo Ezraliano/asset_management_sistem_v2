@@ -25,6 +25,7 @@ class Guarantee extends Model
         'file_location',
         'input_date',
         'status',
+        'unit_id',
     ];
 
     protected function casts(): array
@@ -82,5 +83,21 @@ class Guarantee extends Model
     public function scopeByStatus($query, $status)
     {
         return $query->where('status', $status);
+    }
+
+    /**
+     * Scope untuk filter berdasarkan unit_id
+     */
+    public function scopeByUnitId($query, $unitId)
+    {
+        return $query->where('unit_id', $unitId);
+    }
+
+    /**
+     * Relationship: Guarantee belongs to Unit
+     */
+    public function unit()
+    {
+        return $this->belongsTo(Unit::class, 'unit_id');
     }
 }

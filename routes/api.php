@@ -160,6 +160,9 @@ Route::middleware(['auth:sanctum'])->group(function () {
         // ✅ NEW ROUTE: Get asset by asset_tag (untuk QR Scanner) - accessible by all authenticated users
         Route::get('/assets/tag/{assetTag}', [AssetController::class, 'getByAssetTag']);
 
+        // ✅ Guarantee units route - accessible by all authenticated users
+        Route::get('/guarantees/units', [GuaranteeController::class, 'getUnits']);
+
         // Unit routes - accessible by all authenticated users
         Route::get('/units', [UnitController::class, 'index']);
         Route::get('/units/{unit}', [UnitController::class, 'show']);

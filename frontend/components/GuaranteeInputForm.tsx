@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Asset } from '../types';
-import { addGuarantee, updateGuarantee } from '../services/api';
+import { addGuarantee, updateGuarantee, getGuaranteeUnits } from '../services/api';
 
 interface GuaranteeInputFormProps {
   guarantee?: any;
@@ -32,6 +32,16 @@ interface GuaranteeFormData {
   guarantee_number: string;
   file_location: string;
   input_date: string;
+  unit_id?: number | null;
+}
+
+interface Unit {
+  id: number;
+  code: string;
+  name: string;
+  description?: string;
+  location?: string;
+  is_active: boolean;
 }
 
 const GuaranteeInputForm: React.FC<GuaranteeInputFormProps> = ({ guarantee, assets, onSuccess, onClose }) => {
@@ -45,11 +55,29 @@ const GuaranteeInputForm: React.FC<GuaranteeInputFormProps> = ({ guarantee, asse
     guarantee_number: '',
     file_location: '',
     input_date: '',
+    unit_id: null,
   });
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [validationErrors, setValidationErrors] = useState<ValidationErrors>({});
+  const [units, setUnits] = useState<Unit[]>([]);
+
+  // Fetch units on component mount
+  useEffect(() => {
+    const fetchUnits = async () => {
+      try {
+        const unitsList = await getGuaranteeUnits();
+        if (unitsList) {
+          setUnits(unitsList);
+        }
+      } catch (err: any) {
+        console.error('Error fetching units:', err);
+      }
+    };
+
+    fetchUnits();
+  }, []);
 
   // Initialize form data if editing
   useEffect(() => {
@@ -64,12 +92,14 @@ const GuaranteeInputForm: React.FC<GuaranteeInputFormProps> = ({ guarantee, asse
         guarantee_number: guarantee.guarantee_number || '',
         file_location: guarantee.file_location || '',
         input_date: guarantee.input_date || '',
+        unit_id: guarantee.unit_id || null,
       });
     } else {
       const today = new Date().toISOString().split('T')[0];
       setFormData(prev => ({
         ...prev,
         input_date: today,
+        unit_id: null,
       }));
     }
   }, [guarantee]);
@@ -455,6 +485,33 @@ const GuaranteeInputForm: React.FC<GuaranteeInputFormProps> = ({ guarantee, asse
             <p className="mt-1 text-sm text-red-600">{getFieldError('file_location')}</p>
           )}
         </div>
+
+        {/* Unit */}
+        {units.length > 0 && (
+          <div>
+            <label htmlFor="unit_id" className="block text-sm font-medium text-gray-700 mb-1">
+              Unit <span className="text-gray-500 text-xs">(Opsional)</span>
+            </label>
+            <select
+              id="unit_id"
+              name="unit_id"
+              value={formData.unit_id || ''}
+              onChange={(e) => setFormData(prev => ({
+                ...prev,
+                unit_id: e.target.value ? parseInt(e.target.value) : null
+              }))}
+              disabled={loading}
+              className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary sm:text-sm disabled:bg-gray-50"
+            >
+              <option value="">-- Pilih Unit --</option>
+              {units.map(unit => (
+                <option key={unit.id} value={unit.id}>
+                  {unit.name}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
       </div>
 
       {/* Error Summary */}

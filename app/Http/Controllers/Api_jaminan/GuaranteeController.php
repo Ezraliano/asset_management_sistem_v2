@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api_jaminan;
 
 use App\Http\Controllers\Controller;
 use App\Models_jaminan\Guarantee;
+use App\Models_jaminan\Unit;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Validation\ValidationException;
@@ -17,7 +18,7 @@ class GuaranteeController extends Controller
     public function index(Request $request)
     {
         try {
-            $query = Guarantee::query();
+            $query = Guarantee::query()->with('unit');
 
             // Filter berdasarkan tipe jaminan
             if ($request->has('guarantee_type') && $request->guarantee_type !== '') {
@@ -37,6 +38,11 @@ class GuaranteeController extends Controller
             // Filter berdasarkan status
             if ($request->has('status') && $request->status !== '') {
                 $query->byStatus($request->status);
+            }
+
+            // Filter berdasarkan unit_id
+            if ($request->has('unit_id') && $request->unit_id !== '') {
+                $query->byUnitId($request->unit_id);
             }
 
             // Filter berdasarkan range tanggal
@@ -93,6 +99,7 @@ class GuaranteeController extends Controller
                 'file_location' => 'required|string|max:255',
                 'input_date' => 'required|date',
                 'status' => 'sometimes|in:available,dipinjam,lunas',
+                'unit_id' => 'nullable|exists:mysql_jaminan.units,id',
             ], [
                 'spk_number.required' => 'Nomor SPK tidak boleh kosong.',
                 'spk_number.max' => 'Nomor SPK terlalu panjang (maksimal 255 karakter).',
@@ -163,7 +170,7 @@ class GuaranteeController extends Controller
     public function show($id)
     {
         try {
-            $guarantee = Guarantee::find($id);
+            $guarantee = Guarantee::with('unit')->find($id);
 
             if (!$guarantee) {
                 return response()->json([
@@ -213,6 +220,7 @@ class GuaranteeController extends Controller
                 'file_location' => 'sometimes|required|string|max:255',
                 'input_date' => 'sometimes|required|date',
                 'status' => 'sometimes|in:available,dipinjam,lunas',
+                'unit_id' => 'nullable|exists:mysql_jaminan.units,id',
             ], [
                 'spk_number.required' => 'Nomor SPK tidak boleh kosong.',
                 'spk_number.max' => 'Nomor SPK terlalu panjang (maksimal 255 karakter).',
@@ -234,6 +242,7 @@ class GuaranteeController extends Controller
                 'input_date.required' => 'Tanggal Input tidak boleh kosong.',
                 'input_date.date' => 'Format tanggal tidak valid. Silakan gunakan format YYYY-MM-DD.',
                 'status.in' => 'Status harus salah satu dari: available, dipinjam, lunas.',
+                'unit_id.exists' => 'Unit yang dipilih tidak valid.',
             ]);
 
             // Validasi tambahan: Cek apakah CIF sudah terdaftar dengan Atas Nama SPK berbeda (untuk record lain)
@@ -310,7 +319,8 @@ class GuaranteeController extends Controller
     public function getByType($type)
     {
         try {
-            $guarantees = Guarantee::byType($type)
+            $guarantees = Guarantee::with('unit')
+                ->byType($type)
                 ->orderBy('input_date', 'desc')
                 ->get();
 
@@ -334,7 +344,8 @@ class GuaranteeController extends Controller
     public function getBySpk($spkNumber)
     {
         try {
-            $guarantees = Guarantee::bySpkNumber($spkNumber)
+            $guarantees = Guarantee::with('unit')
+                ->bySpkNumber($spkNumber)
                 ->get();
 
             if ($guarantees->isEmpty()) {
@@ -361,24 +372,31 @@ class GuaranteeController extends Controller
      * Get statistics about guarantees
      * GET /api/guarantees/stats
      */
-    public function getStats()
+    public function getStats(Request $request)
     {
         try {
+            $query = Guarantee::query();
+
+            // Filter by unit_id if provided
+            if ($request->has('unit_id') && $request->unit_id !== '') {
+                $query->byUnitId($request->unit_id);
+            }
+
             $stats = [
-                'total' => Guarantee::count(),
+                'total' => $query->count(),
                 'by_status' => [
-                    'available' => Guarantee::byStatus('available')->count(),
-                    'dipinjam' => Guarantee::byStatus('dipinjam')->count(),
-                    'lunas' => Guarantee::byStatus('lunas')->count(),
+                    'available' => $query->clone()->byStatus('available')->count(),
+                    'dipinjam' => $query->clone()->byStatus('dipinjam')->count(),
+                    'lunas' => $query->clone()->byStatus('lunas')->count(),
                 ],
                 'by_type' => [
-                    'BPKB' => Guarantee::byType('BPKB')->count(),
-                    'SHM' => Guarantee::byType('SHM')->count(),
-                    'SHGB' => Guarantee::byType('SHGB')->count(),
-                    'E-SHM' => Guarantee::byType('E-SHM')->count(),
+                    'BPKB' => $query->clone()->byType('BPKB')->count(),
+                    'SHM' => $query->clone()->byType('SHM')->count(),
+                    'SHGB' => $query->clone()->byType('SHGB')->count(),
+                    'E-SHM' => $query->clone()->byType('E-SHM')->count(),
                 ],
-                'total_spk' => Guarantee::distinct('spk_number')->count('spk_number'),
-                'latest_input' => Guarantee::latest()->first()?->input_date,
+                'total_spk' => $query->clone()->distinct('spk_number')->count('spk_number'),
+                'latest_input' => $query->clone()->latest()->first()?->input_date,
             ];
 
             return response()->json([
@@ -390,6 +408,28 @@ class GuaranteeController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Gagal mengambil statistik jaminan: ' . $e->getMessage()
+            ], Response::HTTP_INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    /**
+     * Get list of available units
+     * GET /api/units/active
+     */
+    public function getUnits()
+    {
+        try {
+            $units = Unit::active()->orderByName()->get();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Daftar unit berhasil diambil',
+                'data' => $units
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal mengambil daftar unit: ' . $e->getMessage()
             ], Response::HTTP_INTERNAL_SERVER_ERROR);
         }
     }
