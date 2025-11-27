@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { getAssets, getGuarantees } from '../services/api';
-import { Asset, View, Guarantee } from '../types';
+import { getAssets, getGuarantees, getGuaranteeUnits } from '../services/api';
+import { Asset, View, Guarantee, Unit } from '../types';
 import Modal from './Modal';
 import GuaranteeInputForm from './GuaranteeInputForm';
 import GuaranteeDetail from './GuaranteeDetail';
@@ -14,6 +14,7 @@ interface GuaranteeListProps {
 const GuaranteeList: React.FC<GuaranteeListProps> = ({ navigateTo }) => {
   const [guarantees, setGuarantees] = useState<Guarantee[]>([]);
   const [assets, setAssets] = useState<Asset[]>([]);
+  const [units, setUnits] = useState<Unit[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [isModalOpen, setModalOpen] = useState(false);
@@ -22,29 +23,38 @@ const GuaranteeList: React.FC<GuaranteeListProps> = ({ navigateTo }) => {
   const [viewingGuaranteeId, setViewingGuaranteeId] = useState<string | null>(null);
   const [searchSpkNumber, setSearchSpkNumber] = useState('');
   const [searchCifNumber, setSearchCifNumber] = useState('');
+  const [selectedUnitId, setSelectedUnitId] = useState<number | ''>('');
   const [allGuarantees, setAllGuarantees] = useState<Guarantee[]>([]);
   const [sortBy, setSortBy] = useState('spk_number');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
 
-  // Fetch assets
+  // Fetch assets and units
   useEffect(() => {
-    const fetchAssets = async () => {
+    const fetchData = async () => {
       try {
         setLoading(true);
-        const assetsData = await getAssets({});
+        const [assetsData, unitsData] = await Promise.all([
+          getAssets({}),
+          getGuaranteeUnits()
+        ]);
+
         if (Array.isArray(assetsData)) {
           const sortedAssets = assetsData.sort((a, b) => a.asset_tag.localeCompare(b.asset_tag));
           setAssets(sortedAssets);
         }
+
+        if (Array.isArray(unitsData)) {
+          setUnits(unitsData);
+        }
       } catch (err) {
-        console.error('Failed to fetch assets:', err);
-        setError('Gagal memuat data aset');
+        console.error('Failed to fetch assets or units:', err);
+        setError('Gagal memuat data aset atau unit');
       } finally {
         setLoading(false);
       }
     };
 
-    fetchAssets();
+    fetchData();
   }, []);
 
   // Fetch guarantees
@@ -84,8 +94,14 @@ const GuaranteeList: React.FC<GuaranteeListProps> = ({ navigateTo }) => {
       );
     }
 
+    if (selectedUnitId) {
+      filtered = filtered.filter(g =>
+        g.unit_id === selectedUnitId
+      );
+    }
+
     setGuarantees(filtered);
-  }, [searchSpkNumber, searchCifNumber, allGuarantees]);
+  }, [searchSpkNumber, searchCifNumber, selectedUnitId, allGuarantees]);
 
   const handleAddGuarantee = () => {
     setEditingGuarantee(undefined);
@@ -244,7 +260,7 @@ const GuaranteeList: React.FC<GuaranteeListProps> = ({ navigateTo }) => {
 
       {/* Search Filters & Sorting */}
       <div className="bg-white rounded-lg shadow p-6">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div>
             <label className="block text-sm font-semibold text-gray-700 mb-2">
               Cari Nomor SPK
@@ -271,6 +287,23 @@ const GuaranteeList: React.FC<GuaranteeListProps> = ({ navigateTo }) => {
           </div>
           <div>
             <label className="block text-sm font-semibold text-gray-700 mb-2">
+              Filter Unit
+            </label>
+            <select
+              value={selectedUnitId}
+              onChange={(e) => setSelectedUnitId(e.target.value ? parseInt(e.target.value) : '')}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary"
+            >
+              <option value="">Semua Unit</option>
+              {units.map(unit => (
+                <option key={unit.id} value={unit.id}>
+                  {unit.name}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-2">
               Urutkan
             </label>
             <div className="flex gap-2">
@@ -292,12 +325,13 @@ const GuaranteeList: React.FC<GuaranteeListProps> = ({ navigateTo }) => {
             </div>
           </div>
         </div>
-        {(searchSpkNumber || searchCifNumber) && (
+        {(searchSpkNumber || searchCifNumber || selectedUnitId) && (
           <div className="mt-4 pt-4 border-t border-gray-200">
             <button
               onClick={() => {
                 setSearchSpkNumber('');
                 setSearchCifNumber('');
+                setSelectedUnitId('');
               }}
               className="text-sm text-primary hover:text-primary-dark font-medium"
             >
@@ -354,6 +388,7 @@ const GuaranteeList: React.FC<GuaranteeListProps> = ({ navigateTo }) => {
                   <th className="px-6 py-3 text-left font-semibold text-gray-700">Atas Nama Jaminan</th>
                   <th className="px-6 py-3 text-left font-semibold text-gray-700">Tipe Jaminan</th>
                   <th className="px-6 py-3 text-left font-semibold text-gray-700">No Jaminan</th>
+                  <th className="px-6 py-3 text-left font-semibold text-gray-700">Unit</th>
                   <th className="px-6 py-3 text-left font-semibold text-gray-700">Lokasi Jaminan</th>
                   <th className="px-6 py-3 text-left font-semibold text-gray-700">Tgl Input Jaminan Masuk</th>
                   <th className="px-6 py-3 text-left font-semibold text-gray-700">Status</th>
@@ -373,6 +408,11 @@ const GuaranteeList: React.FC<GuaranteeListProps> = ({ navigateTo }) => {
                       </span>
                     </td>
                     <td className="px-6 py-4 text-gray-900">{guarantee.guarantee_number}</td>
+                    <td className="px-6 py-4 text-gray-900">
+                      <span className="px-3 py-1 bg-blue-50 text-blue-700 rounded text-xs font-medium">
+                        {guarantee.unit?.name || '-'}
+                      </span>
+                    </td>
                     <td className="px-6 py-4 text-gray-900">{guarantee.file_location}</td>
                     <td className="px-6 py-4 text-gray-900">{formatDate(guarantee.input_date)}</td>
                     <td className="px-6 py-4">

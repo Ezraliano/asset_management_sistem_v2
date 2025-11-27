@@ -350,6 +350,8 @@ export interface Guarantee {
   file_location: string;
   input_date: string;
   status: GuaranteeStatus;
+  unit_id?: number | null;
+  unit?: Unit;
   created_at: string;
   updated_at: string;
 }
