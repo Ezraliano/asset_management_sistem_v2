@@ -116,15 +116,15 @@ class GuaranteeController extends Controller
                 'status.in' => 'Status harus salah satu dari: available, dipinjam, lunas.',
             ]);
 
-            // Validasi tambahan: Cek apakah CIF sudah terdaftar dengan nama berbeda
+            // Validasi tambahan: Cek apakah CIF sudah terdaftar dengan Atas Nama SPK berbeda
             $existingGuarantee = Guarantee::where('cif_number', $validated['cif_number'])->first();
-            if ($existingGuarantee && strtolower(trim($existingGuarantee->guarantee_name)) !== strtolower(trim($validated['guarantee_name']))) {
+            if ($existingGuarantee && strtolower(trim($existingGuarantee->spk_name)) !== strtolower(trim($validated['spk_name']))) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Validasi gagal',
+                    'message' => 'Input gagal',
                     'errors' => [
-                        'cif_number' => 'Nomor CIF ' . $validated['cif_number'] . ' sudah terdaftar dengan nama "' . $existingGuarantee->guarantee_name . '". Atas Nama Jaminan harus sama.',
-                        'guarantee_name' => 'Atas Nama Jaminan harus "' . $existingGuarantee->guarantee_name . '" untuk Nomor CIF ini.'
+                        'cif_number' => 'Nomor CIF ' . $validated['cif_number'] . ' sudah terdaftar dengan Atas Nama SPK "' . $existingGuarantee->spk_name . '". Atas Nama SPK harus sama.',
+                        'spk_name' => 'Atas Nama SPK harus "' . $existingGuarantee->spk_name . '" untuk Nomor CIF ini.'
                     ]
                 ], Response::HTTP_UNPROCESSABLE_ENTITY);
             }
@@ -236,17 +236,17 @@ class GuaranteeController extends Controller
                 'status.in' => 'Status harus salah satu dari: available, dipinjam, lunas.',
             ]);
 
-            // Validasi tambahan: Cek apakah CIF sudah terdaftar dengan nama berbeda (untuk record lain)
+            // Validasi tambahan: Cek apakah CIF sudah terdaftar dengan Atas Nama SPK berbeda (untuk record lain)
             $existingGuarantee = Guarantee::where('cif_number', $validated['cif_number'])
                 ->where('id', '!=', $id)
                 ->first();
-            if ($existingGuarantee && strtolower(trim($existingGuarantee->guarantee_name)) !== strtolower(trim($validated['guarantee_name']))) {
+            if ($existingGuarantee && strtolower(trim($existingGuarantee->spk_name)) !== strtolower(trim($validated['spk_name']))) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Validasi gagal',
                     'errors' => [
-                        'cif_number' => 'Nomor CIF ' . $validated['cif_number'] . ' sudah terdaftar dengan nama "' . $existingGuarantee->guarantee_name . '". Atas Nama Jaminan harus sama.',
-                        'guarantee_name' => 'Atas Nama Jaminan harus "' . $existingGuarantee->guarantee_name . '" untuk Nomor CIF ini.'
+                        'cif_number' => 'Nomor CIF ' . $validated['cif_number'] . ' sudah terdaftar dengan Atas Nama SPK "' . $existingGuarantee->spk_name . '". Atas Nama SPK harus sama.',
+                        'spk_name' => 'Atas Nama SPK harus "' . $existingGuarantee->spk_name . '" untuk Nomor CIF ini.'
                     ]
                 ], Response::HTTP_UNPROCESSABLE_ENTITY);
             }

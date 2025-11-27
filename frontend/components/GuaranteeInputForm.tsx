@@ -292,7 +292,7 @@ const GuaranteeInputForm: React.FC<GuaranteeInputFormProps> = ({ guarantee, asse
         {/* No CIF */}
         <div>
           <label htmlFor="cif_number" className="block text-sm font-medium text-gray-700 mb-1">
-            No CIF * <span className="text-gray-500 text-xs">(Harus sama jika CIF sudah terdaftar)</span>
+            No CIF *
           </label>
           <input
             type="text"
@@ -316,7 +316,7 @@ const GuaranteeInputForm: React.FC<GuaranteeInputFormProps> = ({ guarantee, asse
         {/* Atas Nama SPK */}
         <div>
           <label htmlFor="spk_name" className="block text-sm font-medium text-gray-700 mb-1">
-            Atas Nama SPK *
+            Atas Nama SPK * <span className="text-gray-500 text-xs">(Harus sama jika CIF sudah terdaftar)</span>
           </label>
           <input
             type="text"
@@ -329,7 +329,7 @@ const GuaranteeInputForm: React.FC<GuaranteeInputFormProps> = ({ guarantee, asse
             className={`block w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary sm:text-sm disabled:bg-gray-50 ${
               getFieldError('spk_name') ? 'border-red-300' : 'border-gray-300'
             }`}
-            placeholder="e.g., PT ABC Jaya"
+            placeholder="Atas Nama SPK .."
           />
           {getFieldError('spk_name') && (
             <p className="mt-1 text-sm text-red-600">{getFieldError('spk_name')}</p>
@@ -362,7 +362,7 @@ const GuaranteeInputForm: React.FC<GuaranteeInputFormProps> = ({ guarantee, asse
         {/* Atas Nama Jaminan */}
         <div>
           <label htmlFor="guarantee_name" className="block text-sm font-medium text-gray-700 mb-1">
-            Atas Nama Jaminan * <span className="text-gray-500 text-xs">(Harus sama jika CIF sudah terdaftar)</span>
+            Atas Nama Jaminan * <span className="text-gray-500 text-xs">(Nama Dokumen Jaminan, mis: SHM PT ABC, BPKB Mobil)</span>
           </label>
           <input
             type="text"
@@ -375,7 +375,7 @@ const GuaranteeInputForm: React.FC<GuaranteeInputFormProps> = ({ guarantee, asse
             className={`block w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary sm:text-sm disabled:bg-gray-50 ${
               getFieldError('guarantee_name') ? 'border-red-300' : 'border-gray-300'
             }`}
-            placeholder="e.g., Budi Santoso"
+            placeholder="Contoh BPKB Yamaha Atas Nama.."
           />
           {getFieldError('guarantee_name') && (
             <p className="mt-1 text-sm text-red-600">{getFieldError('guarantee_name')}</p>

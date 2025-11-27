@@ -562,11 +562,11 @@ const AssetDetail: React.FC<AssetDetailProps> = ({ assetId, navigateTo }) => {
                       {/* ✅ PERBAIKAN: Additional Depreciation Info */}
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
                         <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
-                          <p className="text-sm text-gray-600 font-medium">Progress</p>
+                          <p className="text-sm text-gray-600 font-medium">Proses Depresiasi</p>
                           <div className="mt-2">
                             <div className="flex justify-between text-sm text-gray-600 mb-1">
-                              <span>{completionPercentage.toFixed(1)}% Complete</span>
-                              <span>{depreciatedMonths} / {asset.useful_life} months</span>
+                              <span>{Math.floor(completionPercentage)}% Selesai</span>
+                              <span>{depreciatedMonths} / {asset.useful_life} bulan</span>
                             </div>
                             <div className="w-full bg-gray-200 rounded-full h-2">
                               <div 
