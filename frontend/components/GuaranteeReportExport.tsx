@@ -162,22 +162,22 @@ const GuaranteeReportExport: React.FC<GuaranteeReportExportProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg shadow-lg max-w-md w-full mx-4 max-h-screen overflow-y-auto">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-lg shadow-lg max-w-md w-full max-h-screen overflow-y-auto">
         {/* Header */}
-        <div className="sticky top-0 bg-white border-b px-6 py-4 flex items-center justify-between">
-          <h2 className="text-lg font-bold text-gray-800">Download Laporan Jaminan</h2>
+        <div className="sticky top-0 bg-white border-b px-4 md:px-6 py-3 md:py-4 flex items-center justify-between">
+          <h2 className="text-base md:text-lg font-bold text-gray-800">Download Laporan Jaminan</h2>
           <button
             onClick={onClose}
             disabled={loading}
-            className="text-gray-500 hover:text-gray-700 text-2xl disabled:opacity-50"
+            className="text-gray-500 hover:text-gray-700 text-xl md:text-2xl disabled:opacity-50 flex-shrink-0"
           >
             ×
           </button>
         </div>
 
         {/* Content */}
-        <div className="p-6 space-y-6">
+        <div className="p-4 md:p-6 space-y-4 md:space-y-6">
           {/* Error Message */}
           {error && (
             <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-red-800 text-sm">
@@ -194,10 +194,10 @@ const GuaranteeReportExport: React.FC<GuaranteeReportExportProps> = ({
 
           {/* Report Type Selection */}
           <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-3">
+            <label className="block text-sm font-semibold text-gray-700 mb-2 md:mb-3">
               Pilih Jenis Laporan
             </label>
-            <div className="space-y-2">
+            <div className="space-y-2 text-sm">
               <label className="flex items-center p-3 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50 transition">
                 <input
                   type="radio"
@@ -266,10 +266,10 @@ const GuaranteeReportExport: React.FC<GuaranteeReportExportProps> = ({
 
           {/* Export Format Selection */}
           <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-3">
+            <label className="block text-sm font-semibold text-gray-700 mb-2 md:mb-3">
               Pilih Format Ekspor
             </label>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-2 gap-2 md:gap-3 text-sm">
               <label className="flex items-center p-3 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50 transition">
                 <input
                   type="radio"
@@ -314,18 +314,18 @@ const GuaranteeReportExport: React.FC<GuaranteeReportExportProps> = ({
         </div>
 
         {/* Footer */}
-        <div className="border-t px-6 py-4 flex gap-3 bg-gray-50">
+        <div className="border-t px-4 md:px-6 py-3 md:py-4 flex flex-col sm:flex-row gap-2 md:gap-3 bg-gray-50">
           <button
             onClick={onClose}
             disabled={loading}
-            className="flex-1 px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full sm:flex-1 px-3 md:px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition-colors font-medium text-sm disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Batal
           </button>
           <button
             onClick={handleExport}
             disabled={loading}
-            className="flex-1 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-dark transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            className="w-full sm:flex-1 px-3 md:px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-dark transition-colors font-medium text-sm disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
           >
             {loading ? (
               <>

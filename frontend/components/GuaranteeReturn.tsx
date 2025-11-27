@@ -112,22 +112,22 @@ const GuaranteeReturn: React.FC<GuaranteeReturnProps> = ({
   };
 
   return (
-    <div className="space-y-6 max-h-screen overflow-y-auto">
+    <div className="space-y-4 md:space-y-6 max-h-screen overflow-y-auto">
       {/* Header */}
       <div className="flex items-center justify-between sticky top-0 bg-white z-10 pb-4">
-        <h2 className="text-2xl font-bold text-gray-800">Form Pengembalian Jaminan</h2>
+        <h2 className="text-xl md:text-2xl font-bold text-gray-800">Form Pengembalian Jaminan</h2>
         <button
           onClick={onClose}
-          className="text-gray-500 hover:text-gray-700 text-2xl"
+          className="text-gray-500 hover:text-gray-700 text-xl md:text-2xl flex-shrink-0"
         >
           ×
         </button>
       </div>
 
       {/* Info Jaminan */}
-      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-        <p className="text-sm text-blue-600 font-medium mb-3">Data Jaminan (Otomatis)</p>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 md:p-4">
+        <p className="text-xs md:text-sm text-blue-600 font-medium mb-3">Data Jaminan (Otomatis)</p>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-4">
           <div>
             <label className="block text-sm text-gray-600 font-medium">No SPK</label>
             <p className="text-gray-900 font-semibold mt-1">{guarantee.spk_number}</p>
@@ -163,20 +163,20 @@ const GuaranteeReturn: React.FC<GuaranteeReturnProps> = ({
 
       {/* Error Message */}
       {error && (
-        <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-red-800">
+        <div className="bg-red-50 border border-red-200 rounded-lg p-3 md:p-4 text-xs md:text-sm text-red-800">
           {error}
         </div>
       )}
 
       {/* Success Message */}
       {successMessage && (
-        <div className="bg-green-50 border border-green-200 rounded-lg p-4 text-green-800">
+        <div className="bg-green-50 border border-green-200 rounded-lg p-3 md:p-4 text-xs md:text-sm text-green-800">
           {successMessage}
         </div>
       )}
 
       {/* Form */}
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <form onSubmit={handleSubmit} className="space-y-3 md:space-y-4">
         {/* Tanggal Pengembalian */}
         <div>
           <label htmlFor="actual_return_date" className="block text-sm font-medium text-gray-700 mb-1">
@@ -199,18 +199,18 @@ const GuaranteeReturn: React.FC<GuaranteeReturnProps> = ({
         </div>
 
         {/* Info */}
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-          <p className="text-sm text-blue-700">
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 md:p-4">
+          <p className="text-xs md:text-sm text-blue-700">
             <strong>Catatan:</strong> Jaminan akan langsung berubah status menjadi "Lunas" setelah dikembalikan.
           </p>
         </div>
 
         {/* Buttons */}
-        <div className="flex gap-3 pt-4 border-t">
+        <div className="flex flex-col sm:flex-row gap-2 md:gap-3 pt-4 md:pt-6 border-t">
           <button
             type="submit"
             disabled={loading}
-            className="flex-1 bg-primary text-white px-6 py-2 rounded-lg hover:bg-primary-dark transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full sm:flex-1 bg-primary text-white px-4 md:px-6 py-2 rounded-lg hover:bg-primary-dark transition-colors font-medium text-sm md:text-base disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {loading ? 'Memproses...' : 'Kembalikan Jaminan'}
           </button>
@@ -218,7 +218,7 @@ const GuaranteeReturn: React.FC<GuaranteeReturnProps> = ({
             type="button"
             onClick={onClose}
             disabled={loading}
-            className="flex-1 bg-gray-300 text-gray-700 px-6 py-2 rounded-lg hover:bg-gray-400 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full sm:flex-1 bg-gray-300 text-gray-700 px-4 md:px-6 py-2 rounded-lg hover:bg-gray-400 transition-colors font-medium text-sm md:text-base disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Batal
           </button>

@@ -372,20 +372,20 @@ const GuaranteeDetail: React.FC<GuaranteeDetailProps> = ({ guaranteeId, navigate
       </button>
 
       {/* Main Detail Card */}
-      <div className="bg-white p-6 rounded-xl shadow-md">
-        <div className="flex flex-col md:flex-row items-start gap-8">
+      <div className="bg-white p-4 md:p-6 rounded-xl shadow-md">
+        <div className="flex flex-col items-start gap-4 md:gap-8">
           {/* Left Section - Info */}
           <div className="flex-grow w-full">
             {/* Header */}
-            <div className="mb-8">
-              <h1 className="text-3xl font-bold text-gray-900">{guarantee.guarantee_name}</h1>
-              <p className="text-lg text-gray-500 mt-2">{guarantee.spk_number}</p>
+            <div className="mb-6 md:mb-8">
+              <h1 className="text-2xl md:text-3xl font-bold text-gray-900">{guarantee.guarantee_name}</h1>
+              <p className="text-base md:text-lg text-gray-500 mt-1 md:mt-2">{guarantee.spk_number}</p>
             </div>
 
             {/* Section 1: Informasi SPK */}
-            <div className="mb-8">
-              <h2 className="text-xl font-bold text-gray-800 mb-4">Informasi SPK</h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="mb-6 md:mb-8">
+              <h2 className="text-lg md:text-xl font-bold text-gray-800 mb-4">Informasi SPK</h2>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 md:gap-6">
                 <div className="border-l-4 border-primary pl-4">
                   <p className="text-sm text-gray-600 font-medium">No SPK</p>
                   <p className="text-lg text-gray-900 font-semibold mt-1">{guarantee.spk_number}</p>
@@ -409,9 +409,9 @@ const GuaranteeDetail: React.FC<GuaranteeDetailProps> = ({ guaranteeId, navigate
             <div className="border-t border-gray-200 my-8"></div>
 
             {/* Section 2: Informasi Jaminan */}
-            <div className="mb-8">
-              <h2 className="text-xl font-bold text-gray-800 mb-4">Informasi Jaminan</h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="mb-6 md:mb-8">
+              <h2 className="text-lg md:text-xl font-bold text-gray-800 mb-4">Informasi Jaminan</h2>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 md:gap-6">
                 <div className="border-l-4 border-green-400 pl-4">
                   <p className="text-sm text-gray-600 font-medium">Atas Nama Jaminan</p>
                   <p className="text-lg text-gray-900 font-semibold mt-1">{guarantee.guarantee_name}</p>
@@ -439,9 +439,9 @@ const GuaranteeDetail: React.FC<GuaranteeDetailProps> = ({ guaranteeId, navigate
             <div className="border-t border-gray-200 my-8"></div>
 
             {/* Section 3: Status dan Tanggal */}
-            <div className="mb-8">
-              <h2 className="text-xl font-bold text-gray-800 mb-4">Status dan Tanggal</h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="mb-6 md:mb-8">
+              <h2 className="text-lg md:text-xl font-bold text-gray-800 mb-4">Status dan Tanggal</h2>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 md:gap-6">
                 <div className="border-l-4 border-blue-400 pl-4">
                   <p className="text-sm text-gray-600 font-medium">Status</p>
                   <div className="mt-1">
@@ -461,9 +461,9 @@ const GuaranteeDetail: React.FC<GuaranteeDetailProps> = ({ guaranteeId, navigate
             <div className="border-t border-gray-200 my-8"></div>
 
             {/* Section 4: Informasi Sistem */}
-            <div className="mb-8">
-              <h2 className="text-xl font-bold text-gray-800 mb-4">Informasi Sistem</h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="mb-6 md:mb-8">
+              <h2 className="text-lg md:text-xl font-bold text-gray-800 mb-4">Informasi Sistem</h2>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 md:gap-6">
                 <div className="border-l-4 border-gray-400 pl-4">
                   <p className="text-sm text-gray-600 font-medium">Dibuat Pada</p>
                   <p className="text-sm text-gray-900 mt-1">{formatDate(guarantee.created_at)}</p>
@@ -479,12 +479,12 @@ const GuaranteeDetail: React.FC<GuaranteeDetailProps> = ({ guaranteeId, navigate
             <div className="border-t border-gray-200 my-8"></div>
 
             {/* Action Buttons Bar */}
-            <div className="mt-8 pt-6 border-t border-gray-200 flex flex-wrap gap-3 justify-center md:justify-start">
+            <div className="mt-6 md:mt-8 pt-4 md:pt-6 border-t border-gray-200 flex flex-col sm:flex-row sm:flex-wrap gap-2 md:gap-3 justify-center md:justify-start">
               {/* Peminjaman Button - Selalu tersedia */}
               {guarantee && (
                 <button
                   onClick={() => setLoanModalOpen(true)}
-                  className="flex items-center justify-center text-sm font-medium bg-yellow-50 text-yellow-700 px-4 py-2 rounded-lg shadow-sm hover:bg-yellow-100 border border-yellow-200 transition-colors"
+                  className="w-full sm:w-auto flex items-center justify-center text-xs sm:text-sm font-medium bg-yellow-50 text-yellow-700 px-3 sm:px-4 py-2 rounded-lg shadow-sm hover:bg-yellow-100 border border-yellow-200 transition-colors"
                 >
                   <span className="mr-2">📤</span>
                   <span>Peminjaman Jaminan</span>
@@ -495,7 +495,7 @@ const GuaranteeDetail: React.FC<GuaranteeDetailProps> = ({ guaranteeId, navigate
               {guarantee && (
                 <button
                   onClick={handleSettlementButtonClick}
-                  className={`flex items-center justify-center text-sm font-medium px-4 py-2 rounded-lg shadow-sm transition-colors ${
+                  className={`w-full sm:w-auto flex items-center justify-center text-xs sm:text-sm font-medium px-3 sm:px-4 py-2 rounded-lg shadow-sm transition-colors ${
                     guarantee.status === 'available'
                       ? 'bg-green-50 text-green-700 hover:bg-green-100 border border-green-200 cursor-pointer'
                       : 'bg-gray-100 text-gray-400 border border-gray-200 cursor-not-allowed opacity-60'
@@ -512,7 +512,7 @@ const GuaranteeDetail: React.FC<GuaranteeDetailProps> = ({ guaranteeId, navigate
                 <button
                   onClick={handleDownloadPdf}
                   disabled={isDownloadingPdf}
-                  className="flex items-center justify-center text-sm font-medium bg-red-50 text-red-700 px-4 py-2 rounded-lg shadow-sm hover:bg-red-100 border border-red-200 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+                  className="w-full sm:w-auto flex items-center justify-center text-xs sm:text-sm font-medium bg-red-50 text-red-700 px-3 sm:px-4 py-2 rounded-lg shadow-sm hover:bg-red-100 border border-red-200 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
                 >
                   <span className="mr-2">📥</span>
                   <span>{isDownloadingPdf ? 'Membuat PDF...' : 'Download PDF'}</span>
@@ -522,7 +522,7 @@ const GuaranteeDetail: React.FC<GuaranteeDetailProps> = ({ guaranteeId, navigate
               {/* Edit Button - Selalu tersedia */}
               <button
                 onClick={() => setEditModalOpen(true)}
-                className="flex items-center justify-center text-sm font-medium bg-primary text-white px-4 py-2 rounded-lg shadow-sm hover:bg-primary-dark transition-colors"
+                className="w-full sm:w-auto flex items-center justify-center text-xs sm:text-sm font-medium bg-primary text-white px-3 sm:px-4 py-2 rounded-lg shadow-sm hover:bg-primary-dark transition-colors"
               >
                 <span className="mr-2">✏️</span>
                 <span>Edit</span>
@@ -534,17 +534,17 @@ const GuaranteeDetail: React.FC<GuaranteeDetailProps> = ({ guaranteeId, navigate
 
       {/* Tabs Content */}
       <div className="bg-white rounded-xl shadow-md">
-        <div className="border-b border-gray-200">
-          <nav className="flex -mb-px space-x-4 px-4 overflow-x-auto">
+        <div className="border-b border-gray-200 overflow-x-auto">
+          <nav className="flex -mb-px space-x-2 md:space-x-4 px-4">
             <TabButton tabName="history" label="Riwayat Peminjaman" icon={<HistoryIcon />} />
             <TabButton tabName="settlement" label="Pelunasan" icon={<span>💰</span>} />
           </nav>
         </div>
 
-        <div className="p-6">
+        <div className="p-4 md:p-6">
           {activeTab === 'history' && (
             <div>
-              <h3 className="text-xl font-semibold mb-4 text-gray-900">Riwayat Peminjaman Jaminan</h3>
+              <h3 className="text-lg md:text-xl font-semibold mb-4 text-gray-900">Riwayat Peminjaman Jaminan</h3>
 
               {loadingLoans ? (
                 <div className="text-center py-8">
@@ -556,8 +556,8 @@ const GuaranteeDetail: React.FC<GuaranteeDetailProps> = ({ guaranteeId, navigate
                   <p>Belum ada riwayat peminjaman</p>
                 </div>
               ) : (
-                <div className="overflow-x-auto">
-                  <table className="w-full text-sm">
+                <div className="overflow-x-auto -mx-4 md:mx-0">
+                  <table className="w-full text-xs md:text-sm">
                     <thead className="bg-gray-50 border-b">
                       <tr>
                         <th className="px-6 py-3 text-left font-semibold text-gray-700">Nama Peminjam</th>
@@ -604,7 +604,7 @@ const GuaranteeDetail: React.FC<GuaranteeDetailProps> = ({ guaranteeId, navigate
 
           {activeTab === 'settlement' && (
             <div>
-              <h3 className="text-xl font-semibold mb-4 text-gray-900">Riwayat Pelunasan Jaminan</h3>
+              <h3 className="text-lg md:text-xl font-semibold mb-4 text-gray-900">Riwayat Pelunasan Jaminan</h3>
 
               {loadingSettlements ? (
                 <div className="text-center py-8">

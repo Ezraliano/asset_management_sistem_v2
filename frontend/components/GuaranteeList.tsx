@@ -220,21 +220,21 @@ const GuaranteeList: React.FC<GuaranteeListProps> = ({ navigateTo }) => {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 md:space-y-6">
       {/* Header */}
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col md:flex-row md:justify-between md:items-start gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-gray-800">Daftar Jaminan</h1>
-          <p className="text-gray-600 mt-1">Kelola data jaminan aset perusahaan</p>
+          <h1 className="text-2xl md:text-3xl font-bold text-gray-800">Daftar Jaminan</h1>
+          <p className="text-sm md:text-base text-gray-600 mt-1">Kelola data jaminan aset perusahaan</p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 md:gap-3">
           <button
             onClick={() => setReportExportOpen(true)}
-            className="bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700 transition-colors font-medium flex items-center gap-2"
+            className="bg-green-600 text-white px-4 md:px-6 py-2 rounded-lg hover:bg-green-700 transition-colors font-medium flex items-center justify-center gap-2 text-sm md:text-base"
             title="Unduh laporan jaminan"
           >
             <svg
-              className="w-5 h-5"
+              className="w-4 h-4 md:w-5 md:h-5"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -246,21 +246,23 @@ const GuaranteeList: React.FC<GuaranteeListProps> = ({ navigateTo }) => {
                 d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
               />
             </svg>
-            Unduh Laporan
+            <span className="hidden sm:inline">Unduh Laporan</span>
+            <span className="sm:hidden">Laporan</span>
           </button>
           <button
             onClick={handleAddGuarantee}
-            className="bg-primary text-white px-6 py-2 rounded-lg hover:bg-primary-dark transition-colors font-medium flex items-center gap-2"
+            className="bg-primary text-white px-4 md:px-6 py-2 rounded-lg hover:bg-primary-dark transition-colors font-medium flex items-center justify-center gap-2 text-sm md:text-base"
           >
             <PlusIcon />
-            Input Jaminan
+            <span className="hidden sm:inline">Input Jaminan</span>
+            <span className="sm:hidden">Input</span>
           </button>
         </div>
       </div>
 
       {/* Search Filters & Sorting */}
-      <div className="bg-white rounded-lg shadow p-6">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="bg-white rounded-lg shadow p-4 md:p-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
           <div>
             <label className="block text-sm font-semibold text-gray-700 mb-2">
               Cari Nomor SPK
@@ -306,11 +308,11 @@ const GuaranteeList: React.FC<GuaranteeListProps> = ({ navigateTo }) => {
             <label className="block text-sm font-semibold text-gray-700 mb-2">
               Urutkan
             </label>
-            <div className="flex gap-2">
+            <div className="flex flex-col sm:flex-row gap-2">
               <select
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value)}
-                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary"
+                className="flex-1 px-3 md:px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary text-sm"
               >
                 <option value="spk_number">No SPK</option>
                 <option value="cif_number">No CIF</option>
@@ -318,7 +320,7 @@ const GuaranteeList: React.FC<GuaranteeListProps> = ({ navigateTo }) => {
               <button
                 onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
                 title={`Urutkan ${sortOrder === 'asc' ? 'dari besar ke kecil' : 'dari kecil ke besar'}`}
-                className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-100 transition-colors font-medium"
+                className="w-full sm:w-auto px-3 md:px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-100 transition-colors font-medium text-sm"
               >
                 {sortOrder === 'asc' ? '↑ Asc' : '↓ Desc'}
               </button>
@@ -351,35 +353,35 @@ const GuaranteeList: React.FC<GuaranteeListProps> = ({ navigateTo }) => {
       {/* Guarantees Table */}
       <div className="bg-white rounded-lg shadow overflow-hidden">
         {allGuarantees.length === 0 ? (
-          <div className="p-8 text-center">
-            <svg className="w-12 h-12 text-gray-400 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div className="p-6 md:p-8 text-center">
+            <svg className="w-10 h-10 md:w-12 md:h-12 text-gray-400 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
             </svg>
             <p className="text-gray-600 font-medium">Tidak ada data jaminan</p>
-            <p className="text-gray-500 text-sm mt-1">Klik tombol "Input Jaminan" untuk menambahkan data baru</p>
+            <p className="text-gray-500 text-xs md:text-sm mt-1">Klik tombol "Input Jaminan" untuk menambahkan data baru</p>
           </div>
         ) : guarantees.length === 0 ? (
-          <div className="p-8 text-center">
-            <svg className="w-12 h-12 text-gray-400 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div className="p-6 md:p-8 text-center">
+            <svg className="w-10 h-10 md:w-12 md:h-12 text-gray-400 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
             </svg>
             <p className="text-gray-600 font-medium">Tidak ada hasil pencarian</p>
-            <p className="text-gray-500 text-sm mt-1">Coba ubah kriteria pencarian Nomor SPK atau Nomor CIF</p>
+            <p className="text-gray-500 text-xs md:text-sm mt-1">Coba ubah kriteria pencarian Nomor SPK atau Nomor CIF</p>
           </div>
         ) : (
           <div>
-            <div className="px-6 py-4 border-b bg-gray-50">
-              <p className="text-sm text-gray-600">
+            <div className="px-4 md:px-6 py-3 md:py-4 border-b bg-gray-50">
+              <p className="text-xs md:text-sm text-gray-600">
                 Menampilkan <span className="font-semibold">{guarantees.length}</span> dari <span className="font-semibold">{allGuarantees.length}</span> jaminan
                 {(searchSpkNumber || searchCifNumber) && (
-                  <span className="ml-2 text-blue-600">
+                  <span className="ml-2 text-blue-600 text-xs md:text-sm">
                     (Hasil pencarian: {searchSpkNumber && `SPK: "${searchSpkNumber}"`} {searchSpkNumber && searchCifNumber && '+'} {searchCifNumber && `CIF: "${searchCifNumber}"`})
                   </span>
                 )}
               </p>
             </div>
-            <div className="overflow-x-auto">
-            <table className="w-full text-sm">
+            <div className="overflow-x-auto -mx-4 md:mx-0">
+            <table className="w-full text-xs md:text-sm">
               <thead className="bg-gray-50 border-b">
                 <tr>
                   <th className="px-6 py-3 text-left font-semibold text-gray-700">No SPK</th>
@@ -420,19 +422,20 @@ const GuaranteeList: React.FC<GuaranteeListProps> = ({ navigateTo }) => {
                         {getStatusLabel(guarantee.status)}
                       </span>
                     </td>
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-3">
+                    <td className="px-4 md:px-6 py-4">
+                      <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2">
                         <button
                           onClick={() => setViewingGuaranteeId(guarantee.id.toString())}
-                          className="text-blue-600 hover:text-blue-800 font-medium text-sm flex items-center gap-1"
+                          className="text-blue-600 hover:text-blue-800 font-medium text-xs md:text-sm flex items-center gap-1 whitespace-nowrap"
                           title="Lihat Detail"
                         >
                           <ViewIcon />
-                          Lihat
+                          <span className="hidden sm:inline">Lihat</span>
+                          <span className="sm:hidden">Detail</span>
                         </button>
                         <button
                           onClick={() => handleEditGuarantee(guarantee)}
-                          className="text-primary hover:text-primary-dark font-medium text-sm"
+                          className="text-primary hover:text-primary-dark font-medium text-xs md:text-sm"
                         >
                           Edit
                         </button>

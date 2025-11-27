@@ -279,11 +279,11 @@ const GuaranteeInputForm: React.FC<GuaranteeInputFormProps> = ({ guarantee, asse
   const guaranteeTypes = ['BPKB', 'SHM', 'SHGB', 'E-SHM'];
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
+    <form onSubmit={handleSubmit} className="space-y-3 md:space-y-4 max-h-screen overflow-y-auto">
       {error && (
-        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
+        <div className="bg-red-50 border border-red-200 text-red-700 px-3 md:px-4 py-2 md:py-3 rounded-lg text-sm">
           <div className="flex items-center">
-            <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+            <svg className="w-4 h-4 md:w-5 md:h-5 mr-2 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
               <path
                 fillRule="evenodd"
                 d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
@@ -295,7 +295,7 @@ const GuaranteeInputForm: React.FC<GuaranteeInputFormProps> = ({ guarantee, asse
         </div>
       )}
 
-      <div className="space-y-4">
+      <div className="space-y-3 md:space-y-4">
         {/* No SPK */}
         <div>
           <label htmlFor="spk_number" className="block text-sm font-medium text-gray-700 mb-1">
@@ -517,8 +517,8 @@ const GuaranteeInputForm: React.FC<GuaranteeInputFormProps> = ({ guarantee, asse
       {/* Error Summary */}
       {hasErrors() && (
         <div className="bg-red-50 border border-red-200 rounded-lg p-3">
-          <h4 className="text-sm font-medium text-red-800 mb-2">Mohon perbaiki kesalahan berikut:</h4>
-          <ul className="text-sm text-red-700 list-disc list-inside space-y-1">
+          <h4 className="text-xs md:text-sm font-medium text-red-800 mb-2">Mohon perbaiki kesalahan berikut:</h4>
+          <ul className="text-xs md:text-sm text-red-700 list-disc list-inside space-y-1">
             {validationErrors.spk_number && <li>{validationErrors.spk_number}</li>}
             {validationErrors.cif_number && <li>{validationErrors.cif_number}</li>}
             {validationErrors.spk_name && <li>{validationErrors.spk_name}</li>}
@@ -533,19 +533,19 @@ const GuaranteeInputForm: React.FC<GuaranteeInputFormProps> = ({ guarantee, asse
       )}
 
       {/* Form Actions */}
-      <div className="flex justify-end space-x-3 pt-6 border-t">
+      <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 pt-4 md:pt-6 border-t">
         <button
           type="button"
           onClick={onClose}
           disabled={loading}
-          className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-200 rounded-md hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          className="w-full sm:flex-1 px-3 md:px-4 py-2 text-xs md:text-sm font-medium text-gray-700 bg-gray-200 rounded-md hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
         >
           Batal
         </button>
         <button
           type="submit"
           disabled={loading || hasErrors()}
-          className="px-4 py-2 text-sm font-medium text-white bg-primary rounded-md hover:bg-primary-dark disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
+          className="w-full sm:flex-1 px-3 md:px-4 py-2 text-xs md:text-sm font-medium text-white bg-primary rounded-md hover:bg-primary-dark disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
         >
           {loading ? (
             <>

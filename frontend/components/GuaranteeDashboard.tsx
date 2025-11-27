@@ -139,21 +139,21 @@ const GuaranteeDashboard: React.FC<GuaranteeDashboardProps> = ({ navigateTo }) =
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 md:space-y-6">
       {/* Header with Unit Filter */}
-      <div className="bg-white rounded-lg shadow p-6">
-        <div className="flex items-start justify-between mb-4">
+      <div className="bg-white rounded-lg shadow p-4 md:p-6">
+        <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-bold text-gray-800 mb-2">Dashboard Jaminan Asset</h1>
-            <p className="text-gray-600">Kelola data jaminan asuransi untuk semua aset perusahaan</p>
+            <h1 className="text-2xl md:text-3xl font-bold text-gray-800 mb-1 md:mb-2">Dashboard Jaminan Asset</h1>
+            <p className="text-sm md:text-base text-gray-600">Kelola data jaminan asuransi untuk semua aset perusahaan</p>
           </div>
           {units.length > 0 && (
-            <div className="ml-4">
+            <div className="w-full md:w-auto">
               <label className="block text-sm font-medium text-gray-700 mb-2">Filter Unit</label>
               <select
                 value={selectedUnit}
                 onChange={(e) => setSelectedUnit(e.target.value ? parseInt(e.target.value) : '')}
-                className="px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               >
                 <option value="">Semua Unit</option>
                 {units.map((unit) => (
@@ -175,16 +175,16 @@ const GuaranteeDashboard: React.FC<GuaranteeDashboardProps> = ({ navigateTo }) =
       )}
 
       {/* Statistics Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
         {/* Jaminan Tersedia - Green */}
-        <div className="bg-white rounded-lg shadow p-6 hover:shadow-lg transition-shadow">
+        <div className="bg-white rounded-lg shadow p-4 md:p-6 hover:shadow-lg transition-shadow">
           <div className="flex items-start justify-between">
             <div>
-              <p className="text-gray-600 text-sm font-medium mb-2">Jaminan Tersedia</p>
-              <p className="text-4xl font-bold text-green-600">{stats.available}</p>
+              <p className="text-gray-600 text-xs md:text-sm font-medium mb-2">Jaminan Tersedia</p>
+              <p className="text-3xl md:text-4xl font-bold text-green-600">{stats.available}</p>
             </div>
-            <div className="bg-green-100 rounded-full p-3">
-              <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className="bg-green-100 rounded-full p-2 md:p-3">
+              <svg className="w-5 h-5 md:w-6 md:h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
             </div>
@@ -195,14 +195,14 @@ const GuaranteeDashboard: React.FC<GuaranteeDashboardProps> = ({ navigateTo }) =
         </div>
 
         {/* Jaminan Dipinjam - Yellow */}
-        <div className="bg-white rounded-lg shadow p-6 hover:shadow-lg transition-shadow">
+        <div className="bg-white rounded-lg shadow p-4 md:p-6 hover:shadow-lg transition-shadow">
           <div className="flex items-start justify-between">
             <div>
-              <p className="text-gray-600 text-sm font-medium mb-2">Jaminan Dipinjam</p>
-              <p className="text-4xl font-bold text-yellow-600">{stats.dipinjam}</p>
+              <p className="text-gray-600 text-xs md:text-sm font-medium mb-2">Jaminan Dipinjam</p>
+              <p className="text-3xl md:text-4xl font-bold text-yellow-600">{stats.dipinjam}</p>
             </div>
-            <div className="bg-yellow-100 rounded-full p-3">
-              <svg className="w-6 h-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className="bg-yellow-100 rounded-full p-2 md:p-3">
+              <svg className="w-5 h-5 md:w-6 md:h-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
               </svg>
             </div>
@@ -213,14 +213,14 @@ const GuaranteeDashboard: React.FC<GuaranteeDashboardProps> = ({ navigateTo }) =
         </div>
 
         {/* Jaminan Lunas - Blue */}
-        <div className="bg-white rounded-lg shadow p-6 hover:shadow-lg transition-shadow">
+        <div className="bg-white rounded-lg shadow p-4 md:p-6 hover:shadow-lg transition-shadow">
           <div className="flex items-start justify-between">
             <div>
-              <p className="text-gray-600 text-sm font-medium mb-2">Jaminan Lunas</p>
-              <p className="text-4xl font-bold text-blue-600">{stats.lunas}</p>
+              <p className="text-gray-600 text-xs md:text-sm font-medium mb-2">Jaminan Lunas</p>
+              <p className="text-3xl md:text-4xl font-bold text-blue-600">{stats.lunas}</p>
             </div>
-            <div className="bg-blue-100 rounded-full p-3">
-              <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className="bg-blue-100 rounded-full p-2 md:p-3">
+              <svg className="w-5 h-5 md:w-6 md:h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
               </svg>
             </div>
@@ -232,25 +232,34 @@ const GuaranteeDashboard: React.FC<GuaranteeDashboardProps> = ({ navigateTo }) =
       </div>
 
       {/* Summary Card */}
-      <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-200 p-6">
-        <div className="flex items-center justify-between">
+      <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-200 p-4 md:p-6">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div>
-            <p className="text-gray-700 font-medium mb-2">Total Jaminan</p>
-            <p className="text-3xl font-bold text-gray-900">{stats.total}</p>
+            <p className="text-gray-700 text-sm md:text-base font-medium mb-2">Total Jaminan</p>
+            <p className="text-2xl md:text-3xl font-bold text-gray-900">{stats.total}</p>
           </div>
-          <div className="text-right text-sm text-gray-600">
-            <p>{stats.available} tersedia</p>
-            <p>{stats.dipinjam} dipinjam</p>
-            <p>{stats.lunas} lunas</p>
+          <div className="grid grid-cols-3 md:grid-cols-3 gap-4 md:gap-6 text-sm md:text-right">
+            <div className="md:text-right">
+              <p className="text-gray-600">{stats.available}</p>
+              <p className="text-xs text-gray-500">tersedia</p>
+            </div>
+            <div className="md:text-right">
+              <p className="text-gray-600">{stats.dipinjam}</p>
+              <p className="text-xs text-gray-500">dipinjam</p>
+            </div>
+            <div className="md:text-right">
+              <p className="text-gray-600">{stats.lunas}</p>
+              <p className="text-xs text-gray-500">lunas</p>
+            </div>
           </div>
         </div>
       </div>
 
       {/* Charts Section */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
         {/* Bar Chart - Tipe Jaminan */}
-        <div className="bg-white rounded-lg shadow p-6">
-          <h2 className="text-xl font-bold text-gray-800 mb-4">Total Jaminan Berdasarkan Tipe</h2>
+        <div className="bg-white rounded-lg shadow p-4 md:p-6">
+          <h2 className="text-lg md:text-xl font-bold text-gray-800 mb-4">Total Jaminan Berdasarkan Tipe</h2>
           {typeData.length > 0 ? (
             <ResponsiveContainer width="100%" height={300}>
               <BarChart data={typeData}>
@@ -297,8 +306,8 @@ const GuaranteeDashboard: React.FC<GuaranteeDashboardProps> = ({ navigateTo }) =
         </div>
 
         {/* Donut Chart - Status Jaminan */}
-        <div className="bg-white rounded-lg shadow p-6">
-          <h2 className="text-xl font-bold text-gray-800 mb-4">Distribusi Status Jaminan</h2>
+        <div className="bg-white rounded-lg shadow p-4 md:p-6">
+          <h2 className="text-lg md:text-xl font-bold text-gray-800 mb-4">Distribusi Status Jaminan</h2>
           {statusData.length > 0 && statusData.some(d => d.value > 0) ? (
             <ResponsiveContainer width="100%" height={300}>
               <PieChart>
@@ -328,17 +337,17 @@ const GuaranteeDashboard: React.FC<GuaranteeDashboardProps> = ({ navigateTo }) =
             </div>
           )}
           <div className="mt-6 pt-4 border-t border-gray-100">
-            <div className="grid grid-cols-3 gap-2 text-sm">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 text-xs md:text-sm">
               <div className="flex items-center gap-2">
-                <div className="w-3 h-3 rounded-full" style={{ backgroundColor: '#10b981' }}></div>
+                <div className="w-2 h-2 md:w-3 md:h-3 rounded-full" style={{ backgroundColor: '#10b981' }}></div>
                 <span className="text-gray-600">Tersedia: {stats.available}</span>
               </div>
               <div className="flex items-center gap-2">
-                <div className="w-3 h-3 rounded-full" style={{ backgroundColor: '#f59e0b' }}></div>
+                <div className="w-2 h-2 md:w-3 md:h-3 rounded-full" style={{ backgroundColor: '#f59e0b' }}></div>
                 <span className="text-gray-600">Dipinjam: {stats.dipinjam}</span>
               </div>
               <div className="flex items-center gap-2">
-                <div className="w-3 h-3 rounded-full" style={{ backgroundColor: '#3b82f6' }}></div>
+                <div className="w-2 h-2 md:w-3 md:h-3 rounded-full" style={{ backgroundColor: '#3b82f6' }}></div>
                 <span className="text-gray-600">Lunas: {stats.lunas}</span>
               </div>
             </div>
