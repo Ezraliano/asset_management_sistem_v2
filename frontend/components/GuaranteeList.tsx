@@ -9,9 +9,10 @@ import { PlusIcon, ViewIcon } from './icons';
 
 interface GuaranteeListProps {
   navigateTo: (view: View) => void;
+  user?: any;
 }
 
-const GuaranteeList: React.FC<GuaranteeListProps> = ({ navigateTo }) => {
+const GuaranteeList: React.FC<GuaranteeListProps> = ({ navigateTo, user }) => {
   const [guarantees, setGuarantees] = useState<Guarantee[]>([]);
   const [assets, setAssets] = useState<Asset[]>([]);
   const [units, setUnits] = useState<Unit[]>([]);
@@ -184,6 +185,7 @@ const GuaranteeList: React.FC<GuaranteeListProps> = ({ navigateTo }) => {
     return (
       <GuaranteeDetail
         guaranteeId={viewingGuaranteeId}
+        user={user}
         navigateTo={() => {
           setViewingGuaranteeId(null);
           // Refresh list when returning from detail view
@@ -249,14 +251,16 @@ const GuaranteeList: React.FC<GuaranteeListProps> = ({ navigateTo }) => {
             <span className="hidden sm:inline">Unduh Laporan</span>
             <span className="sm:hidden">Laporan</span>
           </button>
-          <button
-            onClick={handleAddGuarantee}
-            className="bg-primary text-white px-4 md:px-6 py-2 rounded-lg hover:bg-primary-dark transition-colors font-medium flex items-center justify-center gap-2 text-sm md:text-base"
-          >
-            <PlusIcon />
-            <span className="hidden sm:inline">Input Jaminan</span>
-            <span className="sm:hidden">Input</span>
-          </button>
+          {user?.role !== 'admin-holding' && (
+            <button
+              onClick={handleAddGuarantee}
+              className="bg-primary text-white px-4 md:px-6 py-2 rounded-lg hover:bg-primary-dark transition-colors font-medium flex items-center justify-center gap-2 text-sm md:text-base"
+            >
+              <PlusIcon />
+              <span className="hidden sm:inline">Input Jaminan</span>
+              <span className="sm:hidden">Input</span>
+            </button>
+          )}
         </div>
       </div>
 
@@ -433,12 +437,14 @@ const GuaranteeList: React.FC<GuaranteeListProps> = ({ navigateTo }) => {
                           <span className="hidden sm:inline">Lihat</span>
                           <span className="sm:hidden">Detail</span>
                         </button>
-                        <button
-                          onClick={() => handleEditGuarantee(guarantee)}
-                          className="text-primary hover:text-primary-dark font-medium text-xs md:text-sm"
-                        >
-                          Edit
-                        </button>
+                        {user?.role !== 'admin-holding' && (
+                          <button
+                            onClick={() => handleEditGuarantee(guarantee)}
+                            className="text-primary hover:text-primary-dark font-medium text-xs md:text-sm"
+                          >
+                            Edit
+                          </button>
+                        )}
                       </div>
                     </td>
                   </tr>

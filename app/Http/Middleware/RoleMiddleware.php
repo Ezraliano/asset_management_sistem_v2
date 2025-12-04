@@ -45,7 +45,13 @@ class RoleMiddleware
         // Check if user has one of the required roles
         $hasRole = false;
         foreach ($roles as $role) {
-            if ($userRole === strtolower($role)) {
+            // Handle 'admin' role alias which can match 'admin-holding' and 'admin-kredit'
+            if ($role === 'admin') {
+                if (in_array($userRole, ['admin', 'admin-holding', 'admin-kredit'])) {
+                    $hasRole = true;
+                    break;
+                }
+            } elseif ($userRole === strtolower($role)) {
                 $hasRole = true;
                 break;
             }

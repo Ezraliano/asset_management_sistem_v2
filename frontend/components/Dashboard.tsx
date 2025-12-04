@@ -1,6 +1,6 @@
 // Dashboard.tsx - DENGAN CHART DAN DIAGRAM LINGKARAN
 import React, { useState, useEffect } from 'react';
-import { DashboardStats, ChartData, Unit } from '../types';
+import { DashboardStats, ChartData, Unit, View } from '../types';
 import { getDashboardStats, getCurrentUser, getUnits } from '../services/api';
 import { useTranslation } from '../hooks/useTranslation';
 import { formatToRupiah } from '../utils/formatters';
@@ -12,7 +12,11 @@ const CHART_COLORS = [
   '#06B6D4', '#84CC16', '#F97316', '#EC4899', '#6366F1'
 ];
 
-const Dashboard: React.FC = () => {
+interface DashboardProps {
+  navigateTo?: (view: View) => void;
+}
+
+const Dashboard: React.FC<DashboardProps> = ({ navigateTo }) => {
   const { t } = useTranslation();
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [loading, setLoading] = useState(true);

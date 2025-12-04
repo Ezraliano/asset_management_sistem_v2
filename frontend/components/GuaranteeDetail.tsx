@@ -14,11 +14,12 @@ import { exportGuaranteeDetailToPdf } from '../utils/guaranteeExportUtils';
 interface GuaranteeDetailProps {
   guaranteeId: string;
   navigateTo: (view: View) => void;
+  user?: any;
 }
 
 type Tab = 'history' | 'settlement';
 
-const GuaranteeDetail: React.FC<GuaranteeDetailProps> = ({ guaranteeId, navigateTo }) => {
+const GuaranteeDetail: React.FC<GuaranteeDetailProps> = ({ guaranteeId, navigateTo, user }) => {
   const [guarantee, setGuarantee] = useState<Guarantee | null>(null);
   const [loanHistory, setLoanHistory] = useState<any[]>([]);
   const [settlementHistory, setSettlementHistory] = useState<any[]>([]);
@@ -480,8 +481,8 @@ const GuaranteeDetail: React.FC<GuaranteeDetailProps> = ({ guaranteeId, navigate
 
             {/* Action Buttons Bar */}
             <div className="mt-6 md:mt-8 pt-4 md:pt-6 border-t border-gray-200 flex flex-col sm:flex-row sm:flex-wrap gap-2 md:gap-3 justify-center md:justify-start">
-              {/* Peminjaman Button - Selalu tersedia */}
-              {guarantee && (
+              {/* Peminjaman Button - Hidden for admin-holding */}
+              {guarantee && user?.role !== 'admin-holding' && (
                 <button
                   onClick={() => setLoanModalOpen(true)}
                   className="w-full sm:w-auto flex items-center justify-center text-xs sm:text-sm font-medium bg-yellow-50 text-yellow-700 px-3 sm:px-4 py-2 rounded-lg shadow-sm hover:bg-yellow-100 border border-yellow-200 transition-colors"
@@ -491,8 +492,8 @@ const GuaranteeDetail: React.FC<GuaranteeDetailProps> = ({ guaranteeId, navigate
                 </button>
               )}
 
-              {/* Pelunasan Button - Hanya bisa jika status 'available' */}
-              {guarantee && (
+              {/* Pelunasan Button - Hidden for admin-holding, Hanya bisa jika status 'available' */}
+              {guarantee && user?.role !== 'admin-holding' && (
                 <button
                   onClick={handleSettlementButtonClick}
                   className={`w-full sm:w-auto flex items-center justify-center text-xs sm:text-sm font-medium px-3 sm:px-4 py-2 rounded-lg shadow-sm transition-colors ${
@@ -507,7 +508,7 @@ const GuaranteeDetail: React.FC<GuaranteeDetailProps> = ({ guaranteeId, navigate
                 </button>
               )}
 
-              {/* Download PDF Button - Selalu tersedia */}
+              {/* Download PDF Button - Always available */}
               {guarantee && (
                 <button
                   onClick={handleDownloadPdf}
@@ -519,14 +520,16 @@ const GuaranteeDetail: React.FC<GuaranteeDetailProps> = ({ guaranteeId, navigate
                 </button>
               )}
 
-              {/* Edit Button - Selalu tersedia */}
-              <button
-                onClick={() => setEditModalOpen(true)}
-                className="w-full sm:w-auto flex items-center justify-center text-xs sm:text-sm font-medium bg-primary text-white px-3 sm:px-4 py-2 rounded-lg shadow-sm hover:bg-primary-dark transition-colors"
-              >
-                <span className="mr-2">✏️</span>
-                <span>Edit</span>
-              </button>
+              {/* Edit Button - Hidden for admin-holding */}
+              {user?.role !== 'admin-holding' && (
+                <button
+                  onClick={() => setEditModalOpen(true)}
+                  className="w-full sm:w-auto flex items-center justify-center text-xs sm:text-sm font-medium bg-primary text-white px-3 sm:px-4 py-2 rounded-lg shadow-sm hover:bg-primary-dark transition-colors"
+                >
+                  <span className="mr-2">✏️</span>
+                  <span>Edit</span>
+                </button>
+              )}
             </div>
           </div>
         </div>

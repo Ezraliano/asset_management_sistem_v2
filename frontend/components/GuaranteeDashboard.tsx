@@ -4,6 +4,7 @@ import { BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Toolti
 
 interface GuaranteeDashboardProps {
   navigateTo?: (view: any) => void;
+  user?: any;
 }
 
 interface BarChartData {
@@ -27,7 +28,7 @@ interface Unit {
   is_active: boolean;
 }
 
-const GuaranteeDashboard: React.FC<GuaranteeDashboardProps> = ({ navigateTo }) => {
+const GuaranteeDashboard: React.FC<GuaranteeDashboardProps> = ({ navigateTo, user }) => {
   const [stats, setStats] = useState({
     available: 0,
     dipinjam: 0,
@@ -147,7 +148,7 @@ const GuaranteeDashboard: React.FC<GuaranteeDashboardProps> = ({ navigateTo }) =
             <h1 className="text-2xl md:text-3xl font-bold text-gray-800 mb-1 md:mb-2">Dashboard Jaminan Asset</h1>
             <p className="text-sm md:text-base text-gray-600">Kelola data jaminan asuransi untuk semua aset perusahaan</p>
           </div>
-          {units.length > 0 && (
+          {units.length > 0 && user?.role !== 'admin-kredit' && (
             <div className="w-full md:w-auto">
               <label className="block text-sm font-medium text-gray-700 mb-2">Filter Unit</label>
               <select

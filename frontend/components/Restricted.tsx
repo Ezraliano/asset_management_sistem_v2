@@ -22,7 +22,16 @@ const Restricted: React.FC<Props> = ({ user, allowedRoles, children }) => {
 
   const lowercasedAllowedRoles = allowedRoles.map(role => role.toLowerCase().trim());
 
-  if (lowercasedAllowedRoles.includes(userRole)) {
+  // Check for exact match or alias match (e.g., 'admin' matches 'admin-holding' and 'admin-kredit')
+  let hasRole = lowercasedAllowedRoles.includes(userRole);
+
+  if (!hasRole && lowercasedAllowedRoles.includes('admin')) {
+    if (userRole === 'admin-holding' || userRole === 'admin-kredit') {
+      hasRole = true;
+    }
+  }
+
+  if (hasRole) {
     return <>{children}</>;
   }
 

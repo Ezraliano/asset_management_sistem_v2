@@ -34,7 +34,7 @@ export interface User {
   name: string;
   username: string;
   email: string;
-  role: 'super-admin' | 'admin' | 'unit' | 'user' | 'auditor';
+  role: 'super-admin' | 'admin' | 'unit' | 'user' | 'auditor' | 'admin-kredit' | 'admin-holding';
   unit_id?: number | null;
   unit?: Unit;
 }

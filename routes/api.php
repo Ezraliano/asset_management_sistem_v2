@@ -251,36 +251,49 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::get('/available-units', [UserController::class, 'getAvailableUnits']);
     });
 
-    // Guarantee Routes - Super Admin, Admin Holding, Admin Unit
-    Route::middleware('role:super-admin,admin,unit')->group(function () {
-        // Define specific routes BEFORE apiResource to prevent route collision
+    // Guarantee Routes - Read-only for admin-holding
+    Route::middleware('role:super-admin,admin,unit,admin-holding')->group(function () {
+        // GET routes (read-only) - accessible by all roles including admin-holding
         Route::get('/guarantees/stats', [GuaranteeController::class, 'getStats']);
         Route::get('/guarantees/by-type/{type}', [GuaranteeController::class, 'getByType']);
         Route::get('/guarantees/by-spk/{spkNumber}', [GuaranteeController::class, 'getBySpk']);
+        Route::get('/guarantees', [GuaranteeController::class, 'index']);
+        Route::get('/guarantees/{id}', [GuaranteeController::class, 'show']);
 
-        // General CRUD routes
-        Route::apiResource('guarantees', GuaranteeController::class);
-
-        // Guarantee Loan Routes
-        // Define specific routes BEFORE apiResource to prevent route collision
+        // Guarantee Loan read routes - accessible by all roles
         Route::get('/guarantee-loans/stats', [GuaranteeLoanController::class, 'getStats']);
         Route::get('/guarantee-loans/by-guarantee/{guaranteeId}', [GuaranteeLoanController::class, 'getByGuaranteeId']);
         Route::get('/guarantee-loans/by-status/{status}', [GuaranteeLoanController::class, 'getByStatus']);
-        Route::put('/guarantee-loans/{id}/return', [GuaranteeLoanController::class, 'returnLoan']);
+        Route::get('/guarantee-loans', [GuaranteeLoanController::class, 'index']);
+        Route::get('/guarantee-loans/{id}', [GuaranteeLoanController::class, 'show']);
 
-        // General CRUD routes
-        Route::apiResource('guarantee-loans', GuaranteeLoanController::class);
-
-        // Guarantee Settlement Routes
-        // Define specific routes BEFORE apiResource to prevent route collision
+        // Guarantee Settlement read routes - accessible by all roles
         Route::get('/guarantee-settlements/stats', [GuaranteeSettlementController::class, 'getStats']);
         Route::get('/guarantee-settlements/by-guarantee/{guaranteeId}', [GuaranteeSettlementController::class, 'getByGuaranteeId']);
         Route::get('/guarantee-settlements/by-status/{status}', [GuaranteeSettlementController::class, 'getByStatus']);
+        Route::get('/guarantee-settlements', [GuaranteeSettlementController::class, 'index']);
+        Route::get('/guarantee-settlements/{id}', [GuaranteeSettlementController::class, 'show']);
+    });
+
+    // Guarantee Write Operations - Only Super Admin, Admin (Kredit), Admin Unit
+    Route::middleware('role:super-admin,admin,unit,admin-kredit')->group(function () {
+        // Guarantee CRUD - create, update, delete (NOT for admin-holding)
+        Route::post('/guarantees', [GuaranteeController::class, 'store']);
+        Route::put('/guarantees/{id}', [GuaranteeController::class, 'update']);
+        Route::delete('/guarantees/{id}', [GuaranteeController::class, 'destroy']);
+
+        // Guarantee Loan operations
+        Route::post('/guarantee-loans', [GuaranteeLoanController::class, 'store']);
+        Route::put('/guarantee-loans/{id}', [GuaranteeLoanController::class, 'update']);
+        Route::delete('/guarantee-loans/{id}', [GuaranteeLoanController::class, 'destroy']);
+        Route::put('/guarantee-loans/{id}/return', [GuaranteeLoanController::class, 'returnLoan']);
+
+        // Guarantee Settlement operations
+        Route::post('/guarantee-settlements', [GuaranteeSettlementController::class, 'store']);
+        Route::put('/guarantee-settlements/{id}', [GuaranteeSettlementController::class, 'update']);
+        Route::delete('/guarantee-settlements/{id}', [GuaranteeSettlementController::class, 'destroy']);
         Route::put('/guarantee-settlements/{id}/approve', [GuaranteeSettlementController::class, 'approve']);
         Route::put('/guarantee-settlements/{id}/reject', [GuaranteeSettlementController::class, 'reject']);
-
-        // General CRUD routes
-        Route::apiResource('guarantee-settlements', GuaranteeSettlementController::class);
     });
 
     // Jaminan User Management Routes - Only Superadmin (Protected by JaminanRoleMiddleware in controller)

@@ -81,7 +81,13 @@ const AppContent: React.FC = () => {
 
   const handleLoginSuccess = (loggedInUser: User) => {
     setUser(loggedInUser);
-    setView({ type: 'DASHBOARD' });
+    // Redirect admin-kredit directly to guarantee dashboard
+    if (loggedInUser.role === 'admin-kredit') {
+      setAppMode('guarantee');
+      setView({ type: 'GUARANTEE_DASHBOARD' });
+    } else {
+      setView({ type: 'DASHBOARD' });
+    }
   };
   
   const handleLogout = async () => {
@@ -198,9 +204,9 @@ const AppContent: React.FC = () => {
             />
           );
       case 'GUARANTEE_DASHBOARD':
-          return <GuaranteeDashboard navigateTo={navigateTo} />;
+          return <GuaranteeDashboard navigateTo={navigateTo} user={user} />;
       case 'GUARANTEE_LIST':
-          return <GuaranteeList navigateTo={navigateTo} />;
+          return <GuaranteeList navigateTo={navigateTo} user={user} />;
       default:
         return <Dashboard navigateTo={navigateTo} />;
     }
