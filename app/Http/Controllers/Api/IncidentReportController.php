@@ -30,10 +30,10 @@ class IncidentReportController extends Controller
             if ($user->role === 'user') {
                 // Users can only see their own reports
                 $query->where('reporter_id', $user->id);
-            } elseif ($user->role === 'unit' && $user->unit_id) {
+            } elseif ($user->role === 'unit' && $user->unit_name) {
                 // Admin Unit can only see reports for assets in their unit
                 $query->whereHas('asset', function($q) use ($user) {
-                    $q->where('unit_id', $user->unit_id);
+                    $q->where('unit_name', $user->unit_name);
                 });
             }
             // super-admin and admin can see all reports
@@ -115,7 +115,7 @@ class IncidentReportController extends Controller
 
             // Check if user can report incident for this asset
             // Users can only report for assets in their unit
-            if ($user->role === 'user' && $asset->unit_id !== $user->unit_id) {
+            if ($user->role === 'user' && $asset->unit_name !== $user->unit_name) {
                 return response()->json([
                     'success' => false,
                     'message' => 'You can only report incidents for assets in your unit'
@@ -215,7 +215,7 @@ class IncidentReportController extends Controller
             }
 
             // Check for Admin Unit
-            if ($user->role === 'unit' && $user->unit_id && $incident->asset->unit_id !== $user->unit_id) {
+            if ($user->role === 'unit' && $user->unit_name && $incident->asset->unit_name !== $user->unit_name) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Unauthorized to view incident reports from other units'
@@ -267,7 +267,7 @@ class IncidentReportController extends Controller
             }
 
             // Check for Admin Unit
-            if ($user->role === 'unit' && $user->unit_id && $incident->asset->unit_id !== $user->unit_id) {
+            if ($user->role === 'unit' && $user->unit_name && $incident->asset->unit_name !== $user->unit_name) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Unauthorized to update incidents from other units'
@@ -400,9 +400,9 @@ class IncidentReportController extends Controller
                 ->whereIn('status', ['PENDING', 'UNDER_REVIEW']);
 
             // Filter by unit for Admin Unit
-            if ($user->role === 'unit' && $user->unit_id) {
+            if ($user->role === 'unit' && $user->unit_name) {
                 $query->whereHas('asset', function($q) use ($user) {
-                    $q->where('unit_id', $user->unit_id);
+                    $q->where('unit_name', $user->unit_name);
                 });
             }
 
@@ -509,9 +509,9 @@ class IncidentReportController extends Controller
                 ->get();
 
             // Filter incidents based on user permissions
-            if ($user->role === 'unit' && $user->unit_id) {
+            if ($user->role === 'unit' && $user->unit_name) {
                 $incidents = $incidents->filter(function ($incident) use ($user) {
-                    return $incident->asset->unit_id === $user->unit_id;
+                    return $incident->asset->unit_name === $user->unit_name;
                 });
             }
 
@@ -637,7 +637,7 @@ class IncidentReportController extends Controller
             }
 
             // Check for Admin Unit
-            if ($user->role === 'unit' && $user->unit_id && $incident->asset->unit_id !== $user->unit_id) {
+            if ($user->role === 'unit' && $user->unit_name && $incident->asset->unit_name !== $user->unit_name) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Unauthorized to view photos from other units'
@@ -741,7 +741,7 @@ class IncidentReportController extends Controller
             }
 
             // Authorization check for Admin Unit
-            if ($user->role === 'unit' && $user->unit_id && $asset->unit_id !== $user->unit_id) {
+            if ($user->role === 'unit' && $user->unit_name && $asset->unit_name !== $user->unit_name) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Unauthorized to view incidents for assets from other units'
@@ -749,7 +749,7 @@ class IncidentReportController extends Controller
             }
 
             // Authorization check for User
-            if ($user->role === 'user' && $asset->unit_id !== $user->unit_id) {
+            if ($user->role === 'user' && $asset->unit_name !== $user->unit_name) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Unauthorized to view incidents for assets from other units'
@@ -790,9 +790,9 @@ class IncidentReportController extends Controller
             // Filter by user role
             if ($user->role === 'user') {
                 $query->where('reporter_id', $user->id);
-            } elseif ($user->role === 'unit' && $user->unit_id) {
+            } elseif ($user->role === 'unit' && $user->unit_name) {
                 $query->whereHas('asset', function($q) use ($user) {
-                    $q->where('unit_id', $user->unit_id);
+                    $q->where('unit_name', $user->unit_name);
                 });
             }
 
@@ -918,9 +918,9 @@ class IncidentReportController extends Controller
                 ->whereIn('status', ['PENDING', 'UNDER_REVIEW']);
 
             // Filter by user role
-            if ($user->role === 'unit' && $user->unit_id) {
+            if ($user->role === 'unit' && $user->unit_name) {
                 $query->whereHas('asset', function($q) use ($user) {
-                    $q->where('unit_id', $user->unit_id);
+                    $q->where('unit_name', $user->unit_name);
                 });
             } elseif ($user->role === 'user') {
                 $query->where('reporter_id', $user->id);

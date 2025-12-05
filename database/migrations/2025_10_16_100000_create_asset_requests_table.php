@@ -13,7 +13,8 @@ return new class extends Migration
     {
         Schema::create('asset_requests', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('requester_unit_id')->constrained('units')->cascadeOnDelete();
+            $table->string('requester_unit_name')->comment('Unit name of requester');
+            $table->index('requester_unit_name');
             $table->foreignId('requester_id')->constrained('users')->cascadeOnDelete();
             $table->string('asset_name');
             $table->foreignId('asset_id')->nullable()->constrained('assets')->nullOnDelete();

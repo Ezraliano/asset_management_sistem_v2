@@ -39,7 +39,7 @@ class UserController extends Controller
                     'username' => $user->username,
                     'email' => $user->email,
                     'role' => $user->role,
-                    'unit_id' => $user->unit_id,
+                    'unit_name' => $user->unit_name,
                     'unit' => $user->unit ? [
                         'id' => $user->unit->id,
                         'name' => $user->unit->name,
@@ -87,7 +87,7 @@ class UserController extends Controller
                 'username' => $user->username,
                 'email' => $user->email,
                 'role' => $user->role,
-                'unit_id' => $user->unit_id,
+                'unit_name' => $user->unit_name,
                 'unit' => $user->unit ? [
                     'id' => $user->unit->id,
                     'name' => $user->unit->name,
@@ -121,7 +121,7 @@ class UserController extends Controller
             'email' => 'required|email|max:255|unique:users,email',
             'password' => 'required|string|min:3',
             'role' => ['required', Rule::in(['unit', 'user', 'auditor'])],
-            'unit_id' => 'nullable|exists:units,id',
+            'unit_name' => 'nullable|exists:units,id',
         ]);
 
         // super-admin and admin can only create unit, user, or auditor
@@ -132,11 +132,11 @@ class UserController extends Controller
             ], 403);
         }
 
-        // Auditor tidak memerlukan unit_id
+        // Auditor tidak memerlukan unit_name
         if ($validated['role'] === 'auditor') {
-            $validated['unit_id'] = null;
-        } elseif (empty($validated['unit_id'])) {
-            // unit dan user harus memiliki unit_id
+            $validated['unit_name'] = null;
+        } elseif (empty($validated['unit_name'])) {
+            // unit dan user harus memiliki unit_name
             return response()->json([
                 'success' => false,
                 'message' => 'Unit and User must be assigned to a unit.',
@@ -150,7 +150,7 @@ class UserController extends Controller
             'email' => $validated['email'],
             'password' => Hash::make($validated['password']),
             'role' => $validated['role'],
-            'unit_id' => $validated['unit_id'],
+            'unit_name' => $validated['unit_name'],
         ]);
 
         // Load unit relationship
@@ -165,7 +165,7 @@ class UserController extends Controller
                 'username' => $user->username,
                 'email' => $user->email,
                 'role' => $user->role,
-                'unit_id' => $user->unit_id,
+                'unit_name' => $user->unit_name,
                 'unit' => $user->unit ? [
                     'id' => $user->unit->id,
                     'name' => $user->unit->name,
@@ -226,7 +226,7 @@ class UserController extends Controller
                 Rule::unique('users', 'email')->ignore($user->id),
             ],
             'role' => ['sometimes', 'required', Rule::in(['unit', 'user', 'auditor'])],
-            'unit_id' => 'sometimes|nullable|exists:units,id',
+            'unit_name' => 'sometimes|nullable|exists:units,id',
             'password' => 'sometimes|nullable|string|min:3',
         ]);
 
@@ -238,9 +238,9 @@ class UserController extends Controller
             ], 403);
         }
 
-        // Jika role diubah menjadi Auditor, set unit_id menjadi null
+        // Jika role diubah menjadi Auditor, set unit_name menjadi null
         if (isset($validated['role']) && $validated['role'] === 'auditor') {
-            $validated['unit_id'] = null;
+            $validated['unit_name'] = null;
         }
 
         // Update user
@@ -256,8 +256,8 @@ class UserController extends Controller
         if (isset($validated['role'])) {
             $user->role = $validated['role'];
         }
-        if (isset($validated['unit_id'])) {
-            $user->unit_id = $validated['unit_id'];
+        if (isset($validated['unit_name'])) {
+            $user->unit_name = $validated['unit_name'];
         }
         if (isset($validated['password']) && !empty($validated['password'])) {
             $user->password = Hash::make($validated['password']);
@@ -277,7 +277,7 @@ class UserController extends Controller
                 'username' => $user->username,
                 'email' => $user->email,
                 'role' => $user->role,
-                'unit_id' => $user->unit_id,
+                'unit_name' => $user->unit_name,
                 'unit' => $user->unit ? [
                     'id' => $user->unit->id,
                     'name' => $user->unit->name,

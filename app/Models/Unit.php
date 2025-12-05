@@ -37,7 +37,7 @@ class Unit extends Model
      */
     public function users(): HasMany
     {
-        return $this->hasMany(User::class);
+        return $this->hasMany(User::class, 'unit_name', 'name');
     }
 
     /**
@@ -45,6 +45,6 @@ class Unit extends Model
      */
     public function assets(): HasMany
     {
-        return $this->hasMany(Asset::class);
+        return $this->hasMany(Asset::class, 'unit_name', 'name');
     }
 }

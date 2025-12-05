@@ -26,7 +26,7 @@ const BulkTransaction: React.FC<BulkTransactionProps> = ({ navigateTo }) => {
     const lines = csvData.trim().split('\n');
     const header = lines.shift()?.trim().toLowerCase();
 
-    const expectedHeader = "name,category,unit_id,value,purchasedate,usefullife,status";
+    const expectedHeader = "name,category,unit_name,value,purchasedate,usefullife,status";
     if (header !== expectedHeader) {
       setError(t('bulk_transaction.alerts.error'));
       console.error('Invalid CSV header. Expected:', expectedHeader, 'Got:', header);
@@ -49,11 +49,10 @@ const BulkTransaction: React.FC<BulkTransactionProps> = ({ navigateTo }) => {
             continue;
         }
 
-        const [name, category, unitIdStr, valueStr, purchaseDate, usefulLifeStr, statusStr] = values.map(v => v.trim());
+        const [name, category, unitName, valueStr, purchaseDate, usefulLifeStr, statusStr] = values.map(v => v.trim());
 
         const value = parseFloat(valueStr);
         const usefulLife = parseInt(usefulLifeStr, 10);
-        const unitId = unitIdStr ? parseInt(unitIdStr, 10) : null;
 
         if (isNaN(value) || value < 0) {
             errors.push(t('bulk_transaction.errors.invalid_value', { row: i + 2 }));
@@ -65,8 +64,8 @@ const BulkTransaction: React.FC<BulkTransactionProps> = ({ navigateTo }) => {
             continue;
         }
 
-        if (unitIdStr && (isNaN(unitId!) || unitId! < 1)) {
-            errors.push(`Row ${i + 2}: Invalid unit_id. Must be a positive number or leave empty.`);
+        if (unitName && unitName.length === 0) {
+            errors.push(`Row ${i + 2}: Invalid unit_name. Must be a valid unit name or leave empty.`);
             continue;
         }
 
@@ -85,7 +84,7 @@ const BulkTransaction: React.FC<BulkTransactionProps> = ({ navigateTo }) => {
         newAssets.push({
             name,
             category,
-            unit_id: unitId,
+            unit_name: unitName || null,
             value,
             purchase_date: purchaseDate,
             useful_life: usefulLife,

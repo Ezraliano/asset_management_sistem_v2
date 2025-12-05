@@ -241,13 +241,13 @@ const ReportView: React.FC<ReportViewProps> = ({ user }) => {
                         from_year: fromYear,
                         to_month: toMonth,
                         to_year: toYear,
-                        unit_id: selectedUnit !== 'all' ? selectedUnit : undefined
+                        unit_name: selectedUnit !== 'all' ? selectedUnit : undefined
                     };
                 } else {
                     return {
                         month: selectedMonth,
                         year: selectedYear,
-                        unit_id: selectedUnit !== 'all' ? selectedUnit : undefined
+                        unit_name: selectedUnit !== 'all' ? selectedUnit : undefined
                     };
                 }
             };
@@ -531,7 +531,7 @@ const ReportView: React.FC<ReportViewProps> = ({ user }) => {
                     response = await getAuditReport({
                         start_date: undefined,
                         end_date: undefined,
-                        unit_id: selectedUnit !== 'all' ? selectedUnit : undefined,
+                        unit_name: selectedUnit !== 'all' ? selectedUnit : undefined,
                         status: 'completed' // Hanya tampilkan audit yang sudah selesai
                     });
                     let reportData = getDataFromResponse(response);

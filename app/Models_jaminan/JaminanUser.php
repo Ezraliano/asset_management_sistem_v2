@@ -31,6 +31,7 @@ class JaminanUser extends Authenticatable
         'email',
         'password',
         'role',
+        'unit_name',
     ];
 
     /**

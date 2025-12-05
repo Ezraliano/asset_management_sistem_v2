@@ -25,7 +25,7 @@ class Guarantee extends Model
         'file_location',
         'input_date',
         'status',
-        'unit_id',
+        'unit_name',
     ];
 
     protected function casts(): array
@@ -86,18 +86,18 @@ class Guarantee extends Model
     }
 
     /**
-     * Scope untuk filter berdasarkan unit_id
+     * Scope untuk filter berdasarkan unit_name
      */
-    public function scopeByUnitId($query, $unitId)
+    public function scopeByUnitName($query, $unitName)
     {
-        return $query->where('unit_id', $unitId);
+        return $query->where('unit_name', $unitName);
     }
 
     /**
-     * Relationship: Guarantee belongs to Unit
+     * Relationship: Guarantee belongs to Unit (by unit name)
      */
     public function unit()
     {
-        return $this->belongsTo(Unit::class, 'unit_id');
+        return $this->belongsTo(Unit::class, 'unit_name', 'name');
     }
 }

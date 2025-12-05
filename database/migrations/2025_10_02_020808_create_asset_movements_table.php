@@ -14,8 +14,10 @@ return new class extends Migration
         Schema::create('asset_movements', function (Blueprint $table) {
             $table->id();
             $table->foreignId('asset_id')->constrained('assets')->onDelete('cascade');
-            $table->foreignId('from_unit_id')->constrained('units')->onDelete('restrict');
-            $table->foreignId('to_unit_id')->constrained('units')->onDelete('restrict');
+            $table->string('from_unit_name')->nullable()->comment('Unit name from where asset is moved');
+            $table->string('to_unit_name')->nullable()->comment('Unit name to where asset is moved');
+            $table->index('from_unit_name');
+            $table->index('to_unit_name');
             $table->foreignId('requested_by_id')->constrained('users')->onDelete('restrict');
             $table->foreignId('validated_by_id')->nullable()->constrained('users')->onDelete('restrict');
             $table->enum('status', ['PENDING', 'APPROVED', 'REJECTED'])->default('PENDING');

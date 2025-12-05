@@ -22,7 +22,7 @@ const AssetForm: React.FC<AssetFormProps> = ({ asset, onSuccess, onClose }) => {
   const [formData, setFormData] = useState({
     name: '',
     category: '',
-    unit_id: null as number | null,
+    unit_name: null as string | null,
     value: 0,
     purchase_date: '',
     useful_life: 12,
@@ -49,7 +49,7 @@ const AssetForm: React.FC<AssetFormProps> = ({ asset, onSuccess, onClose }) => {
         setCurrentUser(user);
 
         // Check if user is Admin Unit - auto-fill and lock unit field
-        const isAdminUnit = user && user.role === 'unit' && user.unit_id;
+        const isAdminUnit = user && user.role === 'unit' && user.unit_name;
         if (isAdminUnit) {
           setIsUnitLocked(true);
         }
@@ -59,7 +59,7 @@ const AssetForm: React.FC<AssetFormProps> = ({ asset, onSuccess, onClose }) => {
           setFormData({
             name: asset.name,
             category: asset.category,
-            unit_id: asset.unit_id || null,
+            unit_name: asset.unit_name || null,
             value: asset.value,
             purchase_date: asset.purchase_date.split(' ')[0],
             useful_life: asset.useful_life,
@@ -71,7 +71,7 @@ const AssetForm: React.FC<AssetFormProps> = ({ asset, onSuccess, onClose }) => {
           setFormData({
             name: '',
             category: '',
-            unit_id: isAdminUnit ? (user.unit_id as number) : null,
+            unit_name: isAdminUnit ? (user.unit_name as string) : null,
             value: 0,
             purchase_date: today,
             useful_life: 12,
@@ -183,7 +183,7 @@ const AssetForm: React.FC<AssetFormProps> = ({ asset, onSuccess, onClose }) => {
 
     if (!formData.name.trim()) errors.general = 'Asset Name is required';
     if (!formData.category.trim()) errors.general = 'Category is required';
-    if (!formData.unit_id) errors.general = 'Unit is required';
+    if (!formData.unit_name) errors.general = 'Unit is required';
 
     if (formData.value <= 0) {
       errors.value = 'Value must be greater than 0';
@@ -328,12 +328,12 @@ const handleSubmit = async (e: React.FormEvent) => {
         </div>
 
         <div>
-          <label htmlFor="unit_id" className="block text-sm font-medium text-gray-700 mb-1">Unit *</label>
-          {isUnitLocked && currentUser?.unit_id ? (
+          <label htmlFor="unit_name" className="block text-sm font-medium text-gray-700 mb-1">Unit *</label>
+          {isUnitLocked && currentUser?.unit_name ? (
             <>
               <input
                 type="text"
-                value={units.find(u => u.id === currentUser.unit_id)?.name || ''}
+                value={currentUser.unit_name || ''}
                 disabled
                 className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm bg-gray-100 cursor-not-allowed"
               />
@@ -343,17 +343,17 @@ const handleSubmit = async (e: React.FormEvent) => {
             </>
           ) : (
             <select
-              name="unit_id"
-              id="unit_id"
-              value={formData.unit_id || ''}
-              onChange={(e) => setFormData(prev => ({ ...prev, unit_id: e.target.value ? Number(e.target.value) : null }))}
+              name="unit_name"
+              id="unit_name"
+              value={formData.unit_name || ''}
+              onChange={(e) => setFormData(prev => ({ ...prev, unit_name: e.target.value || null }))}
               required
               disabled={loading}
               className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary sm:text-sm disabled:bg-gray-50"
             >
               <option value="">-- Pilih Unit --</option>
               {units.map(unit => (
-                <option key={unit.id} value={unit.id}>
+                <option key={unit.id} value={unit.name}>
                   {unit.name} ({unit.code})
                 </option>
               ))}

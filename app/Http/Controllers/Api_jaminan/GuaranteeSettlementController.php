@@ -21,6 +21,14 @@ class GuaranteeSettlementController extends Controller
         try {
             $query = GuaranteeSettlement::with('guarantee');
 
+            // ✅ AUTHORIZATION: Admin-kredit hanya bisa lihat settlement untuk jaminan unitnya sendiri
+            $user = $request->user();
+            if ($user && $user->role === 'admin-kredit' && $user->unit_name) {
+                $query->whereHas('guarantee', function ($q) use ($user) {
+                    $q->where('unit_name', $user->unit_name);
+                });
+            }
+
             // Filter berdasarkan status
             if ($request->has('status') && $request->status !== '') {
                 $query->byStatus($request->status);
@@ -93,6 +101,15 @@ class GuaranteeSettlementController extends Controller
                     'success' => false,
                     'message' => 'Data jaminan tidak ditemukan'
                 ], Response::HTTP_NOT_FOUND);
+            }
+
+            // ✅ AUTHORIZATION: Admin-kredit hanya bisa melunasi jaminan untuk unitnya sendiri
+            $user = $request->user();
+            if ($user && $user->role === 'admin-kredit' && $guarantee->unit_name !== $user->unit_name) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Anda hanya bisa melunasi jaminan untuk unit ' . $user->unit_name
+                ], Response::HTTP_FORBIDDEN);
             }
 
             // Validasi: Jaminan harus memiliki status 'available' untuk dilunasi

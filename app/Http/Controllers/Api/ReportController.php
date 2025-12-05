@@ -41,11 +41,11 @@ class ReportController extends Controller
 
             // Filter berdasarkan role
             if ($user->role === 'unit') {
-                $query->where('unit_id', $user->unit_id);
-                Log::info('Admin Unit filter applied', ['unit_id' => $user->unit_id]);
-            } elseif ($request->has('unit_id') && $request->unit_id !== 'all') {
-                $query->where('unit_id', $request->unit_id);
-                Log::info('Unit filter applied', ['unit_id' => $request->unit_id]);
+                $query->where('unit_name', $user->unit_name);
+                Log::info('Admin Unit filter applied', ['unit_name' => $user->unit_name]);
+            } elseif ($request->has('unit_name') && $request->unit_name !== 'all') {
+                $query->where('unit_name', $request->unit_name);
+                Log::info('Unit filter applied', ['unit_name' => $request->unit_name]);
             }
 
             // Filter tambahan
@@ -153,11 +153,11 @@ class ReportController extends Controller
             // Filter berdasarkan role
             if ($user->role === 'unit') {
                 $query->whereHas('asset', function($q) use ($user) {
-                    $q->where('unit_id', $user->unit_id);
+                    $q->where('unit_name', $user->unit_name);
                 });
-            } elseif ($request->has('unit_id') && $request->unit_id !== 'all') {
+            } elseif ($request->has('unit_name') && $request->unit_name !== 'all') {
                 $query->whereHas('asset', function($q) use ($request) {
-                    $q->where('unit_id', $request->unit_id);
+                    $q->where('unit_name', $request->unit_name);
                 });
             }
 
@@ -262,11 +262,11 @@ class ReportController extends Controller
             // Filter berdasarkan role
             if ($user->role === 'unit') {
                 $query->whereHas('asset', function($q) use ($user) {
-                    $q->where('unit_id', $user->unit_id);
+                    $q->where('unit_name', $user->unit_name);
                 });
-            } elseif ($request->has('unit_id') && $request->unit_id !== 'all') {
+            } elseif ($request->has('unit_name') && $request->unit_name !== 'all') {
                 $query->whereHas('asset', function($q) use ($request) {
-                    $q->where('unit_id', $request->unit_id);
+                    $q->where('unit_name', $request->unit_name);
                 });
             }
 
@@ -366,11 +366,11 @@ class ReportController extends Controller
             // Filter berdasarkan role - cek unit dari asset
             if ($user->role === 'unit') {
                 $query->whereHas('asset', function($q) use ($user) {
-                    $q->where('unit_id', $user->unit_id);
+                    $q->where('unit_name', $user->unit_name);
                 });
-            } elseif ($request->has('unit_id') && $request->unit_id !== 'all') {
+            } elseif ($request->has('unit_name') && $request->unit_name !== 'all') {
                 $query->whereHas('asset', function($q) use ($request) {
-                    $q->where('unit_id', $request->unit_id);
+                    $q->where('unit_name', $request->unit_name);
                 });
             }
 
@@ -477,11 +477,11 @@ class ReportController extends Controller
             // Filter berdasarkan role
             if ($user->role === 'unit') {
                 $query->whereHas('asset', function($q) use ($user) {
-                    $q->where('unit_id', $user->unit_id);
+                    $q->where('unit_name', $user->unit_name);
                 });
-            } elseif ($request->has('unit_id') && $request->unit_id !== 'all') {
+            } elseif ($request->has('unit_name') && $request->unit_name !== 'all') {
                 $query->whereHas('asset', function($q) use ($request) {
-                    $q->where('unit_id', $request->unit_id);
+                    $q->where('unit_name', $request->unit_name);
                 });
             }
 
@@ -577,11 +577,11 @@ class ReportController extends Controller
             // Filter berdasarkan role
             if ($user->role === 'unit') {
                 $query->whereHas('asset', function($q) use ($user) {
-                    $q->where('unit_id', $user->unit_id);
+                    $q->where('unit_name', $user->unit_name);
                 });
-            } elseif ($request->has('unit_id') && $request->unit_id !== 'all') {
+            } elseif ($request->has('unit_name') && $request->unit_name !== 'all') {
                 $query->whereHas('asset', function($q) use ($request) {
-                    $q->where('unit_id', $request->unit_id);
+                    $q->where('unit_name', $request->unit_name);
                 });
             }
 
@@ -682,11 +682,11 @@ class ReportController extends Controller
             // Filter berdasarkan role
             if ($user->role === 'unit') {
                 $query->whereHas('asset', function($q) use ($user) {
-                    $q->where('unit_id', $user->unit_id);
+                    $q->where('unit_name', $user->unit_name);
                 });
-            } elseif ($request->has('unit_id') && $request->unit_id !== 'all') {
+            } elseif ($request->has('unit_name') && $request->unit_name !== 'all') {
                 $query->whereHas('asset', function($q) use ($request) {
-                    $q->where('unit_id', $request->unit_id);
+                    $q->where('unit_name', $request->unit_name);
                 });
             }
 
@@ -838,11 +838,11 @@ class ReportController extends Controller
 
             // Filter berdasarkan role
             if ($user->role === 'unit') {
-                $query->where('unit_id', $user->unit_id);
-                Log::info('Admin Unit filter applied', ['unit_id' => $user->unit_id]);
-            } elseif ($request->has('unit_id') && $request->unit_id !== 'all') {
-                $query->where('unit_id', $request->unit_id);
-                Log::info('Unit filter applied', ['unit_id' => $request->unit_id]);
+                $query->where('unit_name', $user->unit_name);
+                Log::info('Admin Unit filter applied', ['unit_name' => $user->unit_name]);
+            } elseif ($request->has('unit_name') && $request->unit_name !== 'all') {
+                $query->where('unit_name', $request->unit_name);
+                Log::info('Unit filter applied', ['unit_name' => $request->unit_name]);
             }
 
             // Filter berdasarkan status - default hanya completed

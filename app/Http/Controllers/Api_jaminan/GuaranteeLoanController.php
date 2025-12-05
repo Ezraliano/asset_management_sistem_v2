@@ -20,6 +20,14 @@ class GuaranteeLoanController extends Controller
         try {
             $query = GuaranteeLoan::with('guarantee');
 
+            // ✅ AUTHORIZATION: Admin-kredit hanya bisa lihat peminjaman jaminan unitnya sendiri
+            $user = $request->user();
+            if ($user && $user->role === 'admin-kredit' && $user->unit_name) {
+                $query->whereHas('guarantee', function ($q) use ($user) {
+                    $q->where('unit_name', $user->unit_name);
+                });
+            }
+
             // Filter untuk laporan export - hanya tampilkan jaminan yang masih dipinjam
             // Ini memastikan laporan "Jaminan Dipinjam" hanya menampilkan yang berstatus dipinjam
             if ($request->has('for_report') && $request->for_report === 'true') {
@@ -105,6 +113,15 @@ class GuaranteeLoanController extends Controller
                     'success' => false,
                     'message' => 'Jaminan tidak ditemukan'
                 ], Response::HTTP_NOT_FOUND);
+            }
+
+            // ✅ AUTHORIZATION: Admin-kredit hanya bisa meminjamkan jaminan untuk unitnya sendiri
+            $user = $request->user();
+            if ($user && $user->role === 'admin-kredit' && $guarantee->unit_name !== $user->unit_name) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Anda hanya bisa meminjamkan jaminan untuk unit ' . $user->unit_name
+                ], Response::HTTP_FORBIDDEN);
             }
 
             if ($guarantee->status === 'lunas') {
@@ -377,6 +394,16 @@ class GuaranteeLoanController extends Controller
                 ], Response::HTTP_NOT_FOUND);
             }
 
+            // ✅ AUTHORIZATION: Admin-kredit hanya bisa return jaminan untuk unitnya sendiri
+            $guarantee = Guarantee::find($loan->guarantee_id);
+            $user = $request->user();
+            if ($user && $user->role === 'admin-kredit' && $guarantee && $guarantee->unit_name !== $user->unit_name) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Anda hanya bisa melunasi jaminan untuk unit ' . $user->unit_name
+                ], Response::HTTP_FORBIDDEN);
+            }
+
             if ($loan->status === 'returned') {
                 return response()->json([
                     'success' => false,
@@ -397,7 +424,6 @@ class GuaranteeLoanController extends Controller
 
             // Update status jaminan kembali ke 'available' setelah dikembalikan
             // Status 'lunas' hanya diberikan ketika ada settlement yang disetujui
-            $guarantee = Guarantee::find($loan->guarantee_id);
             if ($guarantee) {
                 $guarantee->update(['status' => 'available']);
             }

@@ -19,14 +19,14 @@ class JaminanUnitSeeder extends Seeder
         $units = [
             [
                 'code' => 'HOLDING',
-                'name' => 'Unit Holding',
+                'name' => 'Holding',
                 'description' => 'Unit Kantor Pusat / Holding',
                 'location' => 'Jl. Raya Holding No. 123, Jakarta',
                 'is_active' => true,
             ],
             [
-                'code' => 'KAJOETANGAN',
-                'name' => 'Unit Kajoetangan',
+                'code' => 'BPRGAPusat',
+                'name' => 'BPR GA Pusat Kajoetangan',
                 'description' => 'Unit Cabang Kajoetangan',
                 'location' => 'Jl. Raya Kajoetangan No. 456, Malang',
                 'is_active' => true,

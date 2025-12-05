@@ -16,16 +16,16 @@ class DashboardController extends Controller
         $user = $request->user();
 
         // 1. GET FILTERS
-        $requestedUnitId = $request->query('unit_id');
+        $requestedUnitId = $request->query('unit_name');
         $startDate = $request->query('start_date');
         $endDate = $request->query('end_date');
 
         // 2. DETERMINE UNIT FILTER
-        $unitId = null;
-        if ($user->role === 'unit' && $user->unit_id) {
-            $unitId = $user->unit_id;
+        $unitName = null;
+        if ($user->role === 'unit' && $user->unit_name) {
+            $unitName = $user->unit_name;
         } elseif (in_array($user->role, ['super-admin', 'admin']) && $requestedUnitId && $requestedUnitId !== 'all') {
-            $unitId = (int) $requestedUnitId;
+            $unitName = $requestedUnitId;
         }
 
         // 3. BUILD BASE QUERIES
@@ -35,11 +35,11 @@ class DashboardController extends Controller
         $loanQuery = AssetLoan::query();
 
         // 4. APPLY UNIT FILTER (IF APPLICABLE)
-        if ($unitId) {
-            $assetQuery->where('unit_id', $unitId);
-            $maintenanceQuery->whereHas('asset', fn($q) => $q->where('unit_id', $unitId));
-            $incidentQuery->whereHas('asset', fn($q) => $q->where('unit_id', $unitId));
-            $loanQuery->whereHas('asset', fn($q) => $q->where('unit_id', $unitId));
+        if ($unitName) {
+            $assetQuery->where('unit_name', $unitName);
+            $maintenanceQuery->whereHas('asset', fn($q) => $q->where('unit_name', $unitName));
+            $incidentQuery->whereHas('asset', fn($q) => $q->where('unit_name', $unitName));
+            $loanQuery->whereHas('asset', fn($q) => $q->where('unit_name', $unitName));
         }
 
         // 5. CLONE QUERIES FOR DATE FILTERING
@@ -85,13 +85,12 @@ class DashboardController extends Controller
             ->get()
             ->map(fn($item) => ['name' => $item->category, 'count' => $item->count]);
 
-        if ($unitId) {
-            $unitName = \App\Models\Unit::find($unitId)->name ?? 'Unknown Unit';
+        if ($unitName) {
             $assetsByLocation = collect([['name' => $unitName, 'count' => $totalAssets]]);
         } else {
-            $assetsByLocation = (clone $assetQueryForDate)->selectRaw('unit_id, COUNT(*) as count')
+            $assetsByLocation = (clone $assetQueryForDate)->selectRaw('unit_name, COUNT(*) as count')
                 ->with('unit:id,name')
-                ->groupBy('unit_id')
+                ->groupBy('unit_name')
                 ->get()
                 ->map(fn($item) => ['name' => $item->unit ? $item->unit->name : 'No Unit', 'count' => $item->count]);
         }

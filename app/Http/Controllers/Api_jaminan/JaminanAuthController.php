@@ -153,13 +153,23 @@ class JaminanAuthController extends Controller
             'email' => 'required|email|unique:mysql_jaminan.jaminan_users',
             'password' => 'required|string|min:8',
             'role' => 'required|in:admin-kredit,admin-holding,super-admin',
+            'unit_name' => 'nullable|string|max:255',
         ]);
+
+        // ✅ Validasi: Jika role adalah admin-kredit, unit_name harus ada
+        if ($request->role === 'admin-kredit' && !$request->unit_name) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Admin kredit harus memiliki unit yang ditentukan',
+            ], 422);
+        }
 
         $user = JaminanUser::create([
             'name' => $request->name,
             'email' => $request->email,
             'password' => Hash::make($request->password),
             'role' => $request->role,
+            'unit_name' => $request->unit_name,
         ]);
 
         return response()->json([
@@ -170,6 +180,7 @@ class JaminanAuthController extends Controller
                 'name' => $user->name,
                 'email' => $user->email,
                 'role' => $user->role,
+                'unit_name' => $user->unit_name,
             ],
         ], 201);
     }
@@ -191,7 +202,19 @@ class JaminanAuthController extends Controller
             'email' => 'sometimes|email|unique:mysql_jaminan.jaminan_users,email,' . $id,
             'password' => 'sometimes|string|min:8',
             'role' => 'sometimes|in:admin-kredit,admin-holding,super-admin',
+            'unit_name' => 'sometimes|nullable|string|max:255',
         ]);
+
+        // ✅ Validasi: Jika role diubah menjadi admin-kredit, unit_name harus ada
+        $newRole = $request->role ?? $user->role;
+        $newUnitName = $request->unit_name ?? $user->unit_name;
+
+        if ($newRole === 'admin-kredit' && !$newUnitName) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Admin kredit harus memiliki unit yang ditentukan',
+            ], 422);
+        }
 
         if ($request->has('name')) {
             $user->name = $request->name;
@@ -209,6 +232,10 @@ class JaminanAuthController extends Controller
             $user->role = $request->role;
         }
 
+        if ($request->has('unit_name')) {
+            $user->unit_name = $request->unit_name;
+        }
+
         $user->save();
 
         return response()->json([
@@ -219,6 +246,7 @@ class JaminanAuthController extends Controller
                 'name' => $user->name,
                 'email' => $user->email,
                 'role' => $user->role,
+                'unit_name' => $user->unit_name,
             ],
         ]);
     }

@@ -35,6 +35,7 @@ export interface User {
   username: string;
   email: string;
   role: 'super-admin' | 'admin' | 'unit' | 'user' | 'auditor' | 'admin-kredit' | 'admin-holding';
+  unit_name?: string | null;
   unit_id?: number | null;
   unit?: Unit;
 }
@@ -68,7 +69,7 @@ export interface Asset {
   purchase_date: string;
   useful_life: number;
   status: AssetStatus;
-  unit_id?: number | null;
+  unit_name?: string | null;
   unit?: Unit;
   created_at?: string;
   updated_at?: string;
@@ -350,7 +351,7 @@ export interface Guarantee {
   file_location: string;
   input_date: string;
   status: GuaranteeStatus;
-  unit_id?: number | null;
+  unit_name?: string | null;
   unit?: Unit;
   created_at: string;
   updated_at: string;
@@ -366,6 +367,7 @@ export interface GuaranteeFormData {
   guarantee_number: string;
   file_location: string;
   input_date: string;
+  unit_name?: string | null;
 }
 
 export interface GuaranteeLoan {

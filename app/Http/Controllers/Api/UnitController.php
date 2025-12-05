@@ -26,10 +26,10 @@ class UnitController extends Controller
         // ✅ Filter based on user role
         if (in_array($user->role, ['unit', 'user'])) {
             // Admin Unit & User hanya bisa lihat unit mereka sendiri
-            if ($user->unit_id) {
-                $query->where('id', $user->unit_id);
+            if ($user->unit_name) {
+                $query->where('name', $user->unit_name);
             } else {
-                // User tanpa unit_id akan melihat empty list
+                // User tanpa unit_name akan melihat empty list
                 $query->whereRaw('1 = 0'); // Force empty result
             }
         }
@@ -64,7 +64,7 @@ class UnitController extends Controller
         $user = Auth::user();
 
         // Check if user can view this unit's assets
-        if ($user->role === 'unit' && $user->unit_id !== $unit->id) {
+        if ($user->role === 'unit' && $user->unit_name !== $unit->name) {
             return response()->json([
                 'success' => false,
                 'message' => 'Unauthorized to view assets from other units'
@@ -91,7 +91,7 @@ class UnitController extends Controller
         // Only Super Admin and Admin Holding can view users from all units
         if (!in_array($user->role, ['super-admin', 'admin'])) {
             // Admin Unit can only view users from their own unit
-            if ($user->role === 'unit' && $user->unit_id !== $unit->id) {
+            if ($user->role === 'unit' && $user->unit_name !== $unit->name) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Unauthorized to view users from other units'
@@ -100,7 +100,7 @@ class UnitController extends Controller
         }
 
         $users = $unit->users()
-            ->select(['id', 'name', 'username', 'email', 'role', 'unit_id'])
+            ->select(['id', 'name', 'username', 'email', 'role', 'unit_name'])
             ->get();
 
         return response()->json([

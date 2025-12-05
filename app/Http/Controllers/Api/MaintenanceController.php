@@ -21,7 +21,7 @@ class MaintenanceController extends Controller
         // Filter berdasarkan role
         if ($user->role === 'unit') {
             // Admin Unit hanya bisa lihat maintenance dari unit mereka
-            $query->forUnit($user->unit_id);
+            $query->forUnit($user->unit_name);
         }
         // Super Admin dan Admin Holding bisa lihat semua
 
@@ -43,7 +43,7 @@ class MaintenanceController extends Controller
             'repair_type' => 'nullable|in:Perbaikan Total,Penambahan Komponen,Perbaikan Komponen',
             'maintenance_type' => 'nullable|in:Pemeliharaan Rutin Bulanan,Pemeliharaan Rutin Tahunan',
             'date' => 'required|date',
-            'unit_id' => 'nullable|exists:units,id',
+            'unit_name' => 'nullable|exists:units,id',
             'party_type' => 'required|in:Internal,External',
             'instansi' => 'required|string|max:255',
             'phone_number' => 'required|string|max:20',
@@ -145,7 +145,7 @@ class MaintenanceController extends Controller
             'repair_type' => 'nullable|in:Perbaikan Total,Penambahan Komponen,Perbaikan Komponen',
             'maintenance_type' => 'nullable|in:Pemeliharaan Rutin Bulanan,Pemeliharaan Rutin Tahunan',
             'date' => 'sometimes|required|date',
-            'unit_id' => 'nullable|exists:units,id',
+            'unit_name' => 'nullable|exists:units,id',
             'party_type' => 'sometimes|required|in:Internal,External',
             'instansi' => 'sometimes|required|string|max:255',
             'phone_number' => 'sometimes|required|string|max:20',

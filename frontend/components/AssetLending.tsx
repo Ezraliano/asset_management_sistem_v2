@@ -203,11 +203,10 @@ const AssetLending: React.FC = () => {
       if (currentUser.role === 'user') {
         // For 'user' role, show loans they have borrowed
         loans = loans.filter(loan => loan.borrower_id === currentUser.id);
-      } else if (currentUser.role === 'unit' && currentUser.unit_id) {
+      } else if (currentUser.role === 'unit' && currentUser.unit_name) {
         // For 'unit' role, show loans where their unit is the lender OR the borrower
         loans = loans.filter(loan =>
-          loan.asset.unit_id === currentUser.unit_id ||
-          loan.borrower.unit_id === currentUser.unit_id
+          loan.asset.unit_name === currentUser.unit_name
         );
       }
     }
@@ -219,7 +218,7 @@ const AssetLending: React.FC = () => {
 
     // Apply unit filter (for Super Admin and Admin Holding)
     if (unitFilter !== 'ALL' && currentUser && ['super-admin', 'admin'].includes(currentUser.role)) {
-      loans = loans.filter(loan => loan.asset.unit_id?.toString() === unitFilter);
+      loans = loans.filter(loan => loan.asset.unit_name === unitFilter);
     }
 
     return loans;
@@ -256,8 +255,8 @@ const AssetLending: React.FC = () => {
 
     let pending = allLoans.filter(loan => loan.status === AssetLoanStatus.PENDING);
 
-    if (currentUser && currentUser.role === 'unit' && currentUser.unit_id) {
-      pending = pending.filter(loan => loan.asset.unit_id === currentUser.unit_id);
+    if (currentUser && currentUser.role === 'unit' && currentUser.unit_name) {
+      pending = pending.filter(loan => loan.asset.unit_name === currentUser.unit_name);
     }
 
     return pending;

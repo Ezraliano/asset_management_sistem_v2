@@ -22,8 +22,8 @@ class UnitSeeder extends Seeder
                 'is_active' => true,
             ],
             [
-                'code' => 'KAJOETANGAN',
-                'name' => 'Unit Kajoetangan',
+                'code' => 'BPRGAPusat',
+                'name' => 'BPR GA Pusat Kajoetangan',
                 'description' => 'Unit Cabang Kajoetangan',
                 'address' => 'Jl. Raya Kajoetangan No. 456, Malang',
                 'is_active' => true,

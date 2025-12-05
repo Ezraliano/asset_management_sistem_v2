@@ -18,12 +18,14 @@ return new class extends Migration
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password'); // Hash password
             $table->enum('role', ['admin-kredit', 'admin-holding', 'super-admin']);
+            $table->string('unit_name')->nullable()->comment('Unit name for admin-kredit (e.g., Unit Kajoetangan)');
             $table->rememberToken();
             $table->timestamps();
 
-            // Index untuk email dan role
+            // Index untuk email, role, dan unit_name
             $table->index('email');
             $table->index('role');
+            $table->index('unit_name');
         });
     }
 

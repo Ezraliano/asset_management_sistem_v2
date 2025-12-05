@@ -52,6 +52,7 @@ const InventoryAuditSetup: React.FC<InventoryAuditSetupProps> = ({ navigateTo })
       // Create audit session
       const audit = await startInventoryAudit({
         unit_id: selectedUnitId,
+        unit_name: selectedUnit.name,
         scan_mode: scanMode,
       });
 

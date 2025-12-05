@@ -24,7 +24,7 @@ class User extends Authenticatable
         'email',
         'password',
         'role',
-        'unit_id',
+        'unit_name',
     ];
 
     /**
@@ -82,7 +82,7 @@ class User extends Authenticatable
         }
 
         // Unit admin can only manage their own unit
-        if ($this->role === 'unit' && $unit && $this->unit_id === $unit->id) {
+        if ($this->role === 'unit' && $unit && $this->unit_name === $unit->name) {
             return true;
         }
 
@@ -100,7 +100,7 @@ class User extends Authenticatable
         }
 
         // Unit admin can only approve loans for assets in their unit
-        if ($this->role === 'unit' && $this->unit_id && $asset->unit_id === $this->unit_id) {
+        if ($this->role === 'unit' && $this->unit_name && $asset->unit_name === $this->unit_name) {
             return true;
         }
 
@@ -118,7 +118,7 @@ class User extends Authenticatable
         }
 
         // Unit admin and User can only view their own unit
-        if (in_array($this->role, ['unit', 'user']) && $unit && $this->unit_id === $unit->id) {
+        if (in_array($this->role, ['unit', 'user']) && $unit && $this->unit_name === $unit->name) {
             return true;
         }
 
@@ -131,7 +131,7 @@ class User extends Authenticatable
     public function canBorrowAsset(Asset $asset): bool
     {
         // User can only borrow assets from their own unit
-        if ($this->role === 'user' && $this->unit_id && $asset->unit_id === $this->unit_id) {
+        if ($this->role === 'user' && $this->unit_name && $asset->unit_name === $this->unit_name) {
             return true;
         }
 
@@ -150,7 +150,7 @@ class User extends Authenticatable
         }
 
         // Unit admin can only create assets in their own unit
-        if ($this->role === 'unit' && $unit && $this->unit_id === $unit->id) {
+        if ($this->role === 'unit' && $unit && $this->unit_name === $unit->name) {
             return true;
         }
 
@@ -169,7 +169,7 @@ class User extends Authenticatable
         }
 
         // Unit admin can only update assets in their unit
-        if ($this->role === 'unit' && $this->unit_id && $asset->unit_id === $this->unit_id) {
+        if ($this->role === 'unit' && $this->unit_name && $asset->unit_name === $this->unit_name) {
             return true;
         }
 
@@ -188,7 +188,7 @@ class User extends Authenticatable
         }
 
         // Unit admin can only delete assets in their unit
-        if ($this->role === 'unit' && $this->unit_id && $asset->unit_id === $this->unit_id) {
+        if ($this->role === 'unit' && $this->unit_name && $asset->unit_name === $this->unit_name) {
             return true;
         }
 
@@ -207,7 +207,7 @@ class User extends Authenticatable
         }
 
         // Unit admin can only view loans for assets in their unit
-        if ($this->role === 'unit' && $this->unit_id && $loan->asset->unit_id === $this->unit_id) {
+        if ($this->role === 'unit' && $this->unit_name && $loan->asset->unit_name === $this->unit_name) {
             return true;
         }
 
@@ -233,10 +233,10 @@ class User extends Authenticatable
         // Unit admin HANYA BOLEH process return untuk:
         // 1. Asset ada di unit mereka (asset milik unit mereka)
         // 2. DAN borrower juga dari unit mereka (peminjaman internal dalam unit yang sama)
-        if ($this->role === 'unit' && $this->unit_id) {
-            $assetBelongsToUserUnit = $loan->asset->unit_id === $this->unit_id;
+        if ($this->role === 'unit' && $this->unit_name) {
+            $assetBelongsToUserUnit = $loan->asset->unit_name === $this->unit_name;
             $borrowerFromSameUnit = $loan->borrower &&
-                                    $loan->borrower->unit_id === $this->unit_id;
+                                    $loan->borrower->unit_name === $this->unit_name;
 
             // Hanya boleh jika KEDUA kondisi terpenuhi
             return $assetBelongsToUserUnit && $borrowerFromSameUnit;
@@ -256,7 +256,7 @@ class User extends Authenticatable
         }
 
         // Unit admin can only validate maintenance for assets in their unit
-        if ($this->role === 'unit' && $this->unit_id && $maintenance->asset && $maintenance->asset->unit_id === $this->unit_id) {
+        if ($this->role === 'unit' && $this->unit_name && $maintenance->asset && $maintenance->asset->unit_name === $this->unit_name) {
             return true;
         }
 
@@ -274,7 +274,7 @@ class User extends Authenticatable
         }
 
         // Unit admin can only complete maintenance for assets in their unit
-        if ($this->role === 'unit' && $this->unit_id && $maintenance->asset && $maintenance->asset->unit_id === $this->unit_id) {
+        if ($this->role === 'unit' && $this->unit_name && $maintenance->asset && $maintenance->asset->unit_name === $this->unit_name) {
             return true;
         }
 
@@ -292,7 +292,7 @@ class User extends Authenticatable
         }
 
         // Unit admin can only create maintenance for assets in their unit
-        if ($this->role === 'unit' && $this->unit_id && $asset->unit_id === $this->unit_id) {
+        if ($this->role === 'unit' && $this->unit_name && $asset->unit_name === $this->unit_name) {
             return true;
         }
 
@@ -364,9 +364,9 @@ class User extends Authenticatable
     /**
      * Scope a query to only include users from a specific unit.
      */
-    public function scopeFromUnit($query, $unitId)
+    public function scopeFromUnit($query, $unitName)
     {
-        return $query->where('unit_id', $unitId);
+        return $query->where('unit_name', $unitName);
     }
 
     /**
@@ -444,8 +444,8 @@ class User extends Authenticatable
             'can_approve_loans' => in_array($this->role, ['super-admin', 'admin', 'unit']),
             'can_view_reports' => in_array($this->role, ['super-admin', 'admin']),
             'unit_restricted' => in_array($this->role, ['unit', 'user']),
-            'unit_id' => $this->unit_id,
-            'unit_name' => $this->getUnitName(),
+            'unit_name' => $this->unit_name,
+            'unit_display_name' => $this->getUnitName(),
         ];
     }
 }

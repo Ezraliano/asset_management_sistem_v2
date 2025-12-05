@@ -24,7 +24,7 @@ const GuaranteeList: React.FC<GuaranteeListProps> = ({ navigateTo, user }) => {
   const [viewingGuaranteeId, setViewingGuaranteeId] = useState<string | null>(null);
   const [searchSpkNumber, setSearchSpkNumber] = useState('');
   const [searchCifNumber, setSearchCifNumber] = useState('');
-  const [selectedUnitId, setSelectedUnitId] = useState<number | ''>('');
+  const [selectedUnitName, setSelectedUnitName] = useState<string>('');
   const [allGuarantees, setAllGuarantees] = useState<Guarantee[]>([]);
   const [sortBy, setSortBy] = useState('spk_number');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
@@ -95,14 +95,14 @@ const GuaranteeList: React.FC<GuaranteeListProps> = ({ navigateTo, user }) => {
       );
     }
 
-    if (selectedUnitId) {
+    if (selectedUnitName) {
       filtered = filtered.filter(g =>
-        g.unit_id === selectedUnitId
+        g.unit_name === selectedUnitName
       );
     }
 
     setGuarantees(filtered);
-  }, [searchSpkNumber, searchCifNumber, selectedUnitId, allGuarantees]);
+  }, [searchSpkNumber, searchCifNumber, selectedUnitName, allGuarantees]);
 
   const handleAddGuarantee = () => {
     setEditingGuarantee(undefined);
@@ -296,13 +296,13 @@ const GuaranteeList: React.FC<GuaranteeListProps> = ({ navigateTo, user }) => {
               Filter Unit
             </label>
             <select
-              value={selectedUnitId}
-              onChange={(e) => setSelectedUnitId(e.target.value ? parseInt(e.target.value) : '')}
+              value={selectedUnitName}
+              onChange={(e) => setSelectedUnitName(e.target.value)}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary"
             >
               <option value="">Semua Unit</option>
               {units.map(unit => (
-                <option key={unit.id} value={unit.id}>
+                <option key={unit.id} value={unit.name}>
                   {unit.name}
                 </option>
               ))}
@@ -331,13 +331,13 @@ const GuaranteeList: React.FC<GuaranteeListProps> = ({ navigateTo, user }) => {
             </div>
           </div>
         </div>
-        {(searchSpkNumber || searchCifNumber || selectedUnitId) && (
+        {(searchSpkNumber || searchCifNumber || selectedUnitName) && (
           <div className="mt-4 pt-4 border-t border-gray-200">
             <button
               onClick={() => {
                 setSearchSpkNumber('');
                 setSearchCifNumber('');
-                setSelectedUnitId('');
+                setSelectedUnitName('');
               }}
               className="text-sm text-primary hover:text-primary-dark font-medium"
             >

@@ -34,8 +34,8 @@ class AssetRequestController extends Controller
             ]);
 
             // Filter by role
-            if ($user->role === 'unit' && $user->unit_id) {
-                $query->where('requester_unit_id', $user->unit_id);
+            if ($user->role === 'unit' && $user->unit_name) {
+                $query->where('requester_unit_name', $user->unit_name);
             }
 
             // Filter by status if provided
@@ -83,7 +83,7 @@ class AssetRequestController extends Controller
 
             // Validate: Admin Unit must have a unit
             if ($user->role === 'unit') {
-                if (!$user->unit_id) {
+                if (!$user->unit_name) {
                     return response()->json([
                         'success' => false,
                         'message' => 'Unit tidak ditemukan untuk user ini'
@@ -92,7 +92,7 @@ class AssetRequestController extends Controller
             }
 
             $assetRequest = AssetRequest::create([
-                'requester_unit_id' => $user->unit_id,
+                'requester_unit_name' => $user->unit_name,
                 'requester_id' => $user->id,
                 'asset_name' => $request->asset_name,
                 'request_date' => Carbon::today(),
@@ -313,8 +313,8 @@ class AssetRequestController extends Controller
             ])->findOrFail($id);
 
             // Authorization: Admin Unit can only see their own unit's requests
-            if ($user->role === 'unit' && $user->unit_id) {
-                if ($assetRequest->requester_unit_id !== $user->unit_id) {
+            if ($user->role === 'unit' && $user->unit_name) {
+                if ($assetRequest->requester_unit_name !== $user->unit_name) {
                     return response()->json([
                         'success' => false,
                         'message' => 'Unauthorized to view this request'
@@ -358,7 +358,7 @@ class AssetRequestController extends Controller
 
             // Authorization: Only Admin Unit from requester unit can return
             if ($user->role === 'unit') {
-                if (!$user->unit_id || $assetRequest->requester_unit_id !== $user->unit_id) {
+                if (!$user->unit_name || $assetRequest->requester_unit_name !== $user->unit_name) {
                     return response()->json([
                         'success' => false,
                         'message' => 'Unauthorized to return this asset'
@@ -617,8 +617,8 @@ class AssetRequestController extends Controller
             ->where('loan_status', 'ACTIVE');
 
             // Filter by role
-            if ($user->role === 'unit' && $user->unit_id) {
-                $query->where('requester_unit_id', $user->unit_id);
+            if ($user->role === 'unit' && $user->unit_name) {
+                $query->where('requester_unit_name', $user->unit_name);
             }
 
             $activeLoans = $query->orderBy('actual_loan_date', 'desc')->get();

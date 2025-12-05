@@ -27,7 +27,7 @@ class InventoryAuditController extends Controller
                 // Can see all audits
             } else {
                 // Can only see audits for their own unit
-                $query->where('unit_id', $user->unit_id);
+                $query->where('unit_name', $user->unit_name);
             }
 
             // Filter by status if provided
@@ -35,9 +35,9 @@ class InventoryAuditController extends Controller
                 $query->where('status', $request->status);
             }
 
-            // Filter by unit_id if provided
-            if ($request->has('unit_id')) {
-                $query->where('unit_id', $request->unit_id);
+            // Filter by unit_name if provided
+            if ($request->has('unit_name')) {
+                $query->where('unit_name', $request->unit_name);
             }
 
             $audits = $query->orderBy('created_at', 'desc')->get();
@@ -77,10 +77,16 @@ class InventoryAuditController extends Controller
     {
         try {
             $validated = $request->validate([
-                'unit_id' => 'required|exists:units,id',
+                'unit_name' => 'required|string|exists:units,name',
                 'scan_mode' => 'required|in:camera,manual',
                 'notes' => 'nullable|string',
             ]);
+
+            // Get unit_id from unit_name for asset queries
+            $unit = Unit::where('name', $validated['unit_name'])->first();
+            if (!$unit) {
+                return response()->json(['error' => 'Unit not found'], 404);
+            }
 
             $user = Auth::user();
 
@@ -88,13 +94,13 @@ class InventoryAuditController extends Controller
             // auditor, super-admin, and admin can audit any unit
             // Other roles can only audit their own unit
             if ($user->role !== 'super-admin' && $user->role !== 'admin' && $user->role !== 'auditor') {
-                if ($user->unit_id != $validated['unit_id']) {
+                if ($user->unit_name != $validated['unit_name']) {
                     return response()->json(['error' => 'Unauthorized to audit this unit'], 403);
                 }
             }
 
             // Get all active assets in the unit
-            $expectedAssets = Asset::where('unit_id', $validated['unit_id'])
+            $expectedAssets = Asset::where('unit_name', $validated['unit_name'])
                 ->where('status', '!=', 'disposed')
                 ->where('status', '!=', 'sold')
                 ->pluck('id')
@@ -105,7 +111,7 @@ class InventoryAuditController extends Controller
 
             // Create audit session
             $audit = InventoryAudit::create([
-                'unit_id' => $validated['unit_id'],
+                'unit_name' => $validated['unit_name'],
                 'auditor_id' => $user->id,
                 'audit_code' => $auditCode,
                 'scan_mode' => $validated['scan_mode'],
@@ -120,7 +126,7 @@ class InventoryAuditController extends Controller
             Log::info('Inventory audit started', [
                 'audit_id' => $audit->id,
                 'audit_code' => $audit->audit_code,
-                'unit_id' => $audit->unit_id,
+                'unit_name' => $audit->unit_name,
                 'auditor_id' => $user->id,
             ]);
 
@@ -128,9 +134,11 @@ class InventoryAuditController extends Controller
                 'message' => 'Audit session started successfully',
                 'audit' => $audit->load(['unit', 'auditor']),
             ], 201);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json(['error' => 'Validation failed', 'messages' => $e->errors()], 422);
         } catch (\Exception $e) {
-            Log::error('Error starting inventory audit: ' . $e->getMessage());
-            return response()->json(['error' => 'Failed to start audit'], 500);
+            Log::error('Error starting inventory audit: ' . $e->getMessage() . '\n' . $e->getTraceAsString());
+            return response()->json(['error' => 'Failed to start audit', 'message' => $e->getMessage()], 500);
         }
     }
 
@@ -146,7 +154,7 @@ class InventoryAuditController extends Controller
             // Check permission
             // auditor, super-admin, and admin can view any audit
             if ($user->role !== 'super-admin' && $user->role !== 'admin' && $user->role !== 'auditor') {
-                if ($audit->unit_id != $user->unit_id) {
+                if ($audit->unit_name != $user->unit_name) {
                     return response()->json(['error' => 'Unauthorized'], 403);
                 }
             }
@@ -168,7 +176,9 @@ class InventoryAuditController extends Controller
                 return in_array($asset['id'], $foundAssetIds);
             })->values();
 
-            $missingAssetIds = $audit->missing_assets;
+            // Calculate missing assets (expected but not found)
+            $expectedIds = $audit->expected_asset_ids ?? [];
+            $missingAssetIds = array_diff($expectedIds, $foundAssetIds);
             $missingAssets = $expectedAssets->filter(function ($asset) use ($missingAssetIds) {
                 return in_array($asset['id'], $missingAssetIds);
             })->values();
@@ -194,9 +204,11 @@ class InventoryAuditController extends Controller
                 'created_at' => $audit->created_at,
                 'updated_at' => $audit->updated_at,
             ]);
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            return response()->json(['error' => 'Audit not found'], 404);
         } catch (\Exception $e) {
-            Log::error('Error fetching inventory audit: ' . $e->getMessage());
-            return response()->json(['error' => 'Failed to fetch audit'], 500);
+            Log::error('Error fetching inventory audit: ' . $e->getMessage() . '\n' . $e->getTraceAsString());
+            return response()->json(['error' => 'Failed to fetch audit', 'message' => $e->getMessage()], 500);
         }
     }
 
@@ -216,7 +228,7 @@ class InventoryAuditController extends Controller
             // Check permission
             // auditor, super-admin, and admin can scan assets in any audit
             if ($user->role !== 'super-admin' && $user->role !== 'admin' && $user->role !== 'auditor') {
-                if ($audit->unit_id != $user->unit_id) {
+                if ($audit->unit_name != $user->unit_name) {
                     return response()->json(['error' => 'Unauthorized'], 403);
                 }
             }
@@ -234,10 +246,10 @@ class InventoryAuditController extends Controller
             $asset = null;
             if (is_numeric($assetIdentifier)) {
                 // Search by ID
-                $asset = Asset::find($assetIdentifier);
+                $asset = Asset::with('unit')->find($assetIdentifier);
             } else {
                 // Search by asset_tag (for QR code scans)
-                $asset = Asset::where('asset_tag', $assetIdentifier)->first();
+                $asset = Asset::with('unit')->where('asset_tag', $assetIdentifier)->first();
             }
 
             if (!$asset) {
@@ -272,8 +284,8 @@ class InventoryAuditController extends Controller
                     'id' => $asset->id,
                     'name' => $asset->name,
                     'asset_tag' => $asset->asset_tag,
-                    'current_unit_id' => $asset->unit_id,
-                    'current_unit_name' => $asset->unit->name ?? 'Unknown',
+                    'expected_unit_name' => $asset->unit_name,
+                    'current_unit_display_name' => $asset->unit ? $asset->unit->name : 'Unknown',
                     'scanned_at' => now()->toDateTimeString(),
                 ];
 
@@ -287,13 +299,17 @@ class InventoryAuditController extends Controller
 
                 return response()->json([
                     'type' => 'info',
-                    'message' => "Asset {$asset->name} (ID: {$asset->id}, Tag: {$asset->asset_tag}) is misplaced. Should be in {$asset->unit->name}",
+                    'message' => "Asset {$asset->name} (ID: {$asset->id}, Tag: {$asset->asset_tag}) is misplaced. Should be in " . ($asset->unit ? $asset->unit->name : 'Unknown'),
                     'asset' => $asset,
                 ]);
             }
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json(['error' => 'Validation failed', 'messages' => $e->errors()], 422);
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            return response()->json(['error' => 'Audit not found'], 404);
         } catch (\Exception $e) {
-            Log::error('Error scanning asset in audit: ' . $e->getMessage());
-            return response()->json(['error' => 'Failed to scan asset'], 500);
+            Log::error('Error scanning asset in audit: ' . $e->getMessage() . '\n' . $e->getTraceAsString());
+            return response()->json(['error' => 'Failed to scan asset', 'message' => $e->getMessage()], 500);
         }
     }
 
@@ -313,7 +329,7 @@ class InventoryAuditController extends Controller
             // Check permission
             // auditor, super-admin, and admin can complete any audit
             if ($user->role !== 'super-admin' && $user->role !== 'admin' && $user->role !== 'auditor') {
-                if ($audit->unit_id != $user->unit_id) {
+                if ($audit->unit_name != $user->unit_name) {
                     return response()->json(['error' => 'Unauthorized'], 403);
                 }
             }
@@ -333,7 +349,7 @@ class InventoryAuditController extends Controller
             Log::info('Inventory audit completed', [
                 'audit_id' => $audit->id,
                 'audit_code' => $audit->audit_code,
-                'unit_id' => $audit->unit_id,
+                'unit_name' => $audit->unit_name,
                 'found_count' => $audit->found_count,
                 'missing_count' => $audit->missing_count,
                 'misplaced_count' => $audit->misplaced_count,
@@ -361,7 +377,7 @@ class InventoryAuditController extends Controller
             // Check permission
             // auditor, super-admin, and admin can cancel any audit
             if ($user->role !== 'super-admin' && $user->role !== 'admin' && $user->role !== 'auditor') {
-                if ($audit->unit_id != $user->unit_id) {
+                if ($audit->unit_name != $user->unit_name) {
                     return response()->json(['error' => 'Unauthorized'], 403);
                 }
             }
@@ -377,7 +393,7 @@ class InventoryAuditController extends Controller
             Log::info('Inventory audit cancelled', [
                 'audit_id' => $audit->id,
                 'audit_code' => $audit->audit_code,
-                'unit_id' => $audit->unit_id,
+                'unit_name' => $audit->unit_name,
             ]);
 
             return response()->json([

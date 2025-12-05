@@ -22,7 +22,7 @@ const Dashboard: React.FC<DashboardProps> = ({ navigateTo }) => {
   const [loading, setLoading] = useState(true);
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [units, setUnits] = useState<Unit[]>([]);
-  const [selectedUnitId, setSelectedUnitId] = useState<string>('all');
+  const [selectedUnitName, setSelectedUnitName] = useState<string>('all');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
 
@@ -47,7 +47,7 @@ const Dashboard: React.FC<DashboardProps> = ({ navigateTo }) => {
     const loadStats = async () => {
       setLoading(true);
       try {
-        const data = await getDashboardStats(selectedUnitId, startDate, endDate);
+        const data = await getDashboardStats(selectedUnitName, startDate, endDate);
         setStats(data);
       } catch (error) {
         console.error('Failed to load dashboard stats:', error);
@@ -59,7 +59,7 @@ const Dashboard: React.FC<DashboardProps> = ({ navigateTo }) => {
     if (currentUser) {
       loadStats();
     }
-  }, [selectedUnitId, currentUser, startDate, endDate]);
+  }, [selectedUnitName, currentUser, startDate, endDate]);
 
 
   if (loading) {
@@ -117,13 +117,13 @@ const Dashboard: React.FC<DashboardProps> = ({ navigateTo }) => {
               </label>
               <select
                 id="unit-filter"
-                value={selectedUnitId}
-                onChange={(e) => setSelectedUnitId(e.target.value)}
+                value={selectedUnitName}
+                onChange={(e) => setSelectedUnitName(e.target.value)}
                 className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent bg-white shadow-sm w-full sm:w-auto"
               >
                 <option value="all">Semua Unit</option>
                 {units.map((unit) => (
-                  <option key={unit.id} value={unit.id}>
+                  <option key={unit.id} value={unit.name}>
                     {unit.name}
                   </option>
                 ))}

@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('inventory_audits', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('unit_id')->constrained('units')->onDelete('cascade');
+            $table->string('unit_name')->comment('Unit name for audit');
             $table->foreignId('auditor_id')->constrained('users')->onDelete('cascade');
             $table->string('audit_code')->unique()->comment('Kode unik audit (e.g., AUD-20251023-001)');
             $table->enum('scan_mode', ['camera', 'manual'])->default('camera');
@@ -26,7 +26,7 @@ return new class extends Migration
             $table->text('notes')->nullable();
             $table->timestamps();
 
-            $table->index('unit_id');
+            $table->index('unit_name');
             $table->index('auditor_id');
             $table->index('status');
             $table->index('created_at');

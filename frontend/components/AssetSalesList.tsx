@@ -17,7 +17,7 @@ const AssetSalesList: React.FC<AssetSalesListProps> = ({ user, navigateTo }) => 
 
   // Filter states
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedUnitId, setSelectedUnitId] = useState<number | undefined>(undefined);
+  const [selectedUnitName, setSelectedUnitName] = useState<string | undefined>(undefined);
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
 
@@ -34,7 +34,7 @@ const AssetSalesList: React.FC<AssetSalesListProps> = ({ user, navigateTo }) => 
     try {
       const params: any = {};
       if (searchTerm) params.search = searchTerm;
-      if (selectedUnitId) params.unit_id = selectedUnitId;
+      if (selectedUnitName) params.unit_name = selectedUnitName;
       if (startDate) params.start_date = startDate;
       if (endDate) params.end_date = endDate;
 
@@ -54,7 +54,7 @@ const AssetSalesList: React.FC<AssetSalesListProps> = ({ user, navigateTo }) => 
 
   useEffect(() => {
     fetchData();
-  }, [searchTerm, selectedUnitId, startDate, endDate]);
+  }, [searchTerm, selectedUnitName, startDate, endDate]);
 
   const handleCancelSale = async (saleId: number) => {
     if (!confirm('Apakah Anda yakin ingin membatalkan penjualan ini? Status asset akan dikembalikan ke Available.')) {
@@ -153,13 +153,13 @@ const AssetSalesList: React.FC<AssetSalesListProps> = ({ user, navigateTo }) => 
                 Unit
               </label>
               <select
-                value={selectedUnitId || ''}
-                onChange={(e) => setSelectedUnitId(e.target.value ? Number(e.target.value) : undefined)}
+                value={selectedUnitName || ''}
+                onChange={(e) => setSelectedUnitName(e.target.value || undefined)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <option value="">Semua Unit</option>
                 {units.map((unit) => (
-                  <option key={unit.id} value={unit.id}>
+                  <option key={unit.id} value={unit.name}>
                     {unit.name}
                   </option>
                 ))}
@@ -195,12 +195,12 @@ const AssetSalesList: React.FC<AssetSalesListProps> = ({ user, navigateTo }) => 
         </div>
 
         {/* Clear Filters */}
-        {(searchTerm || selectedUnitId || startDate || endDate) && (
+        {(searchTerm || selectedUnitName || startDate || endDate) && (
           <div className="flex justify-end">
             <button
               onClick={() => {
                 setSearchTerm('');
-                setSelectedUnitId(undefined);
+                setSelectedUnitName(undefined);
                 setStartDate('');
                 setEndDate('');
               }}

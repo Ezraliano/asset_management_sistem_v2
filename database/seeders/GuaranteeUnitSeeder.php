@@ -19,15 +19,15 @@ class GuaranteeUnitSeeder extends Seeder
         \Illuminate\Support\Facades\DB::setDefaultConnection('mysql_jaminan');
 
         // Get all active units
-        $units = Unit::active()->orderBy('name')->get();
+        $units = Unit::active()->orderByName()->get();
 
         if ($units->isEmpty()) {
             $this->command->warn('No active units found. Please seed the units table first.');
             return;
         }
 
-        // Get all guarantees without unit_id
-        $guarantees = Guarantee::whereNull('unit_id')->get();
+        // Get all guarantees without unit_name assigned
+        $guarantees = Guarantee::whereNull('unit_name')->get();
 
         if ($guarantees->isEmpty()) {
             $this->command->info('All guarantees already have units assigned or no guarantees found.');
@@ -43,7 +43,7 @@ class GuaranteeUnitSeeder extends Seeder
             // Assign unit based on index using round-robin
             $unitIndex = $index % $unitCount;
             $unit = $units[$unitIndex];
-            $guarantee->update(['unit_id' => $unit->id]);
+            $guarantee->update(['unit_name' => $unit->name]);
             $assignedCount++;
         }
 

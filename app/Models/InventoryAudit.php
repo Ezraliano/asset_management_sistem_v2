@@ -11,7 +11,7 @@ class InventoryAudit extends Model
     use HasFactory;
 
     protected $fillable = [
-        'unit_id',
+        'unit_name',
         'auditor_id',
         'audit_code',
         'scan_mode',
@@ -37,7 +37,7 @@ class InventoryAudit extends Model
      */
     public function unit(): BelongsTo
     {
-        return $this->belongsTo(Unit::class);
+        return $this->belongsTo(Unit::class, 'unit_name', 'name');
     }
 
     /**

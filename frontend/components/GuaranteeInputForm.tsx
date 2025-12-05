@@ -32,7 +32,7 @@ interface GuaranteeFormData {
   guarantee_number: string;
   file_location: string;
   input_date: string;
-  unit_id?: number | null;
+  unit_name?: string | null;
 }
 
 interface Unit {
@@ -55,7 +55,7 @@ const GuaranteeInputForm: React.FC<GuaranteeInputFormProps> = ({ guarantee, asse
     guarantee_number: '',
     file_location: '',
     input_date: '',
-    unit_id: null,
+    unit_name: null,
   });
 
   const [loading, setLoading] = useState(false);
@@ -92,14 +92,14 @@ const GuaranteeInputForm: React.FC<GuaranteeInputFormProps> = ({ guarantee, asse
         guarantee_number: guarantee.guarantee_number || '',
         file_location: guarantee.file_location || '',
         input_date: guarantee.input_date || '',
-        unit_id: guarantee.unit_id || null,
+        unit_name: guarantee.unit_name || null,
       });
     } else {
       const today = new Date().toISOString().split('T')[0];
       setFormData(prev => ({
         ...prev,
         input_date: today,
-        unit_id: null,
+        unit_name: null,
       }));
     }
   }, [guarantee]);
@@ -489,23 +489,23 @@ const GuaranteeInputForm: React.FC<GuaranteeInputFormProps> = ({ guarantee, asse
         {/* Unit */}
         {units.length > 0 && (
           <div>
-            <label htmlFor="unit_id" className="block text-sm font-medium text-gray-700 mb-1">
+            <label htmlFor="unit_name" className="block text-sm font-medium text-gray-700 mb-1">
               Unit <span className="text-gray-500 text-xs">(Opsional)</span>
             </label>
             <select
-              id="unit_id"
-              name="unit_id"
-              value={formData.unit_id || ''}
+              id="unit_name"
+              name="unit_name"
+              value={formData.unit_name || ''}
               onChange={(e) => setFormData(prev => ({
                 ...prev,
-                unit_id: e.target.value ? parseInt(e.target.value) : null
+                unit_name: e.target.value || null
               }))}
               disabled={loading}
               className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary sm:text-sm disabled:bg-gray-50"
             >
               <option value="">-- Pilih Unit --</option>
               {units.map(unit => (
-                <option key={unit.id} value={unit.id}>
+                <option key={unit.id} value={unit.name}>
                   {unit.name}
                 </option>
               ))}

@@ -19,7 +19,8 @@ return new class extends Migration
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
             $table->string('role');
-            $table->foreignId('unit_id')->nullable()->constrained('units')->onDelete('cascade');
+            $table->string('unit_name')->nullable()->comment('Unit name for filtering by user role');
+            $table->index('unit_name');
             $table->rememberToken();
             $table->timestamps();
         });

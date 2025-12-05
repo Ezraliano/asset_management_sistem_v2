@@ -30,8 +30,8 @@ class AssetMovementController extends Controller
         if ($user->isAdminUnit()) {
             // Admin Unit hanya bisa lihat movement yang dari/ke unit mereka
             $query->where(function($q) use ($user) {
-                $q->where('from_unit_id', $user->unit_id)
-                  ->orWhere('to_unit_id', $user->unit_id);
+                $q->where('from_unit_name', $user->unit_name)
+                  ->orWhere('to_unit_name', $user->unit_name);
             });
         }
         // Super Admin & Admin Holding bisa lihat semua
@@ -53,7 +53,7 @@ class AssetMovementController extends Controller
 
         $validated = $request->validate([
             'asset_id' => 'required|exists:assets,id',
-            'to_unit_id' => 'required|exists:units,id',
+            'to_unit_name' => 'required|exists:units,id',
             'notes' => 'nullable|string|max:1000',
         ]);
 
@@ -68,7 +68,7 @@ class AssetMovementController extends Controller
         }
 
         // Validasi: Asset tidak boleh dipindahkan ke unit yang sama
-        if ($asset->unit_id == $validated['to_unit_id']) {
+        if ($asset->unit_name == $validated['to_unit_name']) {
             return response()->json([
                 'success' => false,
                 'message' => 'Asset sudah berada di unit tujuan'
@@ -89,8 +89,8 @@ class AssetMovementController extends Controller
 
         $movement = AssetMovement::create([
             'asset_id' => $asset->id,
-            'from_unit_id' => $asset->unit_id,
-            'to_unit_id' => $validated['to_unit_id'],
+            'from_unit_name' => $asset->unit_name,
+            'to_unit_name' => $validated['to_unit_name'],
             'requested_by_id' => $user->id,
             'status' => 'PENDING',
             'notes' => $validated['notes'] ?? null,
@@ -125,7 +125,7 @@ class AssetMovementController extends Controller
 
         // Admin Unit hanya bisa lihat yang ditujukan ke unit mereka
         if ($user->isAdminUnit()) {
-            $query->where('to_unit_id', $user->unit_id);
+            $query->where('to_unit_name', $user->unit_name);
         }
         // Super Admin & Admin Holding bisa lihat semua pending
 
@@ -154,7 +154,7 @@ class AssetMovementController extends Controller
         }
 
         // Validasi: User harus bisa manage unit tujuan
-        if ($user->isAdminUnit() && $user->unit_id !== $movement->to_unit_id) {
+        if ($user->isAdminUnit() && $user->unit_name !== $movement->to_unit_name) {
             return response()->json([
                 'success' => false,
                 'message' => 'Anda hanya bisa menerima asset untuk unit Anda'
@@ -170,9 +170,9 @@ class AssetMovementController extends Controller
                 'validated_at' => now(),
             ]);
 
-            // Update asset unit_id
+            // Update asset unit_name
             $movement->asset->update([
-                'unit_id' => $movement->to_unit_id,
+                'unit_name' => $movement->to_unit_name,
             ]);
 
             DB::commit();
@@ -219,7 +219,7 @@ class AssetMovementController extends Controller
         }
 
         // Validasi: User harus bisa manage unit tujuan
-        if ($user->isAdminUnit() && $user->unit_id !== $movement->to_unit_id) {
+        if ($user->isAdminUnit() && $user->unit_name !== $movement->to_unit_name) {
             return response()->json([
                 'success' => false,
                 'message' => 'Anda hanya bisa menolak asset untuk unit Anda'

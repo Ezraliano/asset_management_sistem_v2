@@ -25,7 +25,7 @@ const MoveAssetForm: React.FC<MoveAssetFormProps> = ({ asset, onSuccess, onClose
       const unitsData = await getUnits();
       // Filter out current unit
       const filteredUnits = unitsData.filter((unit: Unit) =>
-        unit.id !== asset.unit_id && unit.is_active
+        unit.name !== asset.unit_name && unit.is_active
       );
       setUnits(filteredUnits);
     } catch (error) {

@@ -20,6 +20,12 @@ class GuaranteeController extends Controller
         try {
             $query = Guarantee::query()->with('unit');
 
+            // ✅ AUTHORIZATION: Admin-kredit hanya bisa lihat jaminan unitnya sendiri
+            $user = $request->user();
+            if ($user && $user->role === 'admin-kredit' && $user->unit_name) {
+                $query->byUnitName($user->unit_name);
+            }
+
             // Filter berdasarkan tipe jaminan
             if ($request->has('guarantee_type') && $request->guarantee_type !== '') {
                 $query->byType($request->guarantee_type);
@@ -40,9 +46,9 @@ class GuaranteeController extends Controller
                 $query->byStatus($request->status);
             }
 
-            // Filter berdasarkan unit_id
-            if ($request->has('unit_id') && $request->unit_id !== '') {
-                $query->byUnitId($request->unit_id);
+            // Filter berdasarkan unit_name
+            if ($request->has('unit_name') && $request->unit_name !== '') {
+                $query->byUnitName($request->unit_name);
             }
 
             // Filter berdasarkan range tanggal
@@ -87,6 +93,15 @@ class GuaranteeController extends Controller
     public function store(Request $request)
     {
         try {
+            // ✅ AUTHORIZATION CHECK: Admin-kredit hanya bisa input jaminan untuk unitnya sendiri
+            $user = $request->user();
+            if ($user && $user->role === 'admin-kredit' && !$user->unit_name) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Admin kredit harus memiliki unit yang ditentukan'
+                ], Response::HTTP_FORBIDDEN);
+            }
+
             // Validasi input dengan custom messages dalam bahasa Indonesia
             $validated = $request->validate([
                 'spk_number' => 'required|string|max:255',
@@ -99,7 +114,7 @@ class GuaranteeController extends Controller
                 'file_location' => 'required|string|max:255',
                 'input_date' => 'required|date',
                 'status' => 'sometimes|in:available,dipinjam,lunas',
-                'unit_id' => 'nullable|exists:mysql_jaminan.units,id',
+                'unit_name' => 'nullable|exists:mysql_jaminan.units,name',
             ], [
                 'spk_number.required' => 'Nomor SPK tidak boleh kosong.',
                 'spk_number.max' => 'Nomor SPK terlalu panjang (maksimal 255 karakter).',
@@ -139,6 +154,19 @@ class GuaranteeController extends Controller
             // Set status default ke 'available' jika tidak ada
             if (!isset($validated['status'])) {
                 $validated['status'] = 'available';
+            }
+
+            // ✅ AUTHORIZATION: Jika admin-kredit, otomatis set unit_name ke unit mereka
+            if ($user && $user->role === 'admin-kredit') {
+                // Admin-kredit tidak boleh mengubah unit_name, harus sesuai dengan unitnya
+                if (isset($validated['unit_name']) && $validated['unit_name'] !== $user->unit_name) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Anda hanya bisa menginput jaminan untuk unit ' . $user->unit_name
+                    ], Response::HTTP_FORBIDDEN);
+                }
+                // Set otomatis unit_name ke unit mereka
+                $validated['unit_name'] = $user->unit_name;
             }
 
             // Create guarantee
@@ -208,6 +236,15 @@ class GuaranteeController extends Controller
                 ], Response::HTTP_NOT_FOUND);
             }
 
+            // ✅ AUTHORIZATION: Admin-kredit hanya bisa update jaminan untuk unitnya sendiri
+            $user = $request->user();
+            if ($user && $user->role === 'admin-kredit' && $guarantee->unit_name !== $user->unit_name) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Anda hanya bisa mengedit jaminan untuk unit ' . $user->unit_name
+                ], Response::HTTP_FORBIDDEN);
+            }
+
             // Validasi input dengan custom messages dalam bahasa Indonesia
             $validated = $request->validate([
                 'spk_number' => 'sometimes|required|string|max:255',
@@ -220,7 +257,7 @@ class GuaranteeController extends Controller
                 'file_location' => 'sometimes|required|string|max:255',
                 'input_date' => 'sometimes|required|date',
                 'status' => 'sometimes|in:available,dipinjam,lunas',
-                'unit_id' => 'nullable|exists:mysql_jaminan.units,id',
+                'unit_name' => 'nullable|exists:mysql_jaminan.units,name',
             ], [
                 'spk_number.required' => 'Nomor SPK tidak boleh kosong.',
                 'spk_number.max' => 'Nomor SPK terlalu panjang (maksimal 255 karakter).',
@@ -242,7 +279,7 @@ class GuaranteeController extends Controller
                 'input_date.required' => 'Tanggal Input tidak boleh kosong.',
                 'input_date.date' => 'Format tanggal tidak valid. Silakan gunakan format YYYY-MM-DD.',
                 'status.in' => 'Status harus salah satu dari: available, dipinjam, lunas.',
-                'unit_id.exists' => 'Unit yang dipilih tidak valid.',
+                'unit_name.exists' => 'Unit yang dipilih tidak valid.',
             ]);
 
             // Validasi tambahan: Cek apakah CIF sudah terdaftar dengan Atas Nama SPK berbeda (untuk record lain)
@@ -258,6 +295,18 @@ class GuaranteeController extends Controller
                         'spk_name' => 'Atas Nama SPK harus "' . $existingGuarantee->spk_name . '" untuk Nomor CIF ini.'
                     ]
                 ], Response::HTTP_UNPROCESSABLE_ENTITY);
+            }
+
+            // ✅ AUTHORIZATION: Jika admin-kredit, jangan boleh ubah unit_name
+            if ($user && $user->role === 'admin-kredit') {
+                if (isset($validated['unit_name']) && $validated['unit_name'] !== $guarantee->unit_name) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Anda tidak bisa mengubah unit jaminan'
+                    ], Response::HTTP_FORBIDDEN);
+                }
+                // Jika unit_name tidak diisi, pertahankan unit_name lama
+                unset($validated['unit_name']);
             }
 
             // Update guarantee
@@ -286,7 +335,7 @@ class GuaranteeController extends Controller
      * Remove the specified guarantee
      * DELETE /api/guarantees/{id}
      */
-    public function destroy($id)
+    public function destroy(Request $request, $id)
     {
         try {
             $guarantee = Guarantee::find($id);
@@ -296,6 +345,15 @@ class GuaranteeController extends Controller
                     'success' => false,
                     'message' => 'Data jaminan tidak ditemukan'
                 ], Response::HTTP_NOT_FOUND);
+            }
+
+            // ✅ AUTHORIZATION: Admin-kredit hanya bisa delete jaminan untuk unitnya sendiri
+            $user = $request->user();
+            if ($user && $user->role === 'admin-kredit' && $guarantee->unit_name !== $user->unit_name) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Anda hanya bisa menghapus jaminan untuk unit ' . $user->unit_name
+                ], Response::HTTP_FORBIDDEN);
             }
 
             $guarantee->delete();
@@ -377,9 +435,9 @@ class GuaranteeController extends Controller
         try {
             $query = Guarantee::query();
 
-            // Filter by unit_id if provided
-            if ($request->has('unit_id') && $request->unit_id !== '') {
-                $query->byUnitId($request->unit_id);
+            // Filter by unit_name if provided
+            if ($request->has('unit_name') && $request->unit_name !== '') {
+                $query->byUnitName($request->unit_name);
             }
 
             $stats = [

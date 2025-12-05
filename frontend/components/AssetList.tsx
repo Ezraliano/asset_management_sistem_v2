@@ -23,7 +23,7 @@ const AssetList: React.FC<AssetListProps> = ({ navigateTo }) => {
   const [isModalOpen, setModalOpen] = useState(false);
   const [isTransferModalOpen, setTransferModalOpen] = useState(false);
   const [editingAsset, setEditingAsset] = useState<Asset | undefined>(undefined);
-  const [filters, setFilters] = useState({ category: '', unit_id: '', status: '' });
+  const [filters, setFilters] = useState({ category: '', unit_name: '', status: '' });
   const [showFilters, setShowFilters] = useState(false);
   const [error, setError] = useState<string>('');
   const [totalAssets, setTotalAssets] = useState(0);
@@ -234,7 +234,7 @@ const AssetList: React.FC<AssetListProps> = ({ navigateTo }) => {
   };
 
   const handleClearFilters = () => {
-    setFilters({ category: '', unit_id: '', status: '' });
+    setFilters({ category: '', unit_name: '', status: '' });
     setCurrentPage(1);
   };
 
@@ -334,16 +334,16 @@ const AssetList: React.FC<AssetListProps> = ({ navigateTo }) => {
 
             {/* Unit Filter */}
             <div className="w-full">
-              <label htmlFor="unit_id" className="block text-sm font-medium text-gray-700">Unit</label>
+              <label htmlFor="unit_name" className="block text-sm font-medium text-gray-700">Unit</label>
               <select
-                id="unit_id"
-                name="unit_id"
-                value={filters.unit_id}
+                id="unit_name"
+                name="unit_name"
+                value={filters.unit_name}
                 onChange={handleFilterChange}
                 className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-primary focus:border-primary sm:text-sm rounded-md"
               >
                 <option value="">All Units</option>
-                {uniqueUnits.map(unit => <option key={unit.id} value={unit.id}>{unit.name}</option>)}
+                {uniqueUnits.map(unit => <option key={unit.id} value={unit.name}>{unit.name}</option>)}
               </select>
             </div>
 

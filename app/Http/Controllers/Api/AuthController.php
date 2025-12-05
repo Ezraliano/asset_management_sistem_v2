@@ -65,7 +65,7 @@ class AuthController extends Controller
                 'username' => $request->user()->username,
                 'email' => $request->user()->email,
                 'role' => $request->user()->role,
-                'unit_id' => $request->user()->unit_id, // ✅ FIX: Tambahkan unit_id untuk validasi pengembalian asset
+                'unit_name' => $request->user()->unit_name, // ✅ FIX: Tambahkan unit_name untuk validasi pengembalian asset
             ],
         ]);
     }
@@ -103,7 +103,7 @@ class AuthController extends Controller
                     'username' => $user->username,
                     'email' => $user->email,
                     'role' => $user->role,
-                    'unit_id' => $user->unit_id,
+                    'unit_name' => $user->unit_name,
                     'unit' => $user->unit ? [
                         'id' => $user->unit->id,
                         'name' => $user->unit->name,

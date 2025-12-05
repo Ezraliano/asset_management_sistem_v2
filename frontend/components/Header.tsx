@@ -60,8 +60,8 @@ const Header: React.FC<HeaderProps> = ({ user, onLogout, isSidebarOpen, setSideb
                     </button>
                 </div>
 
-                {/* Switch Mode Button - Hidden for admin-kredit role */}
-                {user.role !== 'admin-kredit' && (
+                {/* Switch Mode Button - Hidden for admin-kredit and auditor roles */}
+                {user.role !== 'admin-kredit' && user.role !== 'auditor' && (
                     <div className="p-4 border-b border-gray-700">
                         <div className="flex gap-2">
                             <button

@@ -23,7 +23,7 @@ class Asset extends Model
         'purchase_date',
         'useful_life',
         'status',
-        'unit_id',
+        'unit_name',
         'created_at',
         'updated_at',
     ];
@@ -84,7 +84,7 @@ class Asset extends Model
 
     public function unit(): BelongsTo
     {
-        return $this->belongsTo(Unit::class);
+        return $this->belongsTo(Unit::class, 'unit_name', 'name');
     }
 
     public function sales(): HasMany

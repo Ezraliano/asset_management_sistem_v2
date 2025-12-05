@@ -20,7 +20,8 @@ return new class extends Migration
             $table->datetime('purchase_date');
             $table->integer('useful_life')->comment('in months');
             $table->enum('status', ['Available', 'Terpinjam', 'Terjual', 'Lost', 'Dalam Perbaikan','Rusak','Dalam Pemeliharaan'])->default('Available');
-            $table->foreignId('unit_id')->nullable()->constrained('units')->onDelete('cascade');
+            $table->string('unit_name')->nullable()->comment('Unit name for asset organization');
+            $table->index('unit_name');
             $table->timestamps();
         });
     }

@@ -22,6 +22,7 @@ use App\Http\Controllers\Api_jaminan\GuaranteeController;
 use App\Http\Controllers\Api_jaminan\GuaranteeLoanController;
 use App\Http\Controllers\Api_jaminan\GuaranteeSettlementController;
 use App\Http\Controllers\Api_jaminan\JaminanAuthController;
+use App\Http\Controllers\Api_jaminan\DashboardController as JaminanDashboardController;
 
 /*
 |--------------------------------------------------------------------------
@@ -294,6 +295,14 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::delete('/guarantee-settlements/{id}', [GuaranteeSettlementController::class, 'destroy']);
         Route::put('/guarantee-settlements/{id}/approve', [GuaranteeSettlementController::class, 'approve']);
         Route::put('/guarantee-settlements/{id}/reject', [GuaranteeSettlementController::class, 'reject']);
+    });
+
+    // Jaminan Dashboard Routes - All authenticated users can access (authorization checked in controller)
+    Route::middleware('auth:sanctum')->group(function () {
+        Route::prefix('jaminan/dashboard')->group(function () {
+            Route::get('/stats', [JaminanDashboardController::class, 'getStats']);
+            Route::get('/overview', [JaminanDashboardController::class, 'getOverview']);
+        });
     });
 
     // Jaminan User Management Routes - Only Superadmin (Protected by JaminanRoleMiddleware in controller)

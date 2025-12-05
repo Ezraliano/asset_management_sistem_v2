@@ -18,7 +18,8 @@ return new class extends Migration
             $table->enum('repair_type', ['Perbaikan Total', 'Penambahan Komponen', 'Perbaikan Komponen'])->nullable(); // Tipe perbaikan (hanya untuk Perbaikan)
             $table->enum('maintenance_type', ['Pemeliharaan Rutin Bulanan', 'Pemeliharaan Rutin Tahunan'])->nullable(); // Jenis pemeliharaan (hanya untuk Pemeliharaan)
             $table->date('date');
-            $table->foreignId('unit_id')->nullable()->constrained('units')->onDelete('set null'); // Unit yang memperbaiki/memelihara
+            $table->string('unit_name')->nullable()->comment('Unit name that handles repair/maintenance');
+            $table->index('unit_name');
             $table->enum('party_type', ['Internal', 'External']); // Pihak yang menangani
             $table->string('instansi'); // Nama instansi yang memperbaiki/memelihara
             $table->string('phone_number'); // No Telepon

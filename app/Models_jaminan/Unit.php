@@ -36,7 +36,7 @@ class Unit extends Model
      */
     public function guarantees()
     {
-        return $this->hasMany(Guarantee::class, 'unit_id');
+        return $this->hasMany(Guarantee::class, 'unit_name', 'name');
     }
 
     /**

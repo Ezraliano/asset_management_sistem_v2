@@ -464,7 +464,7 @@ export const getDashboardStats = async (
 ): Promise<DashboardStats> => {
   const queryParams = new URLSearchParams();
   if (unitId && unitId !== 'all') {
-    queryParams.append('unit_id', unitId.toString());
+    queryParams.append('unit_name', unitId.toString());
   }
   if (startDate) {
     queryParams.append('start_date', startDate);
@@ -481,10 +481,10 @@ export const getDashboardStats = async (
 };
 
 // Assets API - ✅ PERBAIKAN UTAMA: Fix response handling
-export const getAssets = async (filters: { category?: string; unit_id?: string; status?: string } = {}): Promise<Asset[]> => {
+export const getAssets = async (filters: { category?: string; unit_name?: string; status?: string } = {}): Promise<Asset[]> => {
   const queryParams = new URLSearchParams();
   if (filters.category) queryParams.append('category', filters.category);
-  if (filters.unit_id) queryParams.append('unit_id', filters.unit_id);
+  if (filters.unit_name) queryParams.append('unit_name', filters.unit_name);
   if (filters.status) queryParams.append('status', filters.status);
 
   const queryString = queryParams.toString();
@@ -1363,9 +1363,9 @@ export const getDepreciationProgress = (depreciationData: any): number => {
 
 // ==================== ASSET SALES API ====================
 
-export const getAssetSales = async (params?: { unit_id?: number; search?: string; start_date?: string; end_date?: string }): Promise<AssetSale[]> => {
+export const getAssetSales = async (params?: { unit_name?: string; search?: string; start_date?: string; end_date?: string }): Promise<AssetSale[]> => {
   const queryParams = new URLSearchParams();
-  if (params?.unit_id) queryParams.append('unit_id', params.unit_id.toString());
+  if (params?.unit_name) queryParams.append('unit_name', params.unit_name);
   if (params?.search) queryParams.append('search', params.search);
   if (params?.start_date) queryParams.append('start_date', params.start_date);
   if (params?.end_date) queryParams.append('end_date', params.end_date);
@@ -1758,7 +1758,7 @@ export const rejectAssetRequest = async (id: number, rejectionData: {
 // ==================== REPORTS API ====================
 
 export interface ReportFilters {
-  unit_id?: string | number;
+  unit_name?: string;
   category?: string;
   status?: string;
   type?: string;
@@ -1778,7 +1778,7 @@ export interface ReportResponse<T = any> {
 
 export const getFullAssetReport = async (filters?: ReportFilters): Promise<any> => {
   const queryParams = new URLSearchParams();
-  if (filters?.unit_id && filters.unit_id !== 'all') queryParams.append('unit_id', filters.unit_id.toString());
+  if (filters?.unit_name && filters.unit_name !== 'all') queryParams.append('unit_name', filters.unit_name);
   if (filters?.category) queryParams.append('category', filters.category);
   if (filters?.status) queryParams.append('status', filters.status);
   if (filters?.search) queryParams.append('search', filters.search);
@@ -1800,7 +1800,7 @@ export const getFullAssetReport = async (filters?: ReportFilters): Promise<any> 
 
 export const getMaintenanceReport = async (filters?: ReportFilters): Promise<any> => {
   const queryParams = new URLSearchParams();
-  if (filters?.unit_id && filters.unit_id !== 'all') queryParams.append('unit_id', filters.unit_id.toString());
+  if (filters?.unit_name && filters.unit_name !== 'all') queryParams.append('unit_name', filters.unit_name);
   if (filters?.status) queryParams.append('status', filters.status);
   if (filters?.start_date) queryParams.append('start_date', filters.start_date);
   if (filters?.end_date) queryParams.append('end_date', filters.end_date);
@@ -1820,7 +1820,7 @@ export const getMaintenanceReport = async (filters?: ReportFilters): Promise<any
 
 export const getRepairReport = async (filters?: ReportFilters): Promise<any> => {
   const queryParams = new URLSearchParams();
-  if (filters?.unit_id && filters.unit_id !== 'all') queryParams.append('unit_id', filters.unit_id.toString());
+  if (filters?.unit_name && filters.unit_name !== 'all') queryParams.append('unit_name', filters.unit_name);
   if (filters?.status) queryParams.append('status', filters.status);
   if (filters?.start_date) queryParams.append('start_date', filters.start_date);
   if (filters?.end_date) queryParams.append('end_date', filters.end_date);
@@ -1840,7 +1840,7 @@ export const getRepairReport = async (filters?: ReportFilters): Promise<any> => 
 
 export const getLoanReport = async (filters?: ReportFilters): Promise<any> => {
   const queryParams = new URLSearchParams();
-  if (filters?.unit_id && filters.unit_id !== 'all') queryParams.append('unit_id', filters.unit_id.toString());
+  if (filters?.unit_name && filters.unit_name !== 'all') queryParams.append('unit_name', filters.unit_name);
   if (filters?.status) queryParams.append('status', filters.status);
   if (filters?.start_date) queryParams.append('start_date', filters.start_date);
   if (filters?.end_date) queryParams.append('end_date', filters.end_date);
@@ -1860,7 +1860,7 @@ export const getLoanReport = async (filters?: ReportFilters): Promise<any> => {
 
 export const getDamageReport = async (filters?: ReportFilters): Promise<any> => {
   const queryParams = new URLSearchParams();
-  if (filters?.unit_id && filters.unit_id !== 'all') queryParams.append('unit_id', filters.unit_id.toString());
+  if (filters?.unit_name && filters.unit_name !== 'all') queryParams.append('unit_name', filters.unit_name);
   if (filters?.status) queryParams.append('status', filters.status);
   if (filters?.start_date) queryParams.append('start_date', filters.start_date);
   if (filters?.end_date) queryParams.append('end_date', filters.end_date);
@@ -1880,7 +1880,7 @@ export const getDamageReport = async (filters?: ReportFilters): Promise<any> => 
 
 export const getSaleReport = async (filters?: ReportFilters): Promise<any> => {
   const queryParams = new URLSearchParams();
-  if (filters?.unit_id && filters.unit_id !== 'all') queryParams.append('unit_id', filters.unit_id.toString());
+  if (filters?.unit_name && filters.unit_name !== 'all') queryParams.append('unit_name', filters.unit_name);
   if (filters?.start_date) queryParams.append('start_date', filters.start_date);
   if (filters?.end_date) queryParams.append('end_date', filters.end_date);
 
@@ -1899,7 +1899,7 @@ export const getSaleReport = async (filters?: ReportFilters): Promise<any> => {
 
 export const getLossReport = async (filters?: ReportFilters): Promise<any> => {
   const queryParams = new URLSearchParams();
-  if (filters?.unit_id && filters.unit_id !== 'all') queryParams.append('unit_id', filters.unit_id.toString());
+  if (filters?.unit_name && filters.unit_name !== 'all') queryParams.append('unit_name', filters.unit_name);
   if (filters?.status) queryParams.append('status', filters.status);
   if (filters?.start_date) queryParams.append('start_date', filters.start_date);
   if (filters?.end_date) queryParams.append('end_date', filters.end_date);
@@ -1956,7 +1956,7 @@ export const getAllReports = async (filters?: ReportFilters): Promise<any> => {
 
 export const getAuditReport = async (filters?: ReportFilters): Promise<any> => {
   const queryParams = new URLSearchParams();
-  if (filters?.unit_id && filters.unit_id !== 'all') queryParams.append('unit_id', filters.unit_id.toString());
+  if (filters?.unit_name && filters.unit_name !== 'all') queryParams.append('unit_name', filters.unit_name);
   if (filters?.status) queryParams.append('status', filters.status);
   if (filters?.start_date) queryParams.append('start_date', filters.start_date);
   if (filters?.end_date) queryParams.append('end_date', filters.end_date);
@@ -2002,13 +2002,21 @@ export const getInventoryAudits = async (params?: { status?: string; unit_id?: n
 };
 
 export const startInventoryAudit = async (auditData: {
-  unit_id: number;
+  unit_id?: number;
+  unit_name?: string;
   scan_mode: 'camera' | 'manual';
   notes?: string;
 }): Promise<InventoryAudit> => {
+  // Backend expects unit_name, so send only that
+  const requestData = {
+    unit_name: auditData.unit_name,
+    scan_mode: auditData.scan_mode,
+    ...(auditData.notes && { notes: auditData.notes }),
+  };
+
   const data = await apiRequest('/inventory-audits', {
     method: 'POST',
-    body: JSON.stringify(auditData),
+    body: JSON.stringify(requestData),
   });
   return handleApiResponse<any>(data).audit;
 };
