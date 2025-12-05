@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Asset } from '../types';
-import { addGuarantee, updateGuarantee, getGuaranteeUnits } from '../services/api';
+import { addGuarantee, updateGuarantee, getGuaranteeUnits, getCurrentUser } from '../services/api';
 
 interface GuaranteeInputFormProps {
   guarantee?: any;
@@ -62,22 +62,57 @@ const GuaranteeInputForm: React.FC<GuaranteeInputFormProps> = ({ guarantee, asse
   const [error, setError] = useState('');
   const [validationErrors, setValidationErrors] = useState<ValidationErrors>({});
   const [units, setUnits] = useState<Unit[]>([]);
+  const [currentUser, setCurrentUser] = useState<any>(null);
+  const [isUnitLocked, setIsUnitLocked] = useState(false);
 
-  // Fetch units on component mount
+  // Fetch units and current user on component mount
   useEffect(() => {
-    const fetchUnits = async () => {
+    const fetchData = async () => {
       try {
-        const unitsList = await getGuaranteeUnits();
-        if (unitsList) {
+        const [unitsList, currentUserData] = await Promise.all([
+          getGuaranteeUnits(),
+          getCurrentUser()
+        ]);
+
+        console.log('Units fetched:', unitsList);
+        console.log('Current user:', currentUserData);
+
+        if (Array.isArray(unitsList) && unitsList.length > 0) {
+          console.log(`Successfully loaded ${unitsList.length} units`);
           setUnits(unitsList);
+        } else {
+          console.warn('Units list is empty or invalid:', unitsList);
+          setUnits([]);
+        }
+
+        if (currentUserData) {
+          setCurrentUser(currentUserData);
+
+          // Check if user is admin-kredit - auto-fill and lock unit field
+          const isAdminKredit = currentUserData.role === 'admin-kredit' && currentUserData.unit_name;
+          if (isAdminKredit) {
+            console.log(`Setting unit lock for admin-kredit: ${currentUserData.unit_name}`);
+            setIsUnitLocked(true);
+          }
+
+          // Set form data after knowing user role
+          if (!guarantee) {
+            // Creating new guarantee
+            setFormData(prev => ({
+              ...prev,
+              unit_name: isAdminKredit ? currentUserData.unit_name : null
+            }));
+            console.log(`Auto-filled unit for admin-kredit: ${currentUserData.unit_name}`);
+          }
         }
       } catch (err: any) {
-        console.error('Error fetching units:', err);
+        console.error('Error fetching data:', err);
+        setUnits([]);
       }
     };
 
-    fetchUnits();
-  }, []);
+    fetchData();
+  }, [guarantee]);
 
   // Initialize form data if editing
   useEffect(() => {
@@ -487,11 +522,18 @@ const GuaranteeInputForm: React.FC<GuaranteeInputFormProps> = ({ guarantee, asse
         </div>
 
         {/* Unit */}
-        {units.length > 0 && (
-          <div>
-            <label htmlFor="unit_name" className="block text-sm font-medium text-gray-700 mb-1">
-              Unit <span className="text-gray-500 text-xs">(Opsional)</span>
-            </label>
+        <div>
+          <label htmlFor="unit_name" className="block text-sm font-medium text-gray-700 mb-1">
+            Unit {isUnitLocked ? '' : <span className="text-gray-500 text-xs">(Opsional)</span>}
+          </label>
+          {isUnitLocked && currentUser?.unit_name ? (
+            <input
+              type="text"
+              disabled
+              value={currentUser.unit_name}
+              className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm bg-gray-100 text-gray-700 sm:text-sm cursor-not-allowed"
+            />
+          ) : (
             <select
               id="unit_name"
               name="unit_name"
@@ -500,18 +542,22 @@ const GuaranteeInputForm: React.FC<GuaranteeInputFormProps> = ({ guarantee, asse
                 ...prev,
                 unit_name: e.target.value || null
               }))}
-              disabled={loading}
-              className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary sm:text-sm disabled:bg-gray-50"
+              disabled={loading || units.length === 0}
+              className={`block w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary sm:text-sm ${
+                units.length === 0 ? 'border-gray-300 bg-gray-100 text-gray-500' : 'border-gray-300 focus:ring-primary focus:border-primary'
+              } disabled:bg-gray-50`}
             >
-              <option value="">-- Pilih Unit --</option>
+              <option value="">
+                {units.length === 0 ? '-- Memuat data unit --' : '-- Pilih Unit --'}
+              </option>
               {units.map(unit => (
                 <option key={unit.id} value={unit.name}>
                   {unit.name}
                 </option>
               ))}
             </select>
-          </div>
-        )}
+          )}
+        </div>
       </div>
 
       {/* Error Summary */}
