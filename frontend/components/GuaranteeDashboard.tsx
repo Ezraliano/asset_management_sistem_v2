@@ -39,7 +39,7 @@ const GuaranteeDashboard: React.FC<GuaranteeDashboardProps> = ({ navigateTo, use
   const [statusData, setStatusData] = useState<DonutChartData[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [selectedUnit, setSelectedUnit] = useState<number | ''>('');
+  const [selectedUnit, setSelectedUnit] = useState<string>('');
   const [units, setUnits] = useState<Unit[]>([]);
 
   // Color mapping for guarantee types
@@ -153,12 +153,12 @@ const GuaranteeDashboard: React.FC<GuaranteeDashboardProps> = ({ navigateTo, use
               <label className="block text-sm font-medium text-gray-700 mb-2">Filter Unit</label>
               <select
                 value={selectedUnit}
-                onChange={(e) => setSelectedUnit(e.target.value ? parseInt(e.target.value) : '')}
+                onChange={(e) => setSelectedUnit(e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               >
                 <option value="">Semua Unit</option>
                 {units.map((unit) => (
-                  <option key={unit.id} value={unit.id}>
+                  <option key={unit.id} value={unit.name}>
                     {unit.name}
                   </option>
                 ))}

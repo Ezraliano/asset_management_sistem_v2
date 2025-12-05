@@ -58,6 +58,13 @@ const GuaranteeList: React.FC<GuaranteeListProps> = ({ navigateTo, user }) => {
     fetchData();
   }, []);
 
+  // Auto-reset unit filter for admin-kredit on component mount
+  useEffect(() => {
+    if (user?.role === 'admin-kredit') {
+      setSelectedUnitName('');
+    }
+  }, [user?.role]);
+
   // Fetch guarantees
   useEffect(() => {
     const fetchGuaranteesList = async () => {
@@ -291,23 +298,25 @@ const GuaranteeList: React.FC<GuaranteeListProps> = ({ navigateTo, user }) => {
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary"
             />
           </div>
-          <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-2">
-              Filter Unit
-            </label>
-            <select
-              value={selectedUnitName}
-              onChange={(e) => setSelectedUnitName(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary"
-            >
-              <option value="">Semua Unit</option>
-              {units.map(unit => (
-                <option key={unit.id} value={unit.name}>
-                  {unit.name}
-                </option>
-              ))}
-            </select>
-          </div>
+          {user?.role !== 'admin-kredit' && (
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
+                Filter Unit
+              </label>
+              <select
+                value={selectedUnitName}
+                onChange={(e) => setSelectedUnitName(e.target.value)}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary"
+              >
+                <option value="">Semua Unit</option>
+                {units.map(unit => (
+                  <option key={unit.id} value={unit.name}>
+                    {unit.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
           <div>
             <label className="block text-sm font-semibold text-gray-700 mb-2">
               Urutkan

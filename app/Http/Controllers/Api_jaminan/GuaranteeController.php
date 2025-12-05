@@ -433,10 +433,20 @@ class GuaranteeController extends Controller
     public function getStats(Request $request)
     {
         try {
+            $user = $request->user();
             $query = Guarantee::query();
 
-            // Filter by unit_name if provided
-            if ($request->has('unit_name') && $request->unit_name !== '') {
+            // ✅ AUTHORIZATION: Admin-kredit hanya bisa lihat statistik unitnya sendiri
+            if ($user && $user->role === 'admin-kredit' && $user->unit_name) {
+                $query->byUnitName($user->unit_name);
+            } else if ($user && $user->role === 'admin-kredit' && !$user->unit_name) {
+                // Admin-kredit tanpa unit tidak bisa melihat data apapun
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Admin kredit harus memiliki unit yang ditentukan'
+                ], Response::HTTP_FORBIDDEN);
+            } else if ($request->has('unit_name') && $request->unit_name !== '') {
+                // Super admin dan admin-holding bisa filter by unit jika parameter disediakan
                 $query->byUnitName($request->unit_name);
             }
 

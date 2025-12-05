@@ -2217,9 +2217,9 @@ export const getGuaranteesBySpk = async (spkNumber: string): Promise<Guarantee[]
 /**
  * Get guarantee statistics
  */
-export const getGuaranteeStats = async (unitId?: number | ''): Promise<GuaranteeStats | null> => {
+export const getGuaranteeStats = async (unitName?: string | ''): Promise<GuaranteeStats | null> => {
   try {
-    const url = unitId ? `/guarantees/stats?unit_id=${unitId}` : '/guarantees/stats';
+    const url = unitName ? `/guarantees/stats?unit_name=${encodeURIComponent(unitName)}` : '/guarantees/stats';
     const response = await apiRequest(url);
     const result = handleApiResponse<GuaranteeStats>(response);
     return result || null;
