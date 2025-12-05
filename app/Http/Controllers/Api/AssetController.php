@@ -44,19 +44,19 @@ class AssetController extends Controller
                     // User tanpa unit_name akan melihat empty list
                     $query->whereRaw('1 = 0'); // Force empty result
                 }
-            } elseif ($user && $user->role === 'admin' && $unit_name) {
-                // Admin Holding bisa filter by unit tertentu
-                $query->where('unit_name', $unit_name);
+            } elseif ($user && $user->role === 'admin' && $user->unit_name) {
+                // Admin (Unit Admin) role is forced to their assigned unit (same as unit role)
+                $query->where('unit_name', $user->unit_name);
             }
-            // Super Admin bisa lihat semua (no filter)
+            // Super Admin & Admin Holding bisa lihat semua (no filter)
 
             // Terapkan filter jika ada
             if (!empty($category)) {
                 $query->where('category', 'like', '%' . $category . '%');
             }
 
-            // Filter unit_name hanya untuk Super Admin dan Admin Holding
-            if (!empty($unit_name) && $user && in_array($user->role, ['super-admin', 'admin'])) {
+            // Filter unit_name hanya untuk Super Admin dan Admin Holding (tidak untuk admin unit)
+            if (!empty($unit_name) && $user && in_array($user->role, ['super-admin', 'admin-holding'])) {
                 $query->where('unit_name', $unit_name);
             }
 

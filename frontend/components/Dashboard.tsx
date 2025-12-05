@@ -61,6 +61,12 @@ const Dashboard: React.FC<DashboardProps> = ({ navigateTo }) => {
     }
   }, [selectedUnitName, currentUser, startDate, endDate]);
 
+  // Force unit filter for ADMIN (Unit Admin) role - MUST be before any conditional returns
+  useEffect(() => {
+    if (currentUser?.role === 'admin' && currentUser?.unit_name && selectedUnitName !== currentUser.unit_name) {
+      setSelectedUnitName(currentUser.unit_name);
+    }
+  }, [currentUser, selectedUnitName]);
 
   if (loading) {
     return (
@@ -78,8 +84,22 @@ const Dashboard: React.FC<DashboardProps> = ({ navigateTo }) => {
     );
   }
 
-  // Check if user can filter by unit (Super Admin or Admin Holding)
-  const canFilterByUnit = currentUser && ['super-admin', 'admin'].includes(currentUser.role);
+  // Simple welcome message for USER role
+  if (currentUser?.role === 'user') {
+    return (
+      <div className="space-y-6">
+        <div className="bg-gradient-to-r from-blue-500 to-blue-600 rounded-lg shadow-lg p-12 text-white">
+          <h1 className="text-4xl font-bold mb-4">Selamat Datang di Aset Management Sistem</h1>
+          <p className="text-lg opacity-90">
+            Anda dapat meminjam dan mengembalikan aset dari unit <strong>{currentUser.unit_name || 'Anda'}</strong>
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  // Check if user can filter by unit (Super Admin and Admin Holding can filter - Admin Unit is forced to their unit)
+  const canFilterByUnit = currentUser && ['super-admin', 'admin-holding'].includes(currentUser.role);
 
   return (
     <div className="space-y-6">

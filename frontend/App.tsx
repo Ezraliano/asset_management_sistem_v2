@@ -85,6 +85,10 @@ const AppContent: React.FC = () => {
     if (loggedInUser.role === 'admin-kredit') {
       setAppMode('guarantee');
       setView({ type: 'GUARANTEE_DASHBOARD' });
+    } else if (loggedInUser.role === 'user' || loggedInUser.role === 'admin') {
+      // Force asset mode for user and admin roles
+      setAppMode('asset');
+      setView({ type: 'DASHBOARD' });
     } else {
       setView({ type: 'DASHBOARD' });
     }

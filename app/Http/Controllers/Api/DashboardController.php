@@ -22,9 +22,11 @@ class DashboardController extends Controller
 
         // 2. DETERMINE UNIT FILTER
         $unitName = null;
-        if ($user->role === 'unit' && $user->unit_name) {
+        if (($user->role === 'unit' || $user->role === 'admin') && $user->unit_name) {
+            // Unit and Admin (Unit Admin) roles are forced to their assigned unit
             $unitName = $user->unit_name;
-        } elseif (in_array($user->role, ['super-admin', 'admin']) && $requestedUnitId && $requestedUnitId !== 'all') {
+        } elseif (in_array($user->role, ['super-admin', 'admin-holding']) && $requestedUnitId && $requestedUnitId !== 'all') {
+            // Super Admin and Admin Holding can filter by any unit
             $unitName = $requestedUnitId;
         }
 

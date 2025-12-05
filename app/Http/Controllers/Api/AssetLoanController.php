@@ -29,15 +29,15 @@ class AssetLoanController extends Controller
             if ($user && $user->role === 'user') {
                 // Regular users can only see their own loans
                 $loans->where('borrower_id', $user->id);
-            } elseif ($user && $user->role === 'unit' && $user->unit_name) {
-                // Admin Unit can see loans for assets in their unit OR loans they borrowed themselves
+            } elseif ($user && ($user->role === 'unit' || $user->role === 'admin') && $user->unit_name) {
+                // Admin Unit and Admin roles can see loans for assets in their unit OR loans they borrowed themselves
                 $loans->where(function ($query) use ($user) {
                     $query->whereHas('asset', function($q) use ($user) {
                         $q->where('unit_name', $user->unit_name);
                     })->orWhere('borrower_id', $user->id);
                 });
             }
-            // super-admin and admin can see all loans (no additional filter needed)
+            // super-admin can see all loans (no additional filter needed)
 
             // Allow filtering by status - TAMBAHKAN STATUS LOST
             if ($request->has('status')) {
