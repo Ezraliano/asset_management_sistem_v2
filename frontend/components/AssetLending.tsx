@@ -176,17 +176,25 @@ const AssetLending: React.FC = () => {
     }
   };
 
-  // Filter assets based on search term
+  // Filter assets based on search term and user role
   const filteredAssets = useMemo(() => {
-    if (!searchTerm) {
-      return availableAssets;
+    let assets = availableAssets;
+
+    // For admin (unit admin) and user roles, filter by their unit
+    if (currentUser && (currentUser.role === 'admin' || currentUser.role === 'user') && currentUser.unit_name) {
+      assets = assets.filter(asset => asset.unit_name === currentUser.unit_name);
     }
-    return availableAssets.filter(asset =>
+
+    // Apply search filter
+    if (!searchTerm) {
+      return assets;
+    }
+    return assets.filter(asset =>
       asset.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       asset.asset_tag.toLowerCase().includes(searchTerm.toLowerCase()) ||
       asset.category.toLowerCase().includes(searchTerm.toLowerCase())
     );
-  }, [searchTerm, availableAssets]);
+  }, [searchTerm, availableAssets, currentUser]);
 
   // Filter loans based on user role, status, and unit
   const filteredLoans = useMemo(() => {
@@ -203,8 +211,8 @@ const AssetLending: React.FC = () => {
       if (currentUser.role === 'user') {
         // For 'user' role, show loans they have borrowed
         loans = loans.filter(loan => loan.borrower_id === currentUser.id);
-      } else if (currentUser.role === 'unit' && currentUser.unit_name) {
-        // For 'unit' role, show loans where their unit is the lender OR the borrower
+      } else if ((currentUser.role === 'unit' || currentUser.role === 'admin') && currentUser.unit_name) {
+        // For 'unit' and 'admin' (unit admin) roles, show loans for their unit only
         loans = loans.filter(loan =>
           loan.asset.unit_name === currentUser.unit_name
         );
@@ -216,17 +224,17 @@ const AssetLending: React.FC = () => {
       loans = loans.filter(loan => loan.status === statusFilter);
     }
 
-    // Apply unit filter (for Super Admin and Admin Holding)
-    if (unitFilter !== 'ALL' && currentUser && ['super-admin', 'admin'].includes(currentUser.role)) {
+    // Apply unit filter (only for Super Admin and Admin Holding - not for unit admin)
+    if (unitFilter !== 'ALL' && currentUser && ['super-admin', 'admin-holding'].includes(currentUser.role)) {
       loans = loans.filter(loan => loan.asset.unit_name === unitFilter);
     }
 
     return loans;
   }, [allLoans, currentUser, statusFilter, unitFilter]);
 
-  // Get unique units for filter (for admins)
+  // Get unique units for filter (only for Super Admin and Admin Holding - not for unit admin)
   const availableUnits = useMemo(() => {
-    if (!currentUser || !['super-admin', 'admin'].includes(currentUser.role)) {
+    if (!currentUser || !['super-admin', 'admin-holding'].includes(currentUser.role)) {
       return [];
     }
 

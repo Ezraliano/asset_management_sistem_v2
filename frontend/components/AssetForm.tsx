@@ -48,8 +48,8 @@ const AssetForm: React.FC<AssetFormProps> = ({ asset, onSuccess, onClose }) => {
         setUnits(fetchedUnits);
         setCurrentUser(user);
 
-        // Check if user is Admin Unit - auto-fill and lock unit field
-        const isAdminUnit = user && user.role === 'unit' && user.unit_name;
+        // Check if user is Admin Unit (both 'unit' and 'admin' roles) - auto-fill and lock unit field
+        const isAdminUnit = user && (user.role === 'unit' || user.role === 'admin') && user.unit_name;
         if (isAdminUnit) {
           setIsUnitLocked(true);
         }

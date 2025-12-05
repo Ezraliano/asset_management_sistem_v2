@@ -145,8 +145,11 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::get('/asset-movements-pending', [AssetMovementController::class, 'getPendingMovements']);
         Route::post('/asset-movements/{id}/approve', [AssetMovementController::class, 'approveTransfer']);
         Route::post('/asset-movements/{id}/reject', [AssetMovementController::class, 'rejectTransfer']);
+    });
 
-        // Asset Loan Routes - Role-based filtering handled in controller (NO ROLE MIDDLEWARE)
+    // Asset Loan Routes - Accessible by ALL authenticated users (user, unit, admin, super-admin)
+    // Role-based filtering handled in controller (NO ROLE MIDDLEWARE)
+    Route::middleware(['auth:sanctum'])->group(function () {
         Route::get('/asset-loans', [AssetLoanController::class, 'index']);
         Route::post('/asset-loans', [AssetLoanController::class, 'store']);
         Route::get('/asset-loans/{assetLoan}', [AssetLoanController::class, 'show']);
