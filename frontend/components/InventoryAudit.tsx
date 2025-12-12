@@ -222,8 +222,8 @@ const InventoryAudit: React.FC<InventoryAuditProps> = ({ unitName, auditId, mode
     try {
       await completeInventoryAudit(auditId);
       alert('Audit completed successfully!');
-      // Tetap di halaman audit, tidak redirect ke dashboard
-      // User dapat melihat hasil audit dan download report sebelum kembali
+      // Redirect ke halaman setup audit setelah proses audit selesai
+      navigateTo({ type: 'INVENTORY_AUDIT_SETUP' });
     } catch (error: any) {
       alert('Failed to complete audit: ' + error.message);
     }

@@ -20,12 +20,12 @@ const MaintenanceValidationModal: React.FC<MaintenanceValidationModalProps> = ({
   const [showCompleteForm, setShowCompleteForm] = useState(false);
   const [validationNotes, setValidationNotes] = useState('');
 
-  // Check if user can validate (Super Admin, Admin, or Unit Admin)
-  const canValidate = ['super-admin', 'admin', 'unit'].includes(currentUser.role) &&
+  // Check if user can validate (Super Admin, Admin, Admin Holding, or Unit Admin)
+  const canValidate = ['super-admin', 'admin', 'unit', 'admin-holding'].includes(currentUser.role) &&
                       maintenance.validation_status === 'PENDING';
 
-  // Check if user can complete (Super Admin, Admin, or Unit Admin)
-  const canComplete = ['super-admin', 'admin', 'unit'].includes(currentUser.role) &&
+  // Check if user can complete (Super Admin, Admin, Admin Holding, or Unit Admin)
+  const canComplete = ['super-admin', 'admin', 'unit', 'admin-holding'].includes(currentUser.role) &&
                       maintenance.validation_status === 'APPROVED' &&
                       maintenance.status !== 'COMPLETED';
 

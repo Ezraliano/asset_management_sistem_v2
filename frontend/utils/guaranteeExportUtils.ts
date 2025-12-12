@@ -934,7 +934,7 @@ export const exportGuaranteeDetailToPdf = async (
 
         try {
           // Convert image URL to base64 for embedding in PDF
-          const imageUrl = `http://127.0.0.1:8000/storage/${approvedSettlement.bukti_pelunasan}`;
+          const imageUrl = `http://127.0.0.1:8000/api/storage/${approvedSettlement.bukti_pelunasan}`;
           const response = await fetch(imageUrl);
           const blob = await response.blob();
           const reader = new FileReader();

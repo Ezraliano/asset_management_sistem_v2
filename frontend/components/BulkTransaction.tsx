@@ -24,12 +24,29 @@ const BulkTransaction: React.FC<BulkTransactionProps> = ({ navigateTo }) => {
     setError('');
 
     const lines = csvData.trim().split('\n');
-    const header = lines.shift()?.trim().toLowerCase();
+    const headerLine = lines.shift()?.trim();
 
-    const expectedHeader = "name,category,unit_name,value,purchasedate,usefullife,status";
-    if (header !== expectedHeader) {
+    if (!headerLine) {
       setError(t('bulk_transaction.alerts.error'));
-      console.error('Invalid CSV header. Expected:', expectedHeader, 'Got:', header);
+      setIsSubmitting(false);
+      return;
+    }
+
+    // Auto-detect separator (comma or tab)
+    const separator = headerLine.includes('\t') ? '\t' : ',';
+    const headerValues = headerLine.split(separator).map(v => v.trim().toLowerCase());
+
+    // Normalize header names (convert usefulllife to usefullife)
+    const normalizedHeader = headerValues.map(h =>
+      h === 'usefulllife' ? 'usefullife' : h
+    );
+
+    const expectedHeaderValues = ['name', 'category', 'unit_name', 'value', 'purchasedate', 'usefullife', 'status'];
+
+    // Check if headers match (order matters)
+    if (normalizedHeader.join(',') !== expectedHeaderValues.join(',')) {
+      setError(t('bulk_transaction.alerts.error'));
+      console.error('Invalid CSV header. Expected:', expectedHeaderValues.join(','), 'Got:', normalizedHeader.join(','));
       setIsSubmitting(false);
       return;
     }
@@ -42,7 +59,7 @@ const BulkTransaction: React.FC<BulkTransactionProps> = ({ navigateTo }) => {
         const line = lines[i];
         if (!line.trim()) continue;
 
-        const values = line.split(',');
+        const values = line.split(separator);
 
         if (values.length !== 7) {
             errors.push(t('bulk_transaction.errors.column_count', { row: i + 2, count: values.length }));

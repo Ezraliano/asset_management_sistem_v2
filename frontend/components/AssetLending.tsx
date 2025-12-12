@@ -273,7 +273,7 @@ const AssetLending: React.FC = () => {
   // ✅ PERBAIKAN: Check if user can manage loans (approve/reject/return)
   const canManageLoans = useMemo(() => {
     if (!currentUser) return false;
-    return ['super-admin', 'admin', 'unit'].includes(currentUser.role);
+    return ['super-admin', 'admin', 'unit', 'admin-holding'].includes(currentUser.role);
   }, [currentUser]);
 
   // ✅ PERBAIKAN: Check if user can borrow assets - SEMUA ROLE BISA PINJAM
@@ -439,7 +439,7 @@ const AssetLending: React.FC = () => {
           <h1 className="text-xl sm:text-2xl font-bold text-gray-800">Peminjaman & Permintaan Aset</h1>
 
           {/* View Mode Toggle - Show for Admins */}
-          {['super-admin', 'admin', 'unit'].includes(currentUser?.role || '') && (
+          {['super-admin', 'admin', 'unit', 'admin-holding'].includes(currentUser?.role || '') && (
             <div className="flex gap-2 flex-wrap">
               <button
                 onClick={() => setViewMode('LOANS')}
@@ -491,7 +491,7 @@ const AssetLending: React.FC = () => {
       )}
 
       {/* Show Asset Request List when in REQUESTS view mode */}
-      {viewMode === 'REQUESTS' && ['super-admin', 'admin', 'unit'].includes(currentUser?.role || '') ? (
+      {viewMode === 'REQUESTS' && ['super-admin', 'admin', 'unit', 'admin-holding'].includes(currentUser?.role || '') ? (
         <div className="bg-white p-6 rounded-xl shadow-md">
           <AssetRequestList currentUser={currentUser} />
         </div>

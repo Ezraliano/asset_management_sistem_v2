@@ -66,7 +66,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
     // Auditor can only access audit report
     Route::middleware(['auth:sanctum'])->group(function () {
         // All reports - Admin Holding only
-        Route::middleware('role:super-admin,admin')->group(function () {
+        Route::middleware('role:super-admin,admin,admin-holding')->group(function () {
             Route::get('/reports/all', [ReportController::class, 'getAllReports']);
             Route::get('/reports/full-asset', [ReportController::class, 'getFullAssetReport']);
             Route::get('/reports/maintenance', [ReportController::class, 'getMaintenanceReport']);
@@ -84,7 +84,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
     });
 
     // Group for Aset menu (Admin Holding, Admin Unit)
-    Route::middleware('role:super-admin,admin,unit')->group(function () {
+    Route::middleware('role:super-admin,admin,unit,admin-holding')->group(function () {
         Route::apiResource('assets', AssetController::class);
         Route::get('/assets/{id}/depreciation', [AssetDepreciationController::class, 'show']);
         Route::get('/assets/{id}/depreciation-preview', [AssetDepreciationController::class, 'preview']);
@@ -190,7 +190,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
     });
 
     // Asset Loan Management Routes (Super Admin/Admin Holding/Admin Unit Access)
-    Route::middleware('role:super-admin,admin,unit')->group(function () {
+    Route::middleware('role:super-admin,admin,unit,admin-holding')->group(function () {
         Route::post('asset-loans/{assetLoan}/approve', [AssetLoanController::class, 'approve'])->name('asset-loans.approve');
         Route::post('asset-loans/{assetLoan}/reject', [AssetLoanController::class, 'reject'])->name('asset-loans.reject');
 

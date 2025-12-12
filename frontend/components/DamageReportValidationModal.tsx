@@ -21,7 +21,7 @@ const DamageReportValidationModal: React.FC<DamageReportValidationModalProps> = 
   const [responsibleParty, setResponsibleParty] = useState('');
 
   // Check if user can validate
-  const canValidate = ['super-admin', 'admin', 'unit'].includes(currentUser.role) &&
+  const canValidate = ['super-admin', 'admin', 'unit', 'admin-holding'].includes(currentUser.role) &&
                       report.status === 'PENDING';
 
   const formatDate = (dateString: string): string => {

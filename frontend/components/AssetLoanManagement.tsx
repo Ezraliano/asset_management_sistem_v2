@@ -64,7 +64,7 @@ const AssetLoanManagement: React.FC = () => {
 
   const canManageLoans = useMemo(() => {
     if (!currentUser) return false;
-    return ['super-admin', 'admin', 'unit'].includes(currentUser.role);
+    return ['super-admin', 'admin', 'unit', 'admin-holding'].includes(currentUser.role);
   }, [currentUser]);
 
   const handleActionClick = (loan: AssetLoan, action: 'approve' | 'reject' | 'return' | 'validate_return') => {

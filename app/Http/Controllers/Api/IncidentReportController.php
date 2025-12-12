@@ -249,7 +249,7 @@ class IncidentReportController extends Controller
             $user = Auth::user();
 
             // Authorization check
-            $isAdmin = in_array($user->role, ['super-admin', 'admin', 'unit']);
+            $isAdmin = in_array($user->role, ['super-admin', 'admin', 'unit', 'admin-holding']);
             if (!$isAdmin) {
                 return response()->json([
                     'success' => false,
@@ -388,7 +388,7 @@ class IncidentReportController extends Controller
             $user = Auth::user();
 
             // Authorization check
-            $isAdmin = in_array($user->role, ['super-admin', 'admin', 'unit']);
+            $isAdmin = in_array($user->role, ['super-admin', 'admin', 'unit', 'admin-holding']);
             if (!$isAdmin) {
                 return response()->json([
                     'success' => false,
@@ -484,7 +484,7 @@ class IncidentReportController extends Controller
             $user = Auth::user();
 
             // Authorization check
-            $isAdmin = in_array($user->role, ['super-admin', 'admin', 'unit']);
+            $isAdmin = in_array($user->role, ['super-admin', 'admin', 'unit', 'admin-holding']);
             if (!$isAdmin) {
                 return response()->json([
                     'success' => false,
@@ -807,7 +807,7 @@ class IncidentReportController extends Controller
 
             // Recent incidents for validation (for admin)
             $recentValidationIncidents = [];
-            if (in_array($user->role, ['super-admin', 'admin', 'unit'])) {
+            if (in_array($user->role, ['super-admin', 'admin', 'unit', 'admin-holding'])) {
                 $recentValidationIncidents = (clone $query)
                     ->whereIn('status', ['PENDING', 'UNDER_REVIEW'])
                     ->with(['asset.unit', 'reporter'])
@@ -861,7 +861,7 @@ class IncidentReportController extends Controller
             $user = Auth::user();
 
             // Only super-admin and admin can delete
-            if (!in_array($user->role, ['super-admin', 'admin'])) {
+            if (!in_array($user->role, ['super-admin', 'admin', 'admin-holding'])) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Unauthorized to delete incident reports'

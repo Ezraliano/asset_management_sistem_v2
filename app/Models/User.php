@@ -250,8 +250,8 @@ class User extends Authenticatable
      */
     public function canValidateMaintenance(Maintenance $maintenance): bool
     {
-        // Super Admin and Admin can validate all maintenance records
-        if (in_array($this->role, ['super-admin', 'admin'])) {
+        // Super Admin, Admin, and Admin Holding can validate all maintenance records
+        if (in_array($this->role, ['super-admin', 'admin', 'admin-holding'])) {
             return true;
         }
 
@@ -268,8 +268,8 @@ class User extends Authenticatable
      */
     public function canCompleteMaintenance(Maintenance $maintenance): bool
     {
-        // Super Admin and Admin can complete all maintenance records
-        if (in_array($this->role, ['super-admin', 'admin'])) {
+        // Super Admin, Admin, and Admin Holding can complete all maintenance records
+        if (in_array($this->role, ['super-admin', 'admin', 'admin-holding'])) {
             return true;
         }
 
@@ -286,8 +286,8 @@ class User extends Authenticatable
      */
     public function canCreateMaintenance(Asset $asset): bool
     {
-        // Super Admin and Admin can create maintenance for all assets
-        if (in_array($this->role, ['super-admin', 'admin'])) {
+        // Super Admin, Admin, and Admin Holding can create maintenance for all assets
+        if (in_array($this->role, ['super-admin', 'admin', 'admin-holding'])) {
             return true;
         }
 
